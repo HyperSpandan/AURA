@@ -236,7 +236,6 @@ fun WelcomeScreen(
                 val s = 0.96f + 0.04f * ease
                 scaleX = s
                 scaleY = s
-                alpha = (dive * 1.5f).coerceIn(0f, 1f)
             }
         },
     ) {
