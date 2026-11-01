@@ -16,7 +16,7 @@ function tlv(tag, data) {
 const seq = (...n) => tlv(48, concat(n)), set = (...n) => tlv(49, concat(n)), octet = n => tlv(4, n), int = n => tlv(2, Buffer.from([n])), en = n => tlv(10, Buffer.from([n]));
 const tagged = (tag, value) => tlv(tag < 31 ? [160 + tag] : [191, 128 + (tag >> 7), tag & 127], value);
 const challenge = randomBytes(32).toString('base64url'), signer = 'ab'.repeat(32);
-function description({ security = 1, locked = true, boot = 0, packageName = 'com.opentune', digest = signer, c = challenge, origin = 0 } = {}) {
+function description({ security = 1, locked = true, boot = 0, packageName = 'com.aura', digest = signer, c = challenge, origin = 0 } = {}) {
   return seq(int(100), en(security), int(100), en(security), octet(Buffer.from(c, 'base64url')), octet(Buffer.alloc(0)),
     seq(tagged(709, octet(seq(set(seq(octet(bytes(packageName)), int(44))), set(octet(Buffer.from(digest, 'hex'))))))),
     seq(tagged(1, set(int(2))), tagged(702, int(origin)), tagged(704, seq(octet(Buffer.alloc(32)), tlv(1, Buffer.from([locked ? 255 : 0])), en(boot), octet(Buffer.alloc(32))))));
@@ -41,7 +41,7 @@ test('real certificate chain/proof checks reject wrong roots, revocation, expire
     // A short serial keeps the leading-zero revocation case deterministic.
     run(['x509', '-req', '-in', 'leaf.csr', '-CA', 'root.pem', '-CAkey', 'root.key', '-set_serial', '0x0A', '-out', 'leaf.pem', '-days', '1', '-extfile', 'extensions']);
     const root = new X509Certificate(readFileSync(join(dir, 'root.pem'))), leaf = new X509Certificate(readFileSync(join(dir, 'leaf.pem')));
-    const input = { challenge, chain: [leaf, root].map(c => c.raw.toString('base64')), proof: sign('sha256', bytes('OpenTune-Enrollment-v1\n' + challenge), createPrivateKey(readFileSync(join(dir, 'leaf.key')))).toString('base64url') };
+    const input = { challenge, chain: [leaf, root].map(c => c.raw.toString('base64')), proof: sign('sha256', bytes('AURA-Enrollment-v1\n' + challenge), createPrivateKey(readFileSync(join(dir, 'leaf.key')))).toString('base64url') };
     const trust = { roots: [root], revoked: {} };
     if (process.env.ATTESTATION_TEST_FIXTURE) writeFileSync(process.env.ATTESTATION_TEST_FIXTURE, JSON.stringify({ input, root: root.toString(), signer }));
     assert.match(verifyAttestation(input, trust, [signer]), /PUBLIC KEY/);

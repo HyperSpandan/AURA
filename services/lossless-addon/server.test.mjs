@@ -17,7 +17,7 @@ async function start(extra = {}) {
     stdio: ['ignore', 'pipe', 'inherit'],
   });
   await new Promise((resolve, reject) => {
-    child.stdout.on('data', d => { if (String(d).includes('OpenTune add-on on')) resolve(); });
+    child.stdout.on('data', d => { if (String(d).includes('AURA add-on on')) resolve(); });
     child.on('exit', code => reject(new Error('server exited ' + code)));
   });
   return { base: `http://127.0.0.1:${port}`, dir, stop: () => { child.kill(); rmSync(dir, { recursive: true, force: true }); } };
@@ -40,8 +40,8 @@ test('the VPS server answers like the Worker: public manifests, signed searches,
     // Empty query: answered without asking the source, so no network is needed.
     const path = '/archive/search?quality=best';
     const time = String(Date.now()), nonce = randomBytes(24).toString('base64url');
-    const signature = sign('sha256', Buffer.from(['OpenTune-Addon-v1', session, time, nonce, 'GET', path, sha('')].join('\n')), keys.privateKey).toString('base64url');
-    const headers = { Authorization: 'Bearer ' + session, 'X-OpenTune-Time': time, 'X-OpenTune-Nonce': nonce, 'X-OpenTune-Signature': signature };
+    const signature = sign('sha256', Buffer.from(['AURA-Addon-v1', session, time, nonce, 'GET', path, sha('')].join('\n')), keys.privateKey).toString('base64url');
+    const headers = { Authorization: 'Bearer ' + session, 'X-AURA-Time': time, 'X-AURA-Nonce': nonce, 'X-AURA-Signature': signature };
     const first = await fetch(server.base + path, { headers });
     assert.equal(first.status, 200);
     assert.deepEqual(await first.json(), { tracks: [] });

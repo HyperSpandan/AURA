@@ -3,13 +3,13 @@ import { withAbuseProtection } from './security.mjs';
 import { withAppVerification } from './auth.mjs';
 export { AddonAuthState } from './auth.mjs';
 
-/** OpenTune lossless HTTP adapters. No media transcoding or audio proxying. */
+/** AURA lossless HTTP adapters. No media transcoding or audio proxying. */
 const MONO = 'https://tracks.monochrome.st';
 const ARCHIVE = 'https://archive.org';
 const NETEASE = 'https://music.163.com';
 const METING = 'https://api.qijieya.cn/meting/';
 const MUSOPEN_ITEM = 'musopen-dvd-in-lossless-flac-format';
-const UA = 'OpenTune-Lossless-Addon/0.1 (+https://github.com/justshivv/Opentune)';
+const UA = 'AURA-Lossless-Addon/0.1 (+https://github.com/justshivv/Opentune)';
 const MAX_JSON = 2 * 1024 * 1024;
 const MAX_HEADER = 65536;
 const encoder = new TextEncoder();
@@ -23,13 +23,13 @@ class SourceError extends Error {
   constructor(message, status = 502, retryAfter = null) { super(message); this.status = status; this.retryAfter = retryAfter; }
 }
 const sources = {
-  netease: { id: 'org.opentune.netease', name: 'OpenTune · NetEase',
+  netease: { id: 'org.opentune.netease', name: 'AURA · NetEase',
     description: 'NetEase catalogue with public Meting audio resolution. Native FLAC is checked before playback; availability and original resolution vary by recording.' },
-  monochrome: { id: 'org.opentune.monochrome', name: 'OpenTune · Monochrome',
+  monochrome: { id: 'org.opentune.monochrome', name: 'AURA · Monochrome',
     description: 'Independent adapter for Monochrome’s public Track Streamer. Availability and quotas depend on that service.' },
-  archive: { id: 'org.opentune.archive', name: 'OpenTune · Internet Archive',
+  archive: { id: 'org.opentune.archive', name: 'AURA · Internet Archive',
     description: 'FLAC recordings from Internet Archive. Catalogue includes live recordings and independent releases; it is not a substitute for a studio catalogue.' },
-  musopen: { id: 'org.opentune.musopen', name: 'OpenTune · Musopen Classical',
+  musopen: { id: 'org.opentune.musopen', name: 'AURA · Musopen Classical',
     description: 'Musopen Kickstarter collection on Internet Archive. Original classical FLAC recordings; collection credits are preserved when performer metadata is absent. Not a popular-music catalogue or a guaranteed hi-res tier.' },
 };
 function manifest(source) {
@@ -310,7 +310,7 @@ export function withPause(handler) {
     if (Object.hasOwn(sources, parts[0])) parts.shift();
     if (parts[0] !== 'search' && parts[0] !== 'stream') return handler(request, env);
     return json({ error: 'Paused by its owner', paused: true }, 503,
-      { 'Retry-After': String(PAUSED_RETRY_S), 'X-OpenTune-Paused': '1', 'Access-Control-Expose-Headers': 'Retry-After, X-OpenTune-Paused' });
+      { 'Retry-After': String(PAUSED_RETRY_S), 'X-AURA-Paused': '1', 'Access-Control-Expose-Headers': 'Retry-After, X-AURA-Paused' });
   };
 }
 const handler = createAddon();

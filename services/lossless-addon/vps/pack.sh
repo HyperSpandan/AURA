@@ -14,7 +14,7 @@ USAGE="$SRC/../../usage-api"
 cp "$USAGE"/worker.mjs "$USAGE"/auth.mjs "$USAGE"/addons.mjs "$USAGE"/schema.sql "$STAGE/opentune-addon/usage-api/"
 cp "$USAGE"/dashboard/index.html "$USAGE"/dashboard/dashboard.js "$USAGE"/dashboard/dashboard.css "$USAGE"/dashboard/model.mjs "$USAGE"/dashboard/session.mjs "$STAGE/opentune-addon/usage-api/dashboard/"
 cp "$HERE"/import-usage.mjs "$STAGE/opentune-addon/"
-cp "$HERE"/install.sh "$HERE"/opentune-addon.env "$HERE"/README.md "$STAGE/opentune-addon/"
+cp "$HERE"/install.sh "$HERE"/aura-addon.env "$HERE"/README.md "$STAGE/opentune-addon/"
 tar -czf "$OUT/opentune-addon-vps.tar.gz" -C "$STAGE" opentune-addon
 echo "$OUT/opentune-addon-vps.tar.gz"
 

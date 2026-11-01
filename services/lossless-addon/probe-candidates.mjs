@@ -1,7 +1,7 @@
 /** Read-only research. Reports measured direct FLAC separately from provider claims. */
 import { flacInfo, createAddon } from './worker.mjs';
 import { writeFile } from 'node:fs/promises';
-const UA = 'OpenTune-Source-Research/1.0';
+const UA = 'AURA-Source-Research/1.0';
 async function fetchBounded(url, media = false) {
   const u = new URL(url);
   if (u.protocol !== 'https:') throw Error('HTTPS required');

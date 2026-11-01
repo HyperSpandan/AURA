@@ -1,4 +1,4 @@
-/* OpenTune app controls. The same dark, one-accent look as the usage dashboard. */
+/* AURA app controls. The same dark, one-accent look as the usage dashboard. */
 :root{color-scheme:dark;--bg:#0c0d0f;--panel:#15171a;--panel-2:#1b1e22;--line:#272a2f;--line-2:#363a40;--text:#f3f4f0;--muted:#a3a8ae;--faint:#6f757c;--accent:#c8ef9b;--ink:#15200c;--danger:#ffb4ab;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;font-size:16px;color:var(--text);background:var(--bg)}
 *{box-sizing:border-box}
 body{margin:0;min-height:100svh;background:radial-gradient(1000px 480px at 90% -140px,#2a3a1c66,transparent 70%),radial-gradient(700px 380px at -10% 0,#1d2a3a55,transparent 70%),var(--bg);-webkit-font-smoothing:antialiased}

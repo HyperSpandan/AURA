@@ -8,7 +8,7 @@ it('recovers invalid persisted choices without losing valid preferences', () => 
 });
 it('saves appearance changes independently and round-trips across reloads', () => {
   useAppearance.getState().update({ mode: 'dark', playerStyle: 'polaroid', motion: false });
-  const saved = appearanceOf(JSON.parse(localStorage.getItem('opentune:appearance')!));
+  const saved = appearanceOf(JSON.parse(localStorage.getItem('aura:appearance')!));
   expect(saved).toMatchObject({ mode: 'dark', playerStyle: 'polaroid', motion: false });
   expect(saved.accent).toBe(DEFAULT_APPEARANCE.accent);
 });

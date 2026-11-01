@@ -30,7 +30,7 @@ jobs:
         env:
           KEYSTORE_BASE64: ${{ secrets.OPENTUNE_KEYSTORE_BASE64 }}
         run: |
-          test -n "$KEYSTORE_BASE64" || { echo "Configure the existing OpenTune release signing secrets first."; exit 1; }
+          test -n "$KEYSTORE_BASE64" || { echo "Configure the existing AURA release signing secrets first."; exit 1; }
           printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/store.keystore"
           echo "OPENTUNE_KEYSTORE=$RUNNER_TEMP/store.keystore" >> "$GITHUB_ENV"
       - name: Build selected package
@@ -49,7 +49,7 @@ jobs:
           find . -maxdepth 1 -type f \( -name '*.apk' -o -name '*.aab' \) -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS.txt
       - uses: actions/upload-artifact@v4
         with:
-          name: OpenTune-store-${{ inputs.format }}
+          name: AURA-store-${{ inputs.format }}
           path: dist/store/
       - name: Remove temporary key
         if: always()

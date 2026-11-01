@@ -1,12 +1,12 @@
 import { create } from 'zustand';
 import { currentConfig } from '@/config/remote';
-import { endpoint, flacInfo, manifestOf, matches, publicHttps, qualityParams, type Addon, type CatalogTrack, type Recording } from '@opentune/shared/addons';
-import { BridgeCallError } from '@opentune/shared/bridge';
+import { endpoint, flacInfo, manifestOf, matches, publicHttps, qualityParams, type Addon, type CatalogTrack, type Recording } from '@aura/shared/addons';
+import { BridgeCallError } from '@aura/shared/bridge';
 import { getBridge } from '@/extension/bridge';
 import { fetchPublished, mergeCatalog } from './catalog';
 import { needsVerification, verificationHeaders } from './verification';
-const KEY = 'opentune:audio-addons';
-const SAAVN_KEY = 'opentune:jiosaavn';
+const KEY = 'aura:audio-addons';
+const SAAVN_KEY = 'aura:jiosaavn';
 /** Twenty of the listener's own and twenty published ones at most. */
 function read(): Addon[] { try { const v = JSON.parse(localStorage.getItem(KEY) ?? '[]'); return Array.isArray(v) ? v.filter(x => typeof x?.url === 'string' && typeof x?.name === 'string').slice(0, 40) : []; } catch { return []; } }
 function readSaavn(): boolean { try { return localStorage.getItem(SAAVN_KEY) !== 'false'; } catch { return true; } }
@@ -79,7 +79,7 @@ export async function fetchJson(url: string): Promise<unknown> {
       // the network or an error page: those are said as they are, not as a missing permission.
       if (!(error instanceof TypeError)) throw error instanceof DOMException && error.name === 'TimeoutError' ? new Error('timed out (the server is slow or waking up)') : error;
       if (corsOk.has(origin)) throw new Error("couldn't be reached (network error)");
-      const bridge = getBridge(); if (!bridge) throw new Error("doesn't let browsers ask it directly; the OpenTune extension can");
+      const bridge = getBridge(); if (!bridge) throw new Error("doesn't let browsers ask it directly; the AURA extension can");
       corsBlocked.set(origin, Date.now() + CORS_RETRY_MS);
       const r = await bridge.call('addon.fetch', { url }); status = r.status; text = r.body; retryAfter = r.headers['retry-after'] ?? '';
     }
@@ -120,12 +120,12 @@ export async function addSource(raw: string): Promise<void> {
   update([...sources, { id: crypto.randomUUID(), name: manifest.name, url, enabled: true }]);
 }
 export async function allowSource(raw: string): Promise<void> {
-  const bridge = getBridge(); if (!bridge) throw new Error('Install the OpenTune extension first');
+  const bridge = getBridge(); if (!bridge) throw new Error('Install the AURA extension first');
   await bridge.call('addon.requestPermission', { url: publicHttps(raw).href });
 }
 /** Asks for every one of these sources' hosts on one extension page (an older extension asks for the first). */
 export async function allowSources(sources: Addon[]): Promise<void> {
-  const bridge = getBridge(); if (!bridge) throw new Error('Install the OpenTune extension first');
+  const bridge = getBridge(); if (!bridge) throw new Error('Install the AURA extension first');
   const [first, ...rest] = sources.map(s => publicHttps(s.url).href);
   if (first) await bridge.call('addon.requestPermission', { url: first, urls: rest });
 }

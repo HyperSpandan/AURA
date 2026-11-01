@@ -32,7 +32,7 @@ jobs:
           echo "OPENTUNE_KEYSTORE=$RUNNER_TEMP/verification.keystore" >> "$GITHUB_ENV"
           sed -i 's/versionName = "\([^"]*\)"/versionName = "\1-verification-preview.2"/' app/build.gradle.kts
       - name: Test public-source isolation
-        run: ./gradlew --no-daemon :core:testDebugUnitTest --tests 'com.opentune.data.addons.*'
+        run: ./gradlew --no-daemon :core:testDebugUnitTest --tests 'com.aura.data.addons.*'
       - name: Build Android and TV client
         env:
           OPENTUNE_KEYSTORE_PASSWORD: ${{ secrets.OPENTUNE_KEYSTORE_PASSWORD }}
@@ -41,7 +41,7 @@ jobs:
         run: ./gradlew --no-daemon :app:assembleRelease
       - uses: actions/upload-artifact@v4
         with:
-          name: OpenTune-verified-source-signed
+          name: AURA-verified-source-signed
           path: app/build/outputs/apk/release/*.apk
           if-no-files-found: error
           retention-days: 14
@@ -63,10 +63,10 @@ jobs:
         working-directory: web
       - run: pnpm typecheck && pnpm test
         working-directory: web
-      - run: pnpm --filter @opentune/extension icons && pnpm build:site
+      - run: pnpm --filter @aura/extension icons && pnpm build:site
         working-directory: web
       - uses: actions/upload-artifact@v4
         with:
-          name: OpenTune-verified-source-web
+          name: AURA-verified-source-web
           path: web/app/dist
           if-no-files-found: error

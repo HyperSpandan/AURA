@@ -26,7 +26,7 @@
   "upstream": {
     "searchStatus": 401,
     "matchingRecording": false,
-    "error": "Verify this device with the current official OpenTune app. Unsupported devices cannot use this source."
+    "error": "Verify this device with the current official AURA app. Unsupported devices cannot use this source."
   },
   "security": {
     "mode": "strict",
@@ -45,7 +45,7 @@
       {
         "source": "monochrome",
         "route": "search",
-        "agent": "OpenTune/verified-addon-v1",
+        "agent": "AURA/verified-addon-v1",
         "status": 401
       },
       {
@@ -57,7 +57,7 @@
       {
         "source": "monochrome",
         "route": "stream/untrusted-id",
-        "agent": "OpenTune/verified-addon-v1",
+        "agent": "AURA/verified-addon-v1",
         "status": 401
       },
       {
@@ -69,7 +69,7 @@
       {
         "source": "archive",
         "route": "search",
-        "agent": "OpenTune/verified-addon-v1",
+        "agent": "AURA/verified-addon-v1",
         "status": 401
       },
       {
@@ -81,7 +81,7 @@
       {
         "source": "archive",
         "route": "stream/untrusted-id",
-        "agent": "OpenTune/verified-addon-v1",
+        "agent": "AURA/verified-addon-v1",
         "status": 401
       },
       {
@@ -93,7 +93,7 @@
       {
         "source": "musopen",
         "route": "search",
-        "agent": "OpenTune/verified-addon-v1",
+        "agent": "AURA/verified-addon-v1",
         "status": 401
       },
       {
@@ -105,7 +105,7 @@
       {
         "source": "musopen",
         "route": "stream/untrusted-id",
-        "agent": "OpenTune/verified-addon-v1",
+        "agent": "AURA/verified-addon-v1",
         "status": 401
       },
       {
@@ -117,7 +117,7 @@
       {
         "source": "netease",
         "route": "search",
-        "agent": "OpenTune/verified-addon-v1",
+        "agent": "AURA/verified-addon-v1",
         "status": 401
       },
       {
@@ -129,7 +129,7 @@
       {
         "source": "netease",
         "route": "stream/untrusted-id",
-        "agent": "OpenTune/verified-addon-v1",
+        "agent": "AURA/verified-addon-v1",
         "status": 401
       }
     ]
@@ -137,7 +137,7 @@
   "musopen": {
     "searchStatus": 401,
     "candidates": 0,
-    "error": "Verify this device with the current official OpenTune app. Unsupported devices cannot use this source."
+    "error": "Verify this device with the current official AURA app. Unsupported devices cannot use this source."
   },
   "evidence": {
     "workflow": "https://github.com/justshivv/Opentune/actions/runs/40048690232",

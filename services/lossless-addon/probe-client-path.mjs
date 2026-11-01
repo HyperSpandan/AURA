@@ -3,7 +3,7 @@ const base = 'https://opentune-lossless-addon.create-a-new-site-with-sites.worke
 const report = { checkedAt: new Date().toISOString(), scope: 'Unsigned staged-service path and bounded media headers, not genuine Android attestation', results: [] };
 async function request(url, media = false) {
   const start = Date.now();
-  const r = await fetch(url, { signal: AbortSignal.timeout(8000), headers: { 'User-Agent': 'OpenTune-Client-Diagnostics/1.0', ...(media ? { Range: 'bytes=0-65535' } : {}) } });
+  const r = await fetch(url, { signal: AbortSignal.timeout(8000), headers: { 'User-Agent': 'AURA-Client-Diagnostics/1.0', ...(media ? { Range: 'bytes=0-65535' } : {}) } });
   if (!r.ok) { await r.body?.cancel(); throw Error(`HTTP ${r.status}`); }
   const reader = r.body.getReader(), parts = []; let size = 0; const cap = media ? 65536 : 2097152;
   try { while (size < cap) { const p = await reader.read(); if (p.done) break; const b = p.value.subarray(0, cap-size); parts.push(b); size += b.length; } }

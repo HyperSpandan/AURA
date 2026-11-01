@@ -6,12 +6,12 @@ plugins {
 }
 
 android {
-    namespace = "com.opentune"
+    namespace = "com.aura"
     // InnerTubeX's AAR is compiled against 37; targetSdk (runtime behaviour) stays 36.
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "com.opentune"
+        applicationId = "com.aura"
         minSdk = 26
         targetSdk = 36
         versionCode = 46
@@ -28,14 +28,14 @@ android {
     // A release key from the environment (CI secrets) when there is one;
     // otherwise release builds are signed with the debug key so they still
     // install. See .github/workflows/release.yml.
-    val releaseKeystore = System.getenv("OPENTUNE_KEYSTORE")?.let(::file)?.takeIf { it.exists() }
+    val releaseKeystore = System.getenv("AURA_KEYSTORE")?.let(::file)?.takeIf { it.exists() }
     signingConfigs {
         if (releaseKeystore != null) {
             create("release") {
                 storeFile = releaseKeystore
-                storePassword = System.getenv("OPENTUNE_KEYSTORE_PASSWORD")
-                keyAlias = System.getenv("OPENTUNE_KEY_ALIAS")
-                keyPassword = System.getenv("OPENTUNE_KEY_PASSWORD")
+                storePassword = System.getenv("AURA_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("AURA_KEY_ALIAS")
+                keyPassword = System.getenv("AURA_KEY_PASSWORD") ?: System.getenv("OPENTUNE_KEY_PASSWORD")
             }
         }
     }

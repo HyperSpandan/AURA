@@ -1,4 +1,4 @@
-import type { Bridge, DetectedExtension } from '@opentune/shared/bridge';
+import type { Bridge, DetectedExtension } from '@aura/shared/bridge';
 import { queryClient } from '@/lib/queryClient';
 import { extensionQueryKey } from './useExtension';
 

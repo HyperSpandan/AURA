@@ -55,14 +55,14 @@
 
     <application
         android:banner="@drawable/tv_banner"
-        android:name=".OpenTuneApp"
+        android:name=".AuraApp"
         android:allowBackup="true"
         android:fullBackupContent="@xml/backup_rules"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:label="@string/app_name"
-        android:theme="@style/Theme.OpenTune"
+        android:theme="@style/Theme.Aura"
         android:supportsRtl="true"
         android:localeConfig="@xml/locales_config"
         android:networkSecurityConfig="@xml/network_security_config">
@@ -72,7 +72,7 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="opentune" android:host="addon-approve" />
+                <data android:scheme="aura" android:host="addon-approve" />
             </intent-filter>
         </activity>
         <activity
@@ -80,7 +80,7 @@
             android:exported="true"
             android:launchMode="singleTop"
             android:windowSoftInputMode="adjustResize"
-            android:theme="@style/Theme.OpenTune"
+            android:theme="@style/Theme.Aura"
             android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout">
             <!-- Turning, folding, unfolding and resizing the window are handled by the
                  Compose UI, which picks its layout from the window's size, so pages,
@@ -92,7 +92,7 @@
                 <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
             </intent-filter>
             <!-- Open YouTube Music and YouTube links: songs, playlists, albums, channels.
-                 Not autoVerify: these domains aren't ours, so the user picks OpenTune. -->
+                 Not autoVerify: these domains aren't ours, so the user picks AURA. -->
             <intent-filter tools:ignore="AppLinkWarning">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -108,20 +108,21 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="opentune" android:host="pair" />
+                <data android:scheme="aura" android:host="pair" />
             </intent-filter>
             <intent-filter tools:ignore="AppLinkWarning">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="https" android:host="justshivv.github.io" android:pathPrefix="/Opentune/pair/" />
+                <data android:scheme="https" android:host="justshivv.github.io" android:pathPrefix="/AURA/pair/" />
             </intent-filter>
-            <!-- Invites to a Listen together room: opentune://together/<code>. -->
+            <!-- Invites to a Listen together room: aura://together/<code>. -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="opentune" android:host="together" />
+                <data android:scheme="aura" android:host="together" />
             </intent-filter>
             <!-- GitHub Pages cannot publish assetlinks.json at the domain root;
                  browsers use the invite landing page when Android has no default handler. -->
@@ -130,13 +131,14 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="https" android:host="justshivv.github.io" android:pathPrefix="/Opentune/together/" />
+                <data android:scheme="https" android:host="justshivv.github.io" android:pathPrefix="/AURA/together/" />
             </intent-filter>
-            <!-- "Play … on OpenTune" from the Assistant. -->
+            <!-- "Play … on AURA" from the Assistant. -->
             <intent-filter>
                 <action android:name="android.media.action.MEDIA_PLAY_FROM_SEARCH" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
-            <!-- Shared links ("Share to OpenTune"). -->
+            <!-- Shared links ("Share to AURA"). -->
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -243,7 +245,7 @@
                 android:resource="@xml/share_paths" />
         </provider>
 
-        <!-- Shows OpenTune as a media app in Android Auto. -->
+        <!-- Shows AURA as a media app in Android Auto. -->
         <meta-data
             android:name="com.google.android.gms.car.application"
             android:resource="@xml/automotive_app_desc" />
@@ -252,14 +254,14 @@
         <activity
             android:name=".ui.spotify.ExportifyActivity"
             android:exported="false"
-            android:theme="@style/Theme.OpenTune"
+            android:theme="@style/Theme.Aura"
             android:windowSoftInputMode="adjustResize" />
 
         <!-- Spotify's sign-in in its own screen, for Canvas. -->
         <activity
             android:name=".ui.spotify.SpotifyConnectActivity"
             android:exported="false"
-            android:theme="@style/Theme.OpenTune"
+            android:theme="@style/Theme.Aura"
             android:windowSoftInputMode="adjustResize" />
 
         <!-- The home-screen widget. -->

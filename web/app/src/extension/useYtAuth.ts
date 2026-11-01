@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
-import type { DetectedExtension, YtAuthState } from '@opentune/shared/bridge';
+import type { DetectedExtension, YtAuthState } from '@aura/shared/bridge';
 import { queryClient } from '@/lib/queryClient';
 import { extensionQueryKey, useExtension } from './useExtension';
 
@@ -129,7 +129,7 @@ export function useRefreshYtAuth() {
   return useMutation({ mutationFn: () => readAuth(true) });
 }
 
-/** Connect or disconnect OpenTune from the browser's YouTube session (it stays signed in to Google). */
+/** Connect or disconnect AURA from the browser's YouTube session (it stays signed in to Google). */
 export function useSetConnected() {
   return useMutation({
     mutationFn: async (connected: boolean) => {

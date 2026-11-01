@@ -21,8 +21,8 @@ interface UiState {
   dismissInstallBanner: () => void;
 }
 
-const BANNER_KEY = 'opentune:install-banner-dismissed';
-const SIDEBAR_KEY = 'opentune:sidebar-collapsed';
+const BANNER_KEY = 'aura:install-banner-dismissed';
+const SIDEBAR_KEY = 'aura:sidebar-collapsed';
 
 // Storage can throw (blocked site data); the sidebar then just starts open and isn't remembered.
 function remembered(key: string): boolean {

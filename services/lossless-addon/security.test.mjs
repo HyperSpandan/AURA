@@ -12,7 +12,7 @@ test('different queries and spoofed client identity headers share the same addre
   const keys = [];
   const h = withAbuseProtection(async () => new Response('{}'));
   const env = { REQUEST_LIMITER: { limit: async ({ key }) => { keys.push(key); return { success: true }; } } };
-  await h(request({ 'User-Agent': 'OpenTune/99', 'X-Forwarded-For': '1.2.3.4', 'X-Client-ID': 'a' }), env);
+  await h(request({ 'User-Agent': 'AURA/99', 'X-Forwarded-For': '1.2.3.4', 'X-Client-ID': 'a' }), env);
   await h(new Request('https://addon.example/stream/other', { headers: { 'CF-Connecting-IP': '198.51.100.1', 'X-Client-ID': 'b' } }), env);
   assert.equal(keys[0], keys[1]); assert.doesNotMatch(keys[0], /198\.51/);
   await h(request({ 'CF-Connecting-IP': '198.51.100.2' }), env); assert.notEqual(keys[0], keys[2]);

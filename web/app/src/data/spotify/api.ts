@@ -1,4 +1,4 @@
-import type { SpotifyPlaylist, SpotifyTrack } from '@opentune/shared/bridge';
+import type { SpotifyPlaylist, SpotifyTrack } from '@aura/shared/bridge';
 import { best, type MatchCandidate } from '@/data/match/trackMatcher';
 import { searchSongs } from '@/data/music/api';
 import type { Track } from '@/data/music/types';
@@ -14,7 +14,7 @@ export const LIKED_ID = 'liked';
 
 function bridge() {
   const b = getBridge();
-  if (!b) throw new Error('The OpenTune extension is not installed');
+  if (!b) throw new Error('The AURA extension is not installed');
   return b;
 }
 

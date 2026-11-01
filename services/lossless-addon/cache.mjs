@@ -7,7 +7,7 @@ export function withMetadataCache(handler, { cache = () => globalThis.caches?.de
     if (request.method !== 'GET' || !ttl || url.toString().length > 4096) return handler(request);
     // Credentials/proofs are not part of the cache and are verified on every incoming request.
     url.searchParams.sort();
-    const key = new Request('https://opentune-cache.invalid/v1/' + encodeURIComponent(url.origin + url.pathname + url.search));
+    const key = new Request('https://aura-cache.invalid/v1/' + encodeURIComponent(url.origin + url.pathname + url.search));
     const store = cache();
     const outward = response => {
       const headers = new Headers(response.headers);

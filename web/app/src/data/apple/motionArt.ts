@@ -24,7 +24,7 @@ export const useAppleSettings = create<{
       setArtistArt: (artistArt) => set({ artistArt }),
       setMotion: (motion) => set({ motion }),
     }),
-    { name: 'opentune:apple', version: 1 },
+    { name: 'aura:apple', version: 1 },
   ),
 );
 

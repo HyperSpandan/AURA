@@ -27,7 +27,7 @@ async function session(env, kind = 'native') {
 }
 function signed(s, path, method = 'GET', body = '', nonce = token(), time = String(Date.now())) {
   const proof = sign('sha256', Buffer.from(canonical(s.value, time, nonce, method, path, body)), { key: s.keys.privateKey, dsaEncoding: s.kind === 'web' ? 'ieee-p1363' : 'der' }).toString('base64url');
-  return new Request(origin + path, { method, ...(body ? { body } : {}), headers: { Authorization: 'Bearer ' + s.value, 'X-OpenTune-Time': time, 'X-OpenTune-Nonce': nonce, 'X-OpenTune-Signature': proof } });
+  return new Request(origin + path, { method, ...(body ? { body } : {}), headers: { Authorization: 'Bearer ' + s.value, 'X-AURA-Time': time, 'X-AURA-Nonce': nonce, 'X-AURA-Signature': proof } });
 }
 function setup(options) {
   const env = { AUTH: namespace(), APP_CERT_SHA256: 'a'.repeat(64) }; let calls = 0;
@@ -36,7 +36,7 @@ function setup(options) {
 }
 test('strict default rejects fake User-Agent, Origin and copied bearer before upstream', async () => {
   const { app, env, count } = setup();
-  for (const headers of [{}, { 'User-Agent': 'OpenTune', Origin: 'https://justshivv.github.io' }, { Authorization: 'Bearer ' + token() }]) {
+  for (const headers of [{}, { 'User-Agent': 'AURA', Origin: 'https://justshivv.github.io' }, { Authorization: 'Bearer ' + token() }]) {
     assert.equal((await app(new Request(origin + '/monochrome/search?q=x', { headers }), env)).status, 401);
   }
   assert.equal(count(), 0);
@@ -80,7 +80,7 @@ test('browser is key-bound and requires explicit verified-native approval; web c
 test('the desktop app pairs like a browser, with its own origin', async () => {
   const { app, env } = setup();
   const keys = generateKeyPairSync('ec', { namedCurve: 'prime256v1' });
-  const r = await app(new Request(origin + '/auth/web/start', { method: 'POST', headers: { Origin: 'opentune-desktop://app' }, body: JSON.stringify({ key: keys.publicKey.export({ format: 'jwk' }) }) }), env);
+  const r = await app(new Request(origin + '/auth/web/start', { method: 'POST', headers: { Origin: 'aura-desktop://app' }, body: JSON.stringify({ key: keys.publicKey.export({ format: 'jwk' }) }) }), env);
   assert.equal(r.status, 200);
   assert.match((await r.json()).id, /^[\w-]{43}$/);
 });
@@ -116,6 +116,6 @@ test('trust outages and device-policy rejection have distinct safe diagnostics a
 test('CORS allows signed browser headers; staged window is explicit only', async () => {
   const { app, env } = setup();
   const preflight = await app(new Request(origin + '/monochrome/search', { method: 'OPTIONS' }), env);
-  assert.match(preflight.headers.get('Access-Control-Allow-Headers'), /X-OpenTune-Signature/);
+  assert.match(preflight.headers.get('Access-Control-Allow-Headers'), /X-AURA-Signature/);
   assert.equal((await app(new Request(origin + '/monochrome/search'), { ...env, VERIFICATION_MODE: 'staged' })).status, 200);
 });

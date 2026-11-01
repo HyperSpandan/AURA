@@ -15,7 +15,7 @@ function devExtensionId(): string {
 }
 
 export default defineConfig({
-  base: process.env.OPENTUNE_WEB_BASE || '/Opentune/player/',
+  base: process.env.AURA_WEB_BASE || '/Opentune/player/',
   plugins: [react(), tailwindcss()],
   define: {
     DEV_EXTENSION_ID: JSON.stringify(devExtensionId()),

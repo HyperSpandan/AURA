@@ -6,7 +6,7 @@ import {
   type BridgeEvent,
   type BridgeEventMessage,
   type BridgeResponse,
-} from '@opentune/shared/bridge';
+} from '@aura/shared/bridge';
 
 /** How long a dropped event port waits before reconnecting, while the page is visible. */
 const RECONNECT_MS = 2000;
@@ -36,7 +36,7 @@ export default defineContentScript({
         return false;
       }
     };
-    const GONE = 'OpenTune Extension was updated or reloaded. Reload this page to reconnect to it.';
+    const GONE = 'AURA Extension was updated or reloaded. Reload this page to reconnect to it.';
     let port: Browser.runtime.Port | null = null;
     let retry: ReturnType<typeof setTimeout> | undefined;
 

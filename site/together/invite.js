@@ -2,10 +2,10 @@
 // The invite stays in the fragment: it is never sent to the website server.
 const code = new URLSearchParams(location.hash.slice(1)).get('code') || '';
 if (/^[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{12}$/.test(code)) {
-  const custom = `opentune://together/${code}`;
+  const custom = `aura://together/${code}`;
   const link = document.getElementById('open');
   link.href = /Android/i.test(navigator.userAgent)
-    ? `intent://together/${code}#Intent;scheme=opentune;package=com.opentune;end`
+    ? `intent://together/${code}#Intent;scheme=opentune;package=com.aura;end`
     : custom;
   link.hidden = false;
   // The web player joins the same rooms, from a computer or a phone's browser.

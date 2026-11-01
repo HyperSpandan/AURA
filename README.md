@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/banner.jpg" alt="OpenTune: a free, open-source music player for Android, built on YouTube Music" width="100%">
+  <img src="docs/banner.jpg" alt="AURA: a free, open-source music player for Android, built on YouTube Music" width="100%">
 </p>
 
 <p align="center">
@@ -24,7 +24,7 @@
 
 [![Get it on Orion Store](https://raw.githubusercontent.com/RookieEnough/Orion-Store/refs/heads/main/assets/orion-badge.png)](https://rookieenough.github.io/Orion-Data/redirect.html?id=opentune&icon=https%3A%2F%2Fjustshivv.github.io%2FOpentune%2Ficon-512.png)
 
-# OpenTune
+# AURA
 
 An Android music player for YouTube Music. It talks to YouTube's internal
 ("Innertube") API directly, so there's no API key, no account required and
@@ -41,9 +41,9 @@ documented in [service integrations](docs/service-integrations.md).
 ## See it
 
 <p align="center">
-  <a href="docs/media/opentune-reel.mp4"><img src="docs/media/preview.gif" alt="OpenTune in 40 seconds" width="300" height="533"></a>
+  <a href="docs/media/aura-reel.mp4"><img src="docs/media/preview.gif" alt="AURA in 40 seconds" width="300" height="533"></a>
   <br>
-  <sub><a href="docs/media/opentune-reel.mp4">Watch the 40-second video</a> (MP4, with sound)</sub>
+  <sub><a href="docs/media/aura-reel.mp4">Watch the 40-second video</a> (MP4, with sound)</sub>
 </p>
 
 <table>
@@ -66,7 +66,7 @@ documented in [service integrations](docs/service-integrations.md).
    from the last several years; `universal` runs on anything.
 2. Open the file and allow your browser or file manager to install apps
    when Android asks.
-3. That's it. OpenTune checks this repository for new releases once a day
+3. That's it. AURA checks this repository for new releases once a day
    and can update itself from Settings.
 
 Each release lists SHA-256 checksums of its APKs in `SHA256SUMS.txt`.
@@ -74,7 +74,7 @@ Each release lists SHA-256 checksums of its APKs in `SHA256SUMS.txt`.
 ### iPhone and iPad
 
 **Requires iOS/iPadOS 16 or newer. An Android APK cannot be installed on an iPhone.**
-OpenTune's native iOS build is an `.ipa`. It is not currently on the App Store or TestFlight.
+AURA's native iOS build is an `.ipa`. It is not currently on the App Store or TestFlight.
 
 **Recommended: SideStore, or classic AltStore (not AltStore PAL)**
 
@@ -89,21 +89,21 @@ OpenTune's native iOS build is an `.ipa`. It is not currently on the App Store o
    https://justshivv.github.io/Opentune/ios/source.json
    ```
 
-3. Open the new OpenTune source, choose **OpenTune**, and tap **Install**. Let the
+3. Open the new AURA source, choose **AURA**, and tap **Install**. Let the
    installer sign the app with your Apple ID. Enter Apple credentials only into the
-   installer you chose, never into an OpenTune issue, chat or website form.
+   installer you chose, never into an AURA issue, chat or website form.
 4. If iOS asks, enable **Settings → Privacy & Security → Developer Mode**, restart,
    and confirm. If it reports an untrusted developer, open **Settings → General →
    VPN & Device Management**, select your developer profile and choose **Trust**.
    These prompts depend on the installer and iOS version.
-5. Open OpenTune from the Home Screen. Keep the same installer/source for updates.
+5. Open AURA from the Home Screen. Keep the same installer/source for updates.
    With a free Apple ID the app normally needs re-signing every **7 days**:
    enable the installer's refresh setup and check its expiry date. Background refresh
    is not guaranteed, so refresh manually in the installer before expiry if needed.
 
 **Alternative: install the IPA with a computer**
 
-1. Download [OpenTune-iOS.ipa](https://github.com/justshivv/Opentune/releases/download/ios/OpenTune-iOS.ipa)
+1. Download [AURA-iOS.ipa](https://github.com/justshivv/Opentune/releases/download/ios/AURA-iOS.ipa)
    and install [Sideloadly](https://sideloadly.io) on your PC or Mac.
 2. Connect and unlock your iPhone/iPad, tap **Trust this computer**, choose that device
    in Sideloadly, select the IPA, then follow its signing/install instructions.
@@ -147,7 +147,7 @@ your phone instead:
 1. Install the same APK on the TV, from the
    [releases](https://github.com/justshivv/Opentune/releases) page.
 2. On the TV, open Settings → Account and choose Sign in with your phone.
-3. Scan the QR code with a phone that has OpenTune, on the same Wi-Fi,
+3. Scan the QR code with a phone that has AURA, on the same Wi-Fi,
    and approve sharing your YouTube Music session. The code expires after
    two minutes.
 
@@ -205,7 +205,7 @@ on your own connection with no hosted proxy.
 
 - **Two stream engines that switch on their own.**
   InnerTubeX leads and
-  OpenTune's own client walk backs it up; after a failure the walk leads
+  AURA's own client walk backs it up; after a failure the walk leads
   for ten minutes, then InnerTubeX gets its turn back. NewPipeExtractor is
   the last resort. Every stream URL is
   test-fetched before playback, so a dead link fails fast instead of
@@ -213,7 +213,7 @@ on your own connection with no hosted proxy.
 - **Best audio by default.** Streams are ranked by how they sound, not by
   raw bitrate, so Opus wins over AAC at a similar rate, on Wi-Fi and mobile
   data alike, with a lower ceiling available per network.
-- **Quality upgrade.** A few seconds into a song, OpenTune looks for a
+- **Quality upgrade.** A few seconds into a song, AURA looks for a
   clearly better copy (your Premium account's 256 kbps streams, or Opus
   when the song started on AAC) and switches to it without stopping. The
   player's "…" menu has "Upgrade quality" to ask on demand.
@@ -228,7 +228,7 @@ on your own connection with no hosted proxy.
   ones lifted; headphones and Bluetooth are fully levelled.
 - **Your phone's own sound effects.** The audio session is opened to the
   system, so Dolby Atmos, Samsung SoundAlive, the system equalizer and
-  similar effects apply to OpenTune the way they do to the stock players.
+  similar effects apply to AURA the way they do to the stock players.
 - **A clean signal path.** With the equalizer and effects off, decoded
   audio goes to the output untouched. When they're on, the app's own DSP
   adds headroom so boosts don't clip. The player's Signal path dialog
@@ -294,7 +294,7 @@ on your own connection with no hosted proxy.
 - **Cast to a TV or speaker.** The Play on button in the player finds
   Chromecasts (and TVs and speakers with Chromecast built in) and DLNA
   renderers (most smart TVs, many network speakers, Kodi, VLC) on the same
-  Wi-Fi. No Google libraries are involved: OpenTune speaks the Cast
+  Wi-Fi. No Google libraries are involved: AURA speaks the Cast
   protocol and DLNA itself. The phone serves each song to the device from
   a small web server of its own, so downloads, songs on the phone and
   streams all cast. The queue, autoplay, the notification and every button
@@ -341,7 +341,7 @@ on your own connection with no hosted proxy.
   "Catch up" puts you back in step. Rooms run over public Nostr relays with
   no account or server: messages are encrypted with a key from the room
   code and sent as ephemeral events that relays don't keep. Invites open
-  with an `opentune://together/<code>` link or by typing the code.
+  with an `aura://together/<code>` link or by typing the code.
 - **Picks up where you left off.** The queue, song and position come back
   at launch, paused, without fetching anything until you press play.
 - **Home-screen widget.** Cover, title and artist, with previous,
@@ -352,7 +352,7 @@ on your own connection with no hosted proxy.
   app.
 - **Android Auto.** Browse Home, Recent and Library (Liked, Downloads,
   playlists, radio stations) on the car screen, search by typing or voice ("play … on
-  OpenTune"), and tap a song to play its list from there. Sideloaded
+  AURA"), and tap a song to play its list from there. Sideloaded
   builds show up in Android Auto once "Unknown sources" is turned on in
   Android Auto's developer settings.
 - **Android TV.** The same APK shows up in the TV's row of apps. The remote
@@ -391,7 +391,7 @@ on your own connection with no hosted proxy.
   from your own server and JioSaavn still play through JavaFX, which needs
   the system's FFmpeg libraries (libavcodec).
 - **Opens YouTube links.** music.youtube.com, youtube.com and youtu.be
-  links, or links shared to the app, open in OpenTune.
+  links, or links shared to the app, open in AURA.
 
 ### Library and account
 
@@ -463,12 +463,12 @@ on your own connection with no hosted proxy.
   - a **YouTube Music or YouTube playlist link**, read in full however long
     it is, and saved as a playlist on the phone (or played straight away);
   - a **Spotify playlist, album or song link**, pasted or shared to
-    OpenTune from the Spotify app, with no sign-in. Each song is looked up
+    AURA from the Spotify app, with no sign-in. Each song is looked up
     on YouTube Music and the closest catalogue match kept, with misses
     listed. A song link plays straight away. Without signing in, Spotify
     only shows a playlist's first 100 songs;
   - **Export from Spotify**, for every song of any playlist or your Liked
-    Songs: [Exportify](https://exportify.app) opens inside OpenTune, you
+    Songs: [Exportify](https://exportify.app) opens inside AURA, you
     sign in with Spotify there and tap Export (or Export All), and the
     playlist comes straight back ready to import, with no file to find.
     A CSV from Exportify, TuneMyMusic, Soundiiz and others can also be
@@ -488,9 +488,9 @@ on your own connection with no hosted proxy.
   the catalogue doesn't label still show.
 - **Set as ringtone.** A downloaded song or a file on the phone can be the
   ringtone, notification sound or alarm. A downloaded song is copied to
-  Ringtones/OpenTune first, since the system can't read app storage.
+  Ringtones/AURA first, since the system can't read app storage.
 - **Export and import** of settings, history, likes and playlists as JSON.
-- **Updates in the app.** OpenTune checks this repository's GitHub releases
+- **Updates in the app.** AURA checks this repository's GitHub releases
   every few hours: whenever the app comes to the front, hourly while it's
   open, and twice a day in the background, with a notification when a new
   version is out (or whenever you ask). When GitHub's API is over its
@@ -520,7 +520,7 @@ on your own connection with no hosted proxy.
   full-screen cover too. It's made from the cover itself, so it works for
   every song. Off in Settings, or with reduced motion.
 - **Pull to refresh with the logo.** On Home and Podcasts, pulling down
-  brings in the OpenTune mark and fills it with the playing song's colours
+  brings in the AURA mark and fills it with the playing song's colours
   from left to right while the page follows your finger with some give; past the line
   it ticks and pops, while it loads the mark sways like a sound wave with
   light running across it, and when it's done it shrinks away.
@@ -670,7 +670,7 @@ remains lossy. Source availability varies, and a FLAC header does not prove
 that the upstream master was never transcoded. See the
 [source review](docs/audio-source-review.md) for current limitations.
 
-OpenTune does not decrypt Deezer streams. Animated covers use the token
+AURA does not decrypt Deezer streams. Animated covers use the token
 Apple Music's web player ships in its own page, and Spotify Canvas uses the
 web player's token for your own Spotify sign-in, as do the Spotify
 playlists in Library and the personal Spotify suggestions; Spotify's
@@ -729,8 +729,8 @@ GitHub Actions builds, tests and lints every push (`.github/workflows/ci.yml`)
 and keeps the release APKs as an artifact. Pushing a tag such as `v0.2.0`
 builds signed APKs and publishes them as a GitHub release
 (`.github/workflows/release.yml`). Release signing uses the repository
-secrets `OPENTUNE_KEYSTORE_BASE64`, `OPENTUNE_KEYSTORE_PASSWORD`,
-`OPENTUNE_KEY_ALIAS` and `OPENTUNE_KEY_PASSWORD` when they're set, and the
+secrets `AURA_KEYSTORE_BASE64`, `AURA_KEYSTORE_PASSWORD`,
+`AURA_KEY_ALIAS` and `AURA_KEY_PASSWORD` when they're set, and the
 debug key otherwise. Set the secrets before the first release: the in-app
 updater can only install a release signed with the same key as the copy
 already on the phone, and a CI runner's debug key changes from run to run.
@@ -738,7 +738,7 @@ already on the phone, and a CI runner's debug key changes from run to run.
 ## Project layout
 
 ```
-app/src/main/java/com/opentune/
+app/src/main/java/com/aura/
   data/innertube/   Innertube client and parser, StreamResolver (engine switch),
                     InnerTubeXResolver, PoToken WebView
   data/             account, downloads, library, history, lyrics, loudness, settings
@@ -746,27 +746,27 @@ app/src/main/java/com/opentune/
                     Crossfade, DSP
   ui/               Compose screens: home, explore, search, library, player, settings
 ios/
-  OpenTuneCore/     Swift package: YouTube Music client and parsers, LRCLIB lyrics,
+  AURACore/     Swift package: YouTube Music client and parsers, LRCLIB lyrics,
                     likes and history (Foundation only; `swift test` runs on Linux too)
-  OpenTune/         SwiftUI app: screens, AVPlayer playback, lock screen, AirPlay
+  AURA/         SwiftUI app: screens, AVPlayer playback, lock screen, AirPlay
   project.yml       XcodeGen project (`xcodegen generate`, then open in Xcode)
 docs/               README banner, screenshots and the 40-second video
 ```
 
 The README's screenshots are drawn from the app's own screens by
-`ReadmeScreenshotTest`, which runs when `OPENTUNE_SHOT_ART` points at a
+`ReadmeScreenshotTest`, which runs when `AURA_SHOT_ART` points at a
 folder of cover images (they aren't kept in the repository).
 
 ## Disclaimer
 
 The screenshots and video show real albums, artists and songs to show the
 app as it's used. Cover art, names and recordings belong to their owners.
-OpenTune isn't affiliated with or endorsed by YouTube, Google, Spotify or
+AURA isn't affiliated with or endorsed by YouTube, Google, Spotify or
 any artist or label shown.
 
 ## License
 
-OpenTune is licensed under the GNU General Public License v3.0. See
+AURA is licensed under the GNU General Public License v3.0. See
 [LICENSE](LICENSE). Code, libraries, fonts and data from other projects
 are listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md), as their
 licences require.

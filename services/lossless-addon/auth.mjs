@@ -4,17 +4,17 @@ import { AttestationFailure, googleTrust, sha256, verifyAttestation } from './at
 
 const TOKEN = /^[A-Za-z0-9_-]{43}$/;
 const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Accept, Content-Type, Authorization, X-OpenTune-Time, X-OpenTune-Nonce, X-OpenTune-Signature',
+  'Access-Control-Allow-Headers': 'Accept, Content-Type, Authorization, X-AURA-Time, X-AURA-Nonce, X-AURA-Signature',
   'Access-Control-Expose-Headers': 'Retry-After', 'Cache-Control': 'no-store', 'Content-Type': 'application/json', 'X-Content-Type-Options': 'nosniff' };
 export const reply = (value, status = 200) => new Response(JSON.stringify(value), { status, headers: CORS });
 const token = () => randomBytes(32).toString('base64url');
 /**
- * What OpenTune for computers sends as its Origin when it asks to pair. It isn't
+ * What AURA for computers sends as its Origin when it asks to pair. It isn't
  * a website, so it isn't in WEB_ORIGINS; it pairs the same way, with a phone's approval.
  */
-export const DESKTOP_ORIGIN = 'opentune-desktop://app';
-const denied = () => reply({ error: 'Verify this device with the current official OpenTune app. Unsupported devices cannot use this source.' }, 401);
-export const canonical = (session, time, nonce, method, path, body = '') => ['OpenTune-Addon-v1', session, time, nonce, method, path, sha256(body)].join('\n');
+export const DESKTOP_ORIGIN = 'aura-desktop://app';
+const denied = () => reply({ error: 'Verify this device with the current official AURA app. Unsupported devices cannot use this source.' }, 401);
+export const canonical = (session, time, nonce, method, path, body = '') => ['AURA-Addon-v1', session, time, nonce, method, path, sha256(body)].join('\n');
 function publicKey(pem) {
   const key = createPublicKey(pem);
   if (key.asymmetricKeyType !== 'ec' || key.asymmetricKeyDetails?.namedCurve !== 'prime256v1') throw new Error('Invalid key');
@@ -73,8 +73,8 @@ async function authenticated(request, env, body) {
   if (!TOKEN.test(session || '')) return null;
   const url = new URL(request.url);
   const checked = await state(env, 'session:' + sha256(session), 'check', { session, body,
-    time: request.headers.get('X-OpenTune-Time'), nonce: request.headers.get('X-OpenTune-Nonce'),
-    signature: request.headers.get('X-OpenTune-Signature'), method: request.method, path: url.pathname + url.search });
+    time: request.headers.get('X-AURA-Time'), nonce: request.headers.get('X-AURA-Nonce'),
+    signature: request.headers.get('X-AURA-Signature'), method: request.method, path: url.pathname + url.search });
   return checked.ok ? checked : null;
 }
 async function readBody(request) {
@@ -122,7 +122,7 @@ export function withAppVerification(handler, { trust = googleTrust, attest = ver
         const key = publicKey({ key: jwk, format: 'jwk' }).export({ type: 'spki', format: 'pem' }).toString();
         const id = token(), poll = token(), code = randomBytes(4).toString('hex').toUpperCase(), expires = Date.now() + 300_000;
         await state(env, 'pair:' + id, 'create', { key, pollHash: sha256(poll), origin, code, expires });
-        return reply({ id, poll, code, expires, link: 'opentune://addon-approve?id=' + id });
+        return reply({ id, poll, code, expires, link: 'aura://addon-approve?id=' + id });
       }
       if (path === '/auth/web/status' && request.method === 'POST') {
         const input = JSON.parse(body); if (!TOKEN.test(input.id || '') || !TOKEN.test(input.poll || '')) return denied();
@@ -158,7 +158,7 @@ export function withAppVerification(handler, { trust = googleTrust, attest = ver
       const result = await handler(request), headers = new Headers(result.headers);
       Object.entries(CORS).forEach(([k, v]) => headers.set(k, v));
       return new Response(result.body, { status: result.status, headers });
-    } catch (e) { return reply({ error: 'Verification failed. Retry in the official OpenTune app on a supported, locked device.',
+    } catch (e) { return reply({ error: 'Verification failed. Retry in the official AURA app on a supported, locked device.',
       ...(e instanceof AttestationFailure ? { code: e.code } : {}) }, 403); }
   };
 }

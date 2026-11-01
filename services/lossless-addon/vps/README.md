@@ -1,4 +1,4 @@
-# OpenTune lossless add-on on a VPS
+# AURA lossless add-on on a VPS
 
 The same add-on as the Cloudflare Worker, run by Node.js on an Ubuntu
 server with Caddy in front for HTTPS. Sign-ins are kept in a SQLite file
@@ -34,7 +34,7 @@ again. Settings and sign-ins stay.
 
 ## Settings
 
-`/etc/opentune-addon.env`. After a change:
+`/etc/aura-addon.env`. After a change:
 
 ```sh
 sudo systemctl restart opentune-addon
@@ -66,7 +66,7 @@ owner dashboard, change the four add-on URLs to:
 
 ## Owner dashboard and remote configuration
 
-This package also includes `/control/`. Set `CONTROL_ADMIN_USERNAME` and `CONTROL_ADMIN_PASSWORD` (16+ characters) in `/etc/opentune-addon.env`, restart the service, and open `https://addon-opentune.rethinknow.in/control/`. Existing installations must add these two settings manually; the installer preserves the old environment file.
+This package also includes `/control/`. Set `CONTROL_ADMIN_USERNAME` and `CONTROL_ADMIN_PASSWORD` (16+ characters) in `/etc/aura-addon.env`, restart the service, and open `https://addon-opentune.rethinknow.in/control/`. Existing installations must add these two settings manually; the installer preserves the old environment file.
 
 Back up `control.sqlite` alongside `auth.sqlite`; the configuration signing key must survive server migrations. See [the complete configuration guide](../../../docs/remote-configuration.md) for supported controls, publication, rollback and client compatibility.
 
@@ -80,11 +80,11 @@ Upload the ZIP to your KVM VPS, then run:
 unzip opentune-hostinger.zip
 cd opentune-addon
 sudo bash install.sh
-sudoedit /etc/opentune-addon.env
+sudoedit /etc/aura-addon.env
 sudo systemctl restart opentune-addon
 ```
 
-Keep your existing `PUBLIC_HOST` and certificate pin. Set `CONTROL_ADMIN_USERNAME` and a strong unique `CONTROL_ADMIN_PASSWORD`; these also unlock `/usage/` unless separate `USAGE_ADMIN_*` values are configured. `/control/` remains the content dashboard. The installer preserves an existing environment file and `/var/lib/opentune-addon`, including its signing key and verified device sessions. Back up that directory and `/etc/opentune-addon.env` before an upgrade. New domains require clients to enroll again; copy the stable signed remote-configuration keys when migrating an existing server.
+Keep your existing `PUBLIC_HOST` and certificate pin. Set `CONTROL_ADMIN_USERNAME` and a strong unique `CONTROL_ADMIN_PASSWORD`; these also unlock `/usage/` unless separate `USAGE_ADMIN_*` values are configured. `/control/` remains the content dashboard. The installer preserves an existing environment file and `/var/lib/opentune-addon`, including its signing key and verified device sessions. Back up that directory and `/etc/aura-addon.env` before an upgrade. New domains require clients to enroll again; copy the stable signed remote-configuration keys when migrating an existing server.
 
 `ADDON_WORKERS=1` suits KVM1. On a larger VPS, set 2–4 and restart. The parent routes work to the least busy healthy thread and retries a crashed worker once on another. A bounded shared metadata cache avoids repeated upstream calls. Authentication, nonce replay protection, rate limits, owner configuration and usage SQLite stay in one parent process, so they cannot disagree between workers. Worker threads are private: there are no unauthenticated worker ports. This distributes work on one VPS; it is not high availability across independent servers, and does not create extra upstream-service quotas. Never round-robin independently enrolled Cloudflare and VPS hosts: their verification sessions differ.
 
@@ -117,4 +117,4 @@ curl -o /dev/null -w '%{http_code}\n' https://YOUR_DOMAIN/monochrome/search?q=te
 sudo journalctl -u opentune-addon -n 50 --no-pager
 ```
 
-Then sign into `/control/` and `/usage/`, refresh each page, and test a song in the signed OpenTune app. Store backups off this VPS; a second thread does not protect against disk or server failure. Hostinger shared web hosting cannot run this systemd/Node service; use the KVM VPS.
+Then sign into `/control/` and `/usage/`, refresh each page, and test a song in the signed AURA app. Store backups off this VPS; a second thread does not protect against disk or server failure. Hostinger shared web hosting cannot run this systemd/Node service; use the KVM VPS.

@@ -1,4 +1,4 @@
-import type { HttpResponse, YtFetchParams } from '@opentune/shared/bridge';
+import type { HttpResponse, YtFetchParams } from '@aura/shared/bridge';
 import { installExtensionFetchRule } from './rules';
 import { activeIdentity, signedFetch, SignedOutError } from './ytAuth';
 

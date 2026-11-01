@@ -1,14 +1,14 @@
 # The iOS app's Xcode project, generated with XcodeGen (`xcodegen generate`
 # in this folder) so no .xcodeproj is kept in git. CI does the same.
-name: OpenTune
+name: AURA
 options:
-  bundleIdPrefix: com.opentune
+  bundleIdPrefix: com.aura
   deploymentTarget:
     iOS: "16.0"
   createIntermediateGroups: true
 packages:
-  OpenTuneCore:
-    path: OpenTuneCore
+  AuraCore:
+    path: AuraCore
 settings:
   base:
     MARKETING_VERSION: "0.1.0"
@@ -16,17 +16,17 @@ settings:
     SWIFT_VERSION: "5.0"
     DEVELOPMENT_TEAM: ""
 targets:
-  OpenTune:
+  AURA:
     type: application
     platform: iOS
     sources:
-      - path: OpenTune
+      - path: Aura
     dependencies:
-      - package: OpenTuneCore
+      - package: AuraCore
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.opentune.ios
-        PRODUCT_NAME: OpenTune
+        PRODUCT_BUNDLE_IDENTIFIER: com.aura.ios
+        PRODUCT_NAME: AURA
         TARGETED_DEVICE_FAMILY: "1,2"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
@@ -35,9 +35,9 @@ targets:
         CODE_SIGNING_REQUIRED: NO
         CODE_SIGN_IDENTITY: ""
     info:
-      path: OpenTune/Info.plist
+      path: Aura/Info.plist
       properties:
-        CFBundleDisplayName: OpenTune
+        CFBundleDisplayName: AURA
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         UILaunchScreen: {}

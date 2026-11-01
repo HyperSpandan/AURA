@@ -5,7 +5,7 @@ plugins {
 }
 
 /*
- * OpenTune on the watch: a player of its own, on the watch's Wi-Fi or LTE
+ * AURA on the watch: a player of its own, on the watch's Wi-Fi or LTE
  * and Bluetooth headphones, built on the same :core as the phone app. Its
  * version is the phone app's, read from app/build.gradle.kts.
  */
@@ -14,11 +14,11 @@ val appVersionName = Regex("""versionName = "([^"]+)"""").find(appBuild)!!.group
 val appVersionCode = Regex("""versionCode = (\d+)""").find(appBuild)!!.groupValues[1].toInt()
 
 android {
-    namespace = "com.opentune.wear"
+    namespace = "com.aura.wear"
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "com.opentune.wear"
+        applicationId = "com.aura.wear"
         // Wear OS 3 and later.
         minSdk = 30
         targetSdk = 36
@@ -28,14 +28,14 @@ android {
         ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64") }
     }
 
-    val releaseKeystore = System.getenv("OPENTUNE_KEYSTORE")?.let(::file)?.takeIf { it.exists() }
+    val releaseKeystore = (System.getenv("AURA_KEYSTORE") ?: System.getenv("OPENTUNE_KEYSTORE"))?.let(::file)?.takeIf { it.exists() }
     signingConfigs {
         if (releaseKeystore != null) {
             create("release") {
                 storeFile = releaseKeystore
-                storePassword = System.getenv("OPENTUNE_KEYSTORE_PASSWORD")
-                keyAlias = System.getenv("OPENTUNE_KEY_ALIAS")
-                keyPassword = System.getenv("OPENTUNE_KEY_PASSWORD")
+                storePassword = System.getenv("AURA_KEYSTORE_PASSWORD") ?: System.getenv("OPENTUNE_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("AURA_KEY_ALIAS") ?: System.getenv("OPENTUNE_KEY_ALIAS")
+                keyPassword = System.getenv("AURA_KEY_PASSWORD") ?: System.getenv("OPENTUNE_KEY_PASSWORD")
             }
         }
     }

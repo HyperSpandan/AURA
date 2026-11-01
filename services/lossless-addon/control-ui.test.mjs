@@ -80,7 +80,7 @@ test('API errors retain the server message and valid responses are accepted', as
   assert.equal((await valid.run("api('config')")).revision, 2);
 });
 
-const sessionKey = 'opentune.control.session';
+const sessionKey = 'aura.control.session';
 const current = { revision: 1, history: [], data: { sections: [], sources: null, links: {}, banners: [], playlists: [], communityPrompts: true, network: { timeoutMs: 8000, retries: 2 } } };
 const flush = () => new Promise(resolve => setImmediate(resolve));
 

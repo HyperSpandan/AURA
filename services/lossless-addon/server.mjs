@@ -1,4 +1,4 @@
-// The OpenTune lossless add-on on an ordinary server, for a VPS rather than
+// The AURA lossless add-on on an ordinary server, for a VPS rather than
 // Cloudflare. worker.mjs runs unchanged; this file stands in for what
 // Cloudflare gave it: the Durable Object that keeps device sessions (here a
 // SQLite file), the request limiter (here in memory) and the HTTP server.
@@ -153,7 +153,7 @@ const server = http.createServer(async (req, res) => {
 server.requestTimeout = 60_000;
 server.headersTimeout = 15_000;
 server.listen(PORT, HOST, () => {
-  console.log(`OpenTune add-on on http://${HOST}:${server.address().port} for https://${PUBLIC_HOST}` +
+  console.log(`AURA add-on on http://${HOST}:${server.address().port} for https://${PUBLIC_HOST}` +
     ` (verification ${env.VERIFICATION_MODE}${env.PAUSED === 'true' ? ', paused' : ''})`);
   if (!/^[a-f0-9]{64}$/.test(env.APP_CERT_SHA256)) console.warn('APP_CERT_SHA256 is not set: no device can sign in.');
 });

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Installs the OpenTune lossless add-on on an Ubuntu server, behind Caddy
+# Installs the AURA lossless add-on on an Ubuntu server, behind Caddy
 # for HTTPS, as a systemd service. Run it from the unpacked folder:
 #   sudo bash install.sh
 # Running it again updates the code and keeps the settings and sign-ins.
@@ -8,7 +8,7 @@ set -euo pipefail
 DOMAIN="${DOMAIN:-addon-opentune.rethinknow.in}"
 APP_DIR=/opt/opentune-addon
 DATA_DIR=/var/lib/opentune-addon
-ENV_FILE=/etc/opentune-addon.env
+ENV_FILE=/etc/aura-addon.env
 SERVICE=opentune-addon
 PORT=8787
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -56,7 +56,7 @@ printf '{ "type": "module", "private": true }\n' > "$APP_DIR/package.json"
 chown -R opentune:opentune "$DATA_DIR"
 
 if [ ! -f "$ENV_FILE" ]; then
-  install -m 0640 -g opentune "$HERE/opentune-addon.env" "$ENV_FILE"
+  install -m 0640 -g opentune "$HERE/aura-addon.env" "$ENV_FILE"
   sed -i "s/^PUBLIC_HOST=.*/PUBLIC_HOST=$DOMAIN/" "$ENV_FILE"
   echo "Settings written to $ENV_FILE"
 else
@@ -69,7 +69,7 @@ if [ -d "$HERE/usage-api" ] && ! grep -q '^USAGE_ENABLED=' "$ENV_FILE"; then pri
 
 cat > /etc/systemd/system/$SERVICE.service <<UNIT
 [Unit]
-Description=OpenTune lossless add-on
+Description=AURA lossless add-on
 After=network-online.target
 Wants=network-online.target
 

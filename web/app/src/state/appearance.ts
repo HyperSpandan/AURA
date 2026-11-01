@@ -34,7 +34,7 @@ export function appearanceOf(value: unknown): Appearance {
     liquidGlass: typeof v.liquidGlass === 'boolean' ? v.liquidGlass : true,
   };
 }
-const KEY = 'opentune:appearance';
+const KEY = 'aura:appearance';
 function read(): Appearance {
   try { return appearanceOf(JSON.parse(localStorage.getItem(KEY) ?? '{}')); } catch { return { ...DEFAULT_APPEARANCE }; }
 }

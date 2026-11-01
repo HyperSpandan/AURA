@@ -1,4 +1,4 @@
-const SESSION_KEY = 'opentune.control.session';
+const SESSION_KEY = 'aura.control.session';
 let token = '', revision = 0, data, history = [];
 try { token = sessionStorage.getItem(SESSION_KEY) || ''; } catch { /* Storage may be disabled. */ }
 const $ = id => document.getElementById(id);
@@ -115,7 +115,7 @@ $('previewButton').onclick = () => void action(async () => {
   const list = node('ol'); value.sections.filter(x => x.enabled).forEach(x => list.append(node('li', x.title || x.id))); $('preview').append(list);
   status('Preview updated. Changes have not been published.');
 });
-$('exampleBanner').onclick = () => void action(async () => { const values = readList('banners'); values.push({ id: 'community-' + Date.now(), enabled: true, title: 'Made for music. Built together.', body: 'Join the OpenTune community.', action: 'Join Discord', url: data.links.discord, platforms: ['android', 'tv', 'web'] }); $('banners').value = JSON.stringify(values, null, 2); });
+$('exampleBanner').onclick = () => void action(async () => { const values = readList('banners'); values.push({ id: 'community-' + Date.now(), enabled: true, title: 'Made for music. Built together.', body: 'Join the AURA community.', action: 'Join Discord', url: data.links.discord, platforms: ['android', 'tv', 'web'] }); $('banners').value = JSON.stringify(values, null, 2); });
 $('examplePlaylist').onclick = () => void action(async () => { const values = readList('playlists'); values.push({ id: 'playlist-' + Date.now(), title: 'Your playlist title', browseId: 'VL_REPLACE_WITH_PLAYLIST_ID', artwork: '' }); $('playlists').value = JSON.stringify(values, null, 2); });
 
 $('manageSources').onchange = () => { if (!$('manageSources').checked && !confirm('Return to the legacy catalog? This discards the catalog in this draft.')) { $('manageSources').checked = true; return; } data.sources = $('manageSources').checked ? [] : null; renderSources(); };

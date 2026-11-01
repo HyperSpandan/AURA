@@ -5,7 +5,7 @@ const origin='https://eljohnzcaddon.velixir.run';
 const report={checkedAt:new Date().toISOString(),host:new URL(origin).host,scope:'Public entry points only; user-specific configuration URL not tested.',pages:[]};
 let blocked=false;
 async function read(url,media=false) {
-  const r=await fetch(url,{signal:AbortSignal.timeout(12000),redirect:'manual',headers:{'User-Agent':'OpenTune-Source-Research/1.0',...(media?{Range:'bytes=0-65535'}:{})}});
+  const r=await fetch(url,{signal:AbortSignal.timeout(12000),redirect:'manual',headers:{'User-Agent':'AURA-Source-Research/1.0',...(media?{Range:'bytes=0-65535'}:{})}});
   if(r.status===429) blocked=true;
   const status=r.status, type=r.headers.get('Content-Type');
   if(!r.ok){await r.body?.cancel();return {status,type};}

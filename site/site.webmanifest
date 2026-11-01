@@ -1,6 +1,6 @@
 {
-  "name": "OpenTune",
-  "short_name": "OpenTune",
+  "name": "AURA",
+  "short_name": "AURA",
   "description": "A free, open-source music player for Android.",
   "start_url": "./",
   "scope": "./",

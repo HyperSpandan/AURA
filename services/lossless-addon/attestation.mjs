@@ -2,7 +2,7 @@ import { X509Certificate, createHash, verify } from 'node:crypto';
 import { Buffer } from 'node:buffer';
 
 export class AttestationFailure extends Error {
-  constructor(code) { super('Official hardware-backed OpenTune verification failed'); this.code = code; }
+  constructor(code) { super('Official hardware-backed AURA verification failed'); this.code = code; }
 }
 const fail = (code = 'ATTESTATION_INVALID') => { throw new AttestationFailure(code); };
 const hex = bytes => Buffer.from(bytes).toString('hex');
@@ -69,7 +69,7 @@ export function validateDescription(bytes, challenge, signerDigests) {
   const packages = typed(app[0], 17).children, signers = typed(app[1], 17).children;
   if (packages.length !== 1 || signers.length !== 1) fail();
   const pkg = typed(packages[0], 16).children;
-  if (pkg.length !== 2 || typed(pkg[0], 4).value.toString('utf8') !== 'com.opentune') fail('APP_ID_MISMATCH');
+  if (pkg.length !== 2 || typed(pkg[0], 4).value.toString('utf8') !== 'com.aura') fail('APP_ID_MISMATCH');
   integer(pkg[1]);
   if (!signerDigests.includes(hex(typed(signers[0], 4).value))) fail('APP_SIGNER_MISMATCH');
 }
@@ -126,6 +126,6 @@ export function verifyAttestation(input, { roots, revoked }, signerDigests, now 
   validateDescription(descriptions[0], input.challenge, signerDigests);
   const key = chain[0].publicKey;
   if (key.asymmetricKeyType !== 'ec' || key.asymmetricKeyDetails?.namedCurve !== 'prime256v1') fail();
-  if (typeof input.proof !== 'string' || input.proof.length > 128 || !verify('sha256', Buffer.from('OpenTune-Enrollment-v1\n' + input.challenge), key, Buffer.from(input.proof, 'base64url'))) fail();
+  if (typeof input.proof !== 'string' || input.proof.length > 128 || !verify('sha256', Buffer.from('AURA-Enrollment-v1\n' + input.challenge), key, Buffer.from(input.proof, 'base64url'))) fail();
   return key.export({ type: 'spki', format: 'pem' }).toString();
 }

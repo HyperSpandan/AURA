@@ -6,7 +6,7 @@ const b64 = (b: ArrayBuffer | Uint8Array<ArrayBuffer>) => btoa(String.fromCharCo
 const hash = async (s: string) => [...new Uint8Array(await crypto.subtle.digest('SHA-256', bytes(s)))].map(x => x.toString(16).padStart(2, '0')).join('');
 async function database(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open('opentune-addon-device', 1);
+    const request = indexedDB.open('aura-addon-device', 1);
     request.onupgradeneeded = () => { request.result.createObjectStore('session'); };
     request.onsuccess = () => resolve(request.result); request.onerror = () => reject(request.error);
   });
@@ -36,7 +36,7 @@ export async function startPairing(): Promise<Pairing> {
   const publicKey = await crypto.subtle.exportKey('jwk', keys.publicKey);
   const result = await call('/auth/web/start', { key: publicKey });
   if (typeof result.id !== 'string' || !/^[A-Za-z0-9_-]{43}$/.test(result.id) || typeof result.poll !== 'string' || typeof result.code !== 'string' || typeof result.expires !== 'number') throw new Error('Invalid browser verification response');
-  return { id: result.id, poll: result.poll, code: result.code, expires: result.expires, link: 'opentune://addon-approve?id=' + result.id, key: keys.privateKey };
+  return { id: result.id, poll: result.poll, code: result.code, expires: result.expires, link: 'aura://addon-approve?id=' + result.id, key: keys.privateKey };
 }
 export async function pollPairing(pair: Pairing): Promise<boolean> {
   if (Date.now() >= pair.expires) throw new Error('Request expired. Start verification again.');
@@ -59,9 +59,9 @@ export function needsVerification(url: string): boolean {
 export async function verificationHeaders(url: string): Promise<Record<string, string>> {
   if (!needsVerification(url)) return {};
   const value = await stored();
-  if (!value || value.expires <= Date.now() + value.offset) throw new Error('Open Settings › Audio sources and verify this browser with the official OpenTune app');
+  if (!value || value.expires <= Date.now() + value.offset) throw new Error('Open Settings › Audio sources and verify this browser with the official AURA app');
   const time = String(Date.now() + value.offset), nonce = b64(crypto.getRandomValues(new Uint8Array(24))), u = new URL(url);
-  const message = ['OpenTune-Addon-v1', value.session, time, nonce, 'GET', u.pathname + u.search, await hash('')].join('\n');
+  const message = ['AURA-Addon-v1', value.session, time, nonce, 'GET', u.pathname + u.search, await hash('')].join('\n');
   const signature = await crypto.subtle.sign({ name: 'ECDSA', hash: 'SHA-256' }, value.key, bytes(message));
-  return { Authorization: 'Bearer ' + value.session, 'X-OpenTune-Time': time, 'X-OpenTune-Nonce': nonce, 'X-OpenTune-Signature': b64(signature) };
+  return { Authorization: 'Bearer ' + value.session, 'X-AURA-Time': time, 'X-AURA-Nonce': nonce, 'X-AURA-Signature': b64(signature) };
 }

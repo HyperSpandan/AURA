@@ -15,7 +15,7 @@ async function firstTrack(handler, source = 'monochrome') {
   const response = await handler(req(`/${source}/search?q=Wo%20Noor`));
   assert.equal(response.status, 200); return (await response.json()).tracks[0];
 }
-test('all source manifests work with OpenTune; health does not claim upstream availability', async () => {
+test('all source manifests work with AURA; health does not claim upstream availability', async () => {
   const h = createAddon({ fetcher: () => { throw Error('No request expected'); } });
   for (const source of ['monochrome', 'archive', 'musopen', 'netease']) {
     const m = await (await h(req(`/${source}/manifest.json`))).json();
@@ -66,7 +66,7 @@ test('Monochrome search maps identity, excludes unavailable tracks, resolves mea
   assert.equal(response.status, 200); assert.equal(stream.url, 'https://tracks.monochrome.st/track/recording-1');
   assert.equal(stream.sampleRate, 96000); assert.equal(stream.bitDepth, 24); assert.equal(stream.duration, 180);
   assert.equal(calls[1].options.headers.Range, 'bytes=0-65535');
-  assert.match(calls[1].options.headers['User-Agent'], /^OpenTune-/);
+  assert.match(calls[1].options.headers['User-Agent'], /^AURA-/);
   assert.equal(calls[1].options.headers.Origin, undefined);
 });
 test('CD FLAC stays CD quality; arbitrary or malformed content never earns a FLAC label', () => {
@@ -202,7 +202,7 @@ test('a paused add-on turns searches and streams away before anything else runs'
   for (const path of ['/monochrome/search?q=x', '/netease/stream/abc', '/search?q=x']) {
     const r = await paused(req(path), env);
     assert.equal(r.status, 503);
-    assert.equal(r.headers.get('X-OpenTune-Paused'), '1');
+    assert.equal(r.headers.get('X-AURA-Paused'), '1');
     assert.equal(r.headers.get('Retry-After'), String(PAUSED_RETRY_S));
     assert.equal((await r.json()).paused, true);
   }

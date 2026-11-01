@@ -15,7 +15,7 @@
 
 # The app itself is small next to its libraries; keeping all of it means no
 # setting, serializer, provider or JavaScript interface can go missing.
--keep class com.opentune.** { *; }
+-keep class com.aura.** { *; }
 
 # Stream resolution.
 -keep class org.schabi.newpipe.** { *; }

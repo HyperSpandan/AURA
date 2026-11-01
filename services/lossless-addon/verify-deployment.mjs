@@ -57,7 +57,7 @@ if (paused) {
     for (const route of ['search?q=295&quality=best', 'stream/untrusted-id?quality=best']) {
       const r = await fetch(new URL(`/${source}/${route}`, base), { signal: AbortSignal.timeout(20000) });
       assert.equal(r.status, 503, `${source}/${route}: a paused add-on must turn requests away`);
-      assert.equal(r.headers.get('X-OpenTune-Paused'), '1');
+      assert.equal(r.headers.get('X-AURA-Paused'), '1');
       await r.body?.cancel();
     }
   }
@@ -69,7 +69,7 @@ if (policy.body.mode === 'strict') {
   report.security.unsignedAccess = [];
   for (const source of ['monochrome', 'archive', 'musopen', 'netease']) {
     for (const route of ['search?q=295&quality=best', 'stream/untrusted-id?quality=best']) {
-      for (const agent of ['BitChord/v1.8.1', 'OpenTune/verified-addon-v1']) {
+      for (const agent of ['BitChord/v1.8.1', 'AURA/verified-addon-v1']) {
         const r = await fetch(new URL(`/${source}/${route}`, base), { signal: AbortSignal.timeout(20000), headers: {
           'User-Agent': agent, Origin: 'https://justshivv.github.io', Authorization: 'Bearer ' + 'a'.repeat(43),
         } });

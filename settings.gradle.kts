@@ -15,7 +15,7 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "OpenTune"
+rootProject.name = "AURA"
 include(":app")
 include(":core")
 include(":wear")
