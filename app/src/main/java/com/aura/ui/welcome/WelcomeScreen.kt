@@ -231,9 +231,12 @@ fun WelcomeScreen(
     Box(
         Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).graphicsLayer {
             if (dive < 1f) {
-                val s = 1.14f - 0.14f * (1f - (1f - dive) * (1f - dive))
+                // Apple-style fluid entrance: app gently steps forward from 0.96 to 1.00 as splash dissolves
+                val ease = 1f - (1f - dive) * (1f - dive)
+                val s = 0.96f + 0.04f * ease
                 scaleX = s
                 scaleY = s
+                alpha = (dive * 1.5f).coerceIn(0f, 1f)
             }
         },
     ) {
