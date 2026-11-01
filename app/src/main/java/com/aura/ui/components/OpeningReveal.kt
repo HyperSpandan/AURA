@@ -38,6 +38,8 @@ object Opening {
 /** The splash's black, matching the system splash screen and device bezels. */
 val OPENING_FIELD = Color.Black
 
+private val LOGO_SIZE = 240.dp
+
 /**
  * Apple-grade AURA Opening Reveal with Calibrated Organic Illumination:
  *
@@ -45,8 +47,8 @@ val OPENING_FIELD = Color.Black
  *    Seamlessly takes over from the OS splash screen on pure OLED black (#000000).
  *
  * 2. Ambient Sunrise (0 – 1100ms):
- *    The ambient caustic halo wakes up with a soft, gradual breath, blooming around the
- *    rounded glass corners with titanium silver (#DCE2EA, #818995) and champagne bronze (#E8D5C4).
+ *    The ambient caustic halo wakes up with a soft, gradual breath, blooming behind the
+ *    floating acoustic ribbon with titanium silver (#DCE2EA, #818995) and champagne bronze (#E8D5C4).
  *
  * 3. Silky S-Curve Illumination Sweep (180 – 1280ms, 1100ms duration):
  *    Uses an organic S-curve [CubicBezierEasing(0.35f, 0.0f, 0.25f, 1.0f)].
@@ -58,7 +60,7 @@ val OPENING_FIELD = Color.Black
  *
  * 5. Apple Fluid Spatial Unveil (1420 – 2100ms, 680ms duration):
  *    - Overlay dissolves with iOS quintic spring deceleration (cubic-bezier(0.16, 1, 0.3, 1)).
- *    - Logo elevates toward the camera (1.025 -> 1.085).
+ *    - Pure acoustic ribbon elevates toward the camera (1.00 -> 1.025 -> 1.085).
  *    - Destination app UI steps forward smoothly from 0.96 -> 1.00.
  */
 @Composable
@@ -132,13 +134,13 @@ fun OpeningReveal(onDive: (Float) -> Unit, onDone: () -> Unit) {
                 .background(causticBrush, shape = CircleShape),
         )
 
-        // 2. The Photorealistic 32-bit Master Squircle Tile
+        // 2. The Pure Volumetric 32-bit Acoustic Ribbon
         // GPU texture quad with bilinear filtering (0 CPU software scaling)
         Image(
             bitmap = logoBitmap,
             contentDescription = "AURA",
             modifier = Modifier
-                .size(210.dp)
+                .size(LOGO_SIZE)
                 .graphicsLayer {
                     val el = elevation.value
                     val d = dive.value
@@ -153,7 +155,7 @@ fun OpeningReveal(onDive: (Float) -> Unit, onDone: () -> Unit) {
         // Broad 84-unit feathered beam gliding across the 3D acoustic ribbon
         Canvas(
             modifier = Modifier
-                .size(210.dp)
+                .size(LOGO_SIZE)
                 .graphicsLayer {
                     val el = elevation.value
                     val d = dive.value
