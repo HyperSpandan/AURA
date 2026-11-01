@@ -28,6 +28,7 @@ import androidx.compose.ui.res.imageResource
 import androidx.compose.ui.unit.dp
 import com.aura.R
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 /** Plays once per launch of the app, not each time the screen is rebuilt. */
 object Opening {
@@ -38,34 +39,35 @@ object Opening {
 val OPENING_FIELD = Color.Black
 
 /**
- * Apple-grade AURA Opening Reveal:
+ * Apple-grade AURA Opening Reveal with Calibrated Organic Illumination:
  *
  * 1. Poised Continuity:
  *    Seamlessly takes over from the OS splash screen on pure OLED black (#000000).
  *
- * 2. Luminous Poise (0 – 950ms):
- *    - The 32-bit master obsidian glass tile elevates with subtle micro-depth (1.00 -> 1.025).
- *    - An atmospheric caustic halo softly blooms around the glass curvature, blending
- *      titanium silver (#DCE2EA, #818995) and warm champagne bronze (#E8D5C4).
- *    - A silky, iridescent specular gleam caresses the 3D acoustic ribbon contour.
+ * 2. Ambient Sunrise (0 – 1100ms):
+ *    The ambient caustic halo wakes up with a soft, gradual breath, blooming around the
+ *    rounded glass corners with titanium silver (#DCE2EA, #818995) and champagne bronze (#E8D5C4).
  *
- * 3. Hold of Poise (950 – 1070ms):
- *    A brief 120ms moment of clarity where the illuminated mark is fully visible.
+ * 3. Silky S-Curve Illumination Sweep (180 – 1280ms, 1100ms duration):
+ *    Uses an organic S-curve [CubicBezierEasing(0.35f, 0.0f, 0.25f, 1.0f)].
+ *    A wide, 84-unit feathered specular beam glides steadily across the 3D acoustic ribbon
+ *    from bottom-left to top-right, creating a luxurious, continuous caress with ZERO flash/stutter.
  *
- * 4. Apple Fluid Spatial Unveil (1070 – 1750ms):
+ * 4. Hold of Clarity (1280 – 1420ms, 140ms duration):
+ *    Poised stillness where the illuminated mark is fully visible in all its glory.
+ *
+ * 5. Apple Fluid Spatial Unveil (1420 – 2100ms, 680ms duration):
  *    - Overlay dissolves with iOS quintic spring deceleration (cubic-bezier(0.16, 1, 0.3, 1)).
  *    - Logo elevates toward the camera (1.025 -> 1.085).
  *    - Destination app UI steps forward smoothly from 0.96 -> 1.00.
- *
- * Hardware-accelerated architecture:
- * All scaling, alpha dissolving, and transforms operate directly on GPU RenderNodes
- * via [Modifier.graphicsLayer], ensuring 0 per-frame heap allocations and locked 120 FPS.
  */
 @Composable
 fun OpeningReveal(onDive: (Float) -> Unit, onDone: () -> Unit) {
     val logoBitmap = ImageBitmap.imageResource(id = R.drawable.splash_logo)
     val mark = remember { markPath() }
-    val settle = remember { Animatable(0f) }
+    val glow = remember { Animatable(0f) }
+    val elevation = remember { Animatable(0f) }
+    val shimmer = remember { Animatable(0f) }
     val dive = remember { Animatable(0f) }
     val done by rememberUpdatedState(onDone)
     val report by rememberUpdatedState(onDive)
@@ -83,11 +85,23 @@ fun OpeningReveal(onDive: (Float) -> Unit, onDone: () -> Unit) {
     }
 
     LaunchedEffect(Unit) {
-        // Phase 1: Luminous poise, caustic aura blooming, and specular sheen sweep.
-        settle.animateTo(1f, tween(SETTLE_MS, easing = CubicBezierEasing(0.16f, 1f, 0.3f, 1f)))
-        delay(HOLD_MS)
-        // Phase 2: Apple fluid spatial unveil (spring deceleration).
-        dive.animateTo(1f, tween(DIVE_MS, easing = CubicBezierEasing(0.16f, 1f, 0.3f, 1f))) { report(value) }
+        // 1. Ambient caustic halo breathes in smoothly (organic S-curve, 1100ms)
+        launch {
+            glow.animateTo(1f, tween(1100, easing = CubicBezierEasing(0.35f, 0f, 0.25f, 1f)))
+        }
+        // 2. Micro elevation begins gently (1300ms)
+        launch {
+            elevation.animateTo(1f, tween(1300, easing = CubicBezierEasing(0.35f, 0f, 0.25f, 1f)))
+        }
+        // 3. Silky specular ribbon illumination starts after halo is softly established
+        delay(180L)
+        shimmer.animateTo(1f, tween(1100, easing = CubicBezierEasing(0.35f, 0f, 0.25f, 1f)))
+
+        // 4. Brief hold of poise where the mark is fully illuminated
+        delay(140L)
+
+        // 5. Apple fluid spatial unveil into the app
+        dive.animateTo(1f, tween(680, easing = CubicBezierEasing(0.16f, 1f, 0.3f, 1f))) { report(value) }
         report(1f)
         done()
     }
@@ -108,12 +122,12 @@ fun OpeningReveal(onDive: (Float) -> Unit, onDone: () -> Unit) {
             modifier = Modifier
                 .size(380.dp)
                 .graphicsLayer {
-                    val st = settle.value
+                    val gw = glow.value
                     val d = dive.value
-                    val s = 0.88f + 0.28f * st + 0.90f * d
+                    val s = 0.88f + 0.26f * gw + 0.85f * d
                     scaleX = s
                     scaleY = s
-                    alpha = ((st * 0.58f) * (1f - d * 0.85f)).coerceIn(0f, 1f)
+                    alpha = ((gw * 0.58f) * (1f - d * 0.85f)).coerceIn(0f, 1f)
                 }
                 .background(causticBrush, shape = CircleShape),
         )
@@ -126,47 +140,47 @@ fun OpeningReveal(onDive: (Float) -> Unit, onDone: () -> Unit) {
             modifier = Modifier
                 .size(210.dp)
                 .graphicsLayer {
-                    val st = settle.value
+                    val el = elevation.value
                     val d = dive.value
                     // Apple physical elevation: 1.00 -> 1.025 during settle, then lifts to 1.085 during unveil
-                    val s = 1.0f + 0.025f * st + 0.06f * d
+                    val s = 1.0f + 0.025f * el + 0.06f * d
                     scaleX = s
                     scaleY = s
                 },
         )
 
         // 3. Silky Specular Ribbon Gleam (The Apple Caustic Shimmer)
-        // Sweeps across the 3D acoustic ribbon curve without any hard lines or polygon tears
+        // Broad 84-unit feathered beam gliding across the 3D acoustic ribbon
         Canvas(
             modifier = Modifier
                 .size(210.dp)
                 .graphicsLayer {
-                    val st = settle.value
+                    val el = elevation.value
                     val d = dive.value
-                    val s = 1.0f + 0.025f * st + 0.06f * d
+                    val s = 1.0f + 0.025f * el + 0.06f * d
                     scaleX = s
                     scaleY = s
-                    alpha = if (d > 0.02f) (1f - d * 4f).coerceIn(0f, 1f) else 1f
+                    alpha = if (d > 0.02f) (1f - d * 3.5f).coerceIn(0f, 1f) else 1f
                 },
         ) {
-            val st = settle.value
-            if (st in 0.05f..0.98f) {
+            val sh = shimmer.value
+            if (sh in 0.01f..0.99f) {
                 val s = size.width / MARK_VIEWPORT
                 translate(size.width / 2f - MARK_VIEWPORT / 2f * s, size.height / 2f - MARK_VIEWPORT / 2f * s) {
                     scale(s, s, pivot = Offset.Zero) {
-                        val shimmerX = -35f + 180f * st
+                        val shimmerX = -50f + 210f * sh
                         drawPath(
                             mark,
                             Brush.linearGradient(
                                 colors = listOf(
                                     Color.Transparent,
-                                    Color(0xFFDCE2EA).copy(alpha = 0.55f),
+                                    Color(0xFFDCE2EA).copy(alpha = 0.45f),
                                     Color.White.copy(alpha = 0.85f),
-                                    Color(0xFFE8D5C4).copy(alpha = 0.65f),
+                                    Color(0xFFE8D5C4).copy(alpha = 0.55f),
                                     Color.Transparent,
                                 ),
-                                start = Offset(shimmerX - 24f, 25f),
-                                end = Offset(shimmerX + 24f, 80f),
+                                start = Offset(shimmerX - 42f, 20f),
+                                end = Offset(shimmerX + 42f, 85f),
                             ),
                         )
                     }
@@ -175,7 +189,3 @@ fun OpeningReveal(onDive: (Float) -> Unit, onDone: () -> Unit) {
         }
     }
 }
-
-private const val SETTLE_MS = 950
-private const val HOLD_MS = 120L
-private const val DIVE_MS = 680
