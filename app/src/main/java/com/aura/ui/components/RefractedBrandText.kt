@@ -37,18 +37,14 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aura.R
-import kotlin.math.PI
 import kotlin.math.pow
-import kotlin.math.sin
 
 /**
  * AURA Refracted Brand Name Component.
  * 100% Native Jetpack Compose implementation calibrated directly to the AURA Brand Identity:
+ * - Seamless, continuous left-to-right light flow with organic breathing intervals (zero video-loop pop/jump)
  * - Liquid Titanium Silver, Polished Chrome, Cool Slate, and Pure Radiant White highlights
- * - Zero discordant electric blues: pure metallic silver & frosted platinum harmony matching the 3D acoustic ribbon logo
  * - Staggered character lift entrance (liftDuration = 1.75s, stagger = 0.55, power4.out easing, no opacity fade)
- * - Left-to-right light flow with opening travel (6.9s) and continuous harmonic glint cycle (13.2s)
- * - Beveled glass contour highlights and razor-sharp specular crest reflections
  * - 120 FPS native hardware acceleration with zero WebView dependencies or crashes
  */
 @Composable
@@ -81,24 +77,27 @@ fun RefractedBrandText(
         }
     }
 
-    // ReactDrops configuration constants
+    // Character entrance lift parameters
     val liftDuration = 1.75f
     val stagger = 0.55f
-    val openingDuration = 6.9f
-    val duration = 13.2f
 
-    // Shared beam optical flow across the entire word
-    val beamProgress = (elapsedSec / openingDuration).coerceIn(0f, 1f)
-    val openingTravel = 1f - (1f - beamProgress).pow(4.5f)
-    val cycleTime = if (elapsedSec > openingDuration) (elapsedSec - openingDuration) % duration else 0f
-    val cyclePhase = (cycleTime / duration) * 2f * PI.toFloat()
-    val settledGlint = 0.5f + 0.35f * sin(cyclePhase)
+    // Seamless, organic traveling glint loop parameters
+    // Each cycle is 4.6 seconds:
+    // 0.0s - 2.8s: Fluid light beam travels across the word from left to right
+    // 2.8s - 4.6s: Calm, serene resting phase in resting Liquid Titanium (beam is fully off-screen)
+    // Wrap at 4.6s is mathematically continuous (influence is 0.000 both before and after)
+    val loopPeriod = 4.6f
+    val travelDuration = 2.8f
+    val cycleTime = elapsedSec % loopPeriod
 
-    // Beam center X in normalized [0, 1] word space
-    val beamCenterX = if (elapsedSec < openingDuration) {
-        -0.25f + 1.5f * openingTravel
+    // Beam center X in normalized word space [0.0 = first letter, 1.0 = last letter]
+    val beamCenterX = if (cycleTime < travelDuration) {
+        val p = (cycleTime / travelDuration).coerceIn(0f, 1f)
+        // Cubic smoothstep (smooth acceleration, cruising, and smooth deceleration)
+        val smoothP = p * p * (3f - 2f * p)
+        -0.35f + 1.70f * smoothP
     } else {
-        settledGlint
+        2.0f // Fully parked off-screen during the resting breath
     }
 
     val characters = remember(text) { text.map { it.toString() } }
@@ -123,30 +122,52 @@ fun RefractedBrandText(
             val liftProgress = (charElapsed / charDuration).coerceIn(0f, 1f)
             val easedLift = 1f - (1f - liftProgress).pow(5) // power4.out formula
 
-            // Character starts offset downward and lifts into place
+            // Character starts offset downward and lifts cleanly into place
             val yOffset = with(density) { ((1f - easedLift) * totalHeightPx).toDp() }
 
             // Spatial beam coordination for each individual letter
             val charNormX = (index + 0.5f) / glyphCount.toFloat()
             val distToBeam = kotlin.math.abs(beamCenterX - charNormX)
-            val beamIntensity = (1f - (distToBeam / 0.5f).coerceIn(0f, 1f)).pow(1.6f)
+            val beamRadius = 0.38f
+            // Quadratic falloff: perfectly drops to 0 at boundary
+            val beamIntensity = if (distToBeam < beamRadius) {
+                (1f - (distToBeam / beamRadius)).pow(2f)
+            } else 0f
 
-            // Dynamic Liquid Titanium & Polished Chrome gradient matching the AURA brand ribbon
-            val dynamicBodyBrush = remember(beamCenterX, distToBeam) {
-                val shift = (beamCenterX - charNormX) * 140f
-                Brush.linearGradient(
-                    0.00f to Color(0xFF475569), // Deep metallic slate edge
-                    0.18f to Color(0xFF64748B), // Liquid titanium substrate
-                    0.35f to Color(0xFF94A3B8), // Metallic silver-grey
-                    0.44f to Color(0xFFCBD5E1), // Polished platinum silver
-                    0.50f to Color(0xFFFFFFFF), // Pure radiant white specular core
-                    0.56f to Color(0xFFF1EBE4), // Champagne platinum glint
-                    0.65f to Color(0xFFD4D9E2), // Lustrous silver
-                    0.82f to Color(0xFF89909C), // Frosted titanium
-                    1.00f to Color(0xFF334155), // Graphite titanium shadow
-                    start = Offset(-shift, 0f),
-                    end = Offset(totalHeightPx * 2.8f - shift, totalHeightPx)
-                )
+            // Relative position of beam within this specific glyph [-1.0 = left of glyph, +1.0 = right of glyph]
+            val localBeamNorm = ((beamCenterX - charNormX) / beamRadius).coerceIn(-1f, 1f)
+            val localCoreX = (localBeamNorm * 0.5f + 0.5f).coerceIn(0.1f, 0.9f)
+
+            // Dynamic Liquid Titanium & Polished Chrome gradient tailored to the incident refracted beam
+            val dynamicBodyBrush = remember(beamIntensity, localCoreX) {
+                if (beamIntensity > 0.001f) {
+                    // Actively illuminated by the passing light beam: radiant chrome with diamond-white core
+                    val core = localCoreX
+                    val spread = 0.28f
+                    val leftEdge = (core - spread).coerceAtLeast(0f)
+                    val rightEdge = (core + spread).coerceAtMost(1f)
+
+                    Brush.linearGradient(
+                        0.0f to Color(0xFF64748B), // Liquid titanium substrate
+                        leftEdge to Color(0xFFCBD5E1), // Approaching platinum
+                        (core - 0.04f).coerceAtLeast(0f) to Color(0xFFFAF6F0), // Champagne glint
+                        core to Color(0xFFFFFFFF), // Pure diamond-white radiant beam core
+                        (core + 0.04f).coerceAtMost(1f) to Color(0xFFFFFFFF),
+                        rightEdge to Color(0xFFD4D9E2), // Departing silver
+                        1.0f to Color(0xFF475569), // Metallic titanium shadow
+                        start = Offset(0f, 0f),
+                        end = Offset(totalHeightPx * 0.85f, totalHeightPx)
+                    )
+                } else {
+                    // Pristine resting state: sculpted Liquid Titanium Silver
+                    Brush.verticalGradient(
+                        0.00f to Color(0xFFFFFFFF), // Crisp upper edge reflection
+                        0.18f to Color(0xFFE2E8F0), // Polished platinum
+                        0.45f to Color(0xFFCBD5E1), // Liquid titanium silver
+                        0.75f to Color(0xFF94A3B8), // Frosted slate
+                        1.00f to Color(0xFF475569)  // Deep titanium shadow
+                    )
+                }
             }
 
             // Bold stroke expansion brush (gives extraBold = 2.25 weight and beveled silver contour)
@@ -163,7 +184,7 @@ fun RefractedBrandText(
             val crestBrush = remember(beamIntensity) {
                 Brush.verticalGradient(
                     0.0f to Color(0xFFFFFFFF),
-                    0.45f to Color(0xFFFFFFFF).copy(alpha = 0.45f * beamIntensity),
+                    0.40f to Color(0xFFFFFFFF).copy(alpha = 0.40f + 0.50f * beamIntensity),
                     1.0f to Color.Transparent
                 )
             }
@@ -178,20 +199,22 @@ fun RefractedBrandText(
                     modifier = Modifier.offset(y = yOffset)
                 ) {
                     // Layer 1: Ambient dispersed silver bloom behind glyph (pure luminous white & silver)
-                    Text(
-                        text = char,
-                        style = TextStyle(
-                            fontFamily = outfitFont,
-                            fontWeight = FontWeight.Black,
-                            fontSize = fontSize,
-                            color = Color(0xFFCBD5E1).copy(alpha = 0.35f * beamIntensity),
-                            shadow = Shadow(
-                                color = Color(0xFFFFFFFF).copy(alpha = 0.50f * beamIntensity),
-                                offset = Offset(0f, 0f),
-                                blurRadius = with(density) { (12.dp * beamIntensity).toPx() }
+                    if (beamIntensity > 0.01f) {
+                        Text(
+                            text = char,
+                            style = TextStyle(
+                                fontFamily = outfitFont,
+                                fontWeight = FontWeight.Black,
+                                fontSize = fontSize,
+                                color = Color(0xFFE2E8F0).copy(alpha = 0.35f * beamIntensity),
+                                shadow = Shadow(
+                                    color = Color(0xFFFFFFFF).copy(alpha = 0.60f * beamIntensity),
+                                    offset = Offset(0f, 0f),
+                                    blurRadius = with(density) { (14.dp * beamIntensity).toPx() }
+                                )
                             )
                         )
-                    )
+                    }
 
                     // Layer 2: ExtraBold stroke expansion (thickness & solid structural weight)
                     Text(
