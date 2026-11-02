@@ -244,43 +244,33 @@ fun HomeScreen(
     ) {
         LazyColumn(state = listState, contentPadding = contentPadding, modifier = Modifier.fillMaxSize().nestedScroll(covers.scrollWatch)) {
             item(key = "top") {
-                // A greeting for the time of day, by name when signed in, with the
-                // account (and settings) one tap away on the right.
-                // Read again each time Home comes back into view: kept from the morning,
-                // it still said good morning at night.
-                val shownAt by page.currentStateFlow.collectAsState()
-                val hour = remember(shownAt.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) {
-                    java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
-                }
-                val greeting = when (hour) {
-                    in 5..11 -> "Good morning"
-                    in 12..16 -> "Good afternoon"
-                    in 17..21 -> "Good evening"
-                    else -> "Late night"
-                }
                 // A name only when there really is one: the signed-in account's, or the
-                // one entered for Listen together. Otherwise the greeting stands alone.
+                // one entered for Listen together.
                 val firstName = (account?.name ?: com.aura.data.together.Together.savedName)
                     .substringBefore(' ').trim().takeIf { it.isNotBlank() }
                 Column(
                     Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.statusBars)
                         .padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 8.dp),
                 ) {
-                    // The greeting sits right over the name, the buttons beside the pair.
-                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    // Brand name sits right over the name, the buttons beside the pair.
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
                         Column(Modifier.weight(1f)) {
+                            com.aura.ui.components.RefractedBrandText(
+                                height = if (firstName != null) 36.dp else 44.dp
+                            )
                             if (firstName != null) {
-                                Text(com.aura.ui.theme.tr(greeting), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
                                 Text(
                                     firstName,
-                                    style = MaterialTheme.typography.displaySmall,
-                                    maxLines = 2,
+                                    style = MaterialTheme.typography.titleLarge,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1,
                                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                                     modifier = Modifier.padding(top = 2.dp),
                                 )
-                            } else {
-                                Text(com.aura.ui.theme.tr(greeting), style = MaterialTheme.typography.displaySmall, maxLines = 2)
                             }
                         }
                         if (onRecognize != null) {
