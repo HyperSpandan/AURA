@@ -59,12 +59,12 @@ export default function HomePage() {
           <RefractedText
             text={"AURA"}
             theme={"dark"}
-            topColor={"auto"}
-            bottomColor={"auto"}
-            beamColor={"auto"}
-            spectrumWarmColor={"auto"}
-            spectrumMiddleColor={"auto"}
-            spectrumCoolColor={"auto"}
+            topColor={"#E2E8F0"}
+            bottomColor={"#475569"}
+            beamColor={"#FFFFFF"}
+            spectrumWarmColor={"#F1EBE4"}
+            spectrumMiddleColor={"#FFFFFF"}
+            spectrumCoolColor={"#CBD5E1"}
             reveal={true}
             stagger={0.55}
             liftDuration={1.75}

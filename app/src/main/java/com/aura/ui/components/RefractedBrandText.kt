@@ -43,13 +43,12 @@ import kotlin.math.sin
 
 /**
  * AURA Refracted Brand Name Component.
- * 100% Native Jetpack Compose implementation of the ReactDrops "Refracted Text" component.
- * Features:
- * - Ultra-bold architectural geometric typeface (fontWeight = 900, extraBold = 2.25)
- * - Liquid glass refraction with tri-spectral ray dispersion (Diamond White, Champagne Amber, Steel Blue)
+ * 100% Native Jetpack Compose implementation calibrated directly to the AURA Brand Identity:
+ * - Liquid Titanium Silver, Polished Chrome, Cool Slate, and Pure Radiant White highlights
+ * - Zero discordant electric blues: pure metallic silver & frosted platinum harmony matching the 3D acoustic ribbon logo
  * - Staggered character lift entrance (liftDuration = 1.75s, stagger = 0.55, power4.out easing, no opacity fade)
- * - Left-to-right light flow with opening travel (6.9s) and continuous glint cycle (13.2s)
- * - Beveled glass contour highlights and radiant optical refraction
+ * - Left-to-right light flow with opening travel (6.9s) and continuous harmonic glint cycle (13.2s)
+ * - Beveled glass contour highlights and razor-sharp specular crest reflections
  * - 120 FPS native hardware acceleration with zero WebView dependencies or crashes
  */
 @Composable
@@ -132,38 +131,39 @@ fun RefractedBrandText(
             val distToBeam = kotlin.math.abs(beamCenterX - charNormX)
             val beamIntensity = (1f - (distToBeam / 0.5f).coerceIn(0f, 1f)).pow(1.6f)
 
-            // Dynamic prismatic liquid glass gradient tailored to the incident refracted beam
+            // Dynamic Liquid Titanium & Polished Chrome gradient matching the AURA brand ribbon
             val dynamicBodyBrush = remember(beamCenterX, distToBeam) {
                 val shift = (beamCenterX - charNormX) * 140f
                 Brush.linearGradient(
-                    0.00f to Color(0xFFCBD5E1), // Cool platinum substrate
-                    0.20f to Color(0xFFE2E8F0), // Bright platinum
-                    0.38f to Color(0xFF6B8AFF).copy(alpha = 0.85f + 0.15f * beamIntensity), // Steel blue ray
-                    0.48f to Color(0xFFFFFFFF), // Pure white radiant core
-                    0.54f to Color(0xFFFDE68A), // Champagne amber glint
-                    0.65f to Color(0xFFF59E0B).copy(alpha = 0.75f + 0.25f * beamIntensity), // Warm dispersion ray
-                    0.85f to Color(0xFFE2E8F0), // Bright silver
-                    1.00f to Color(0xFF94A3B8), // Refracted shadow
+                    0.00f to Color(0xFF475569), // Deep metallic slate edge
+                    0.18f to Color(0xFF64748B), // Liquid titanium substrate
+                    0.35f to Color(0xFF94A3B8), // Metallic silver-grey
+                    0.44f to Color(0xFFCBD5E1), // Polished platinum silver
+                    0.50f to Color(0xFFFFFFFF), // Pure radiant white specular core
+                    0.56f to Color(0xFFF1EBE4), // Champagne platinum glint
+                    0.65f to Color(0xFFD4D9E2), // Lustrous silver
+                    0.82f to Color(0xFF89909C), // Frosted titanium
+                    1.00f to Color(0xFF334155), // Graphite titanium shadow
                     start = Offset(-shift, 0f),
                     end = Offset(totalHeightPx * 2.8f - shift, totalHeightPx)
                 )
             }
 
-            // Bold stroke expansion brush (gives extraBold = 2.25 weight and bevel)
+            // Bold stroke expansion brush (gives extraBold = 2.25 weight and beveled silver contour)
             val strokeExpansionBrush = remember(beamIntensity) {
                 Brush.verticalGradient(
-                    0.0f to Color(0xFFFFFFFF).copy(alpha = 0.95f),
-                    0.3f to Color(0xFFE2E8F0).copy(alpha = 0.75f),
-                    0.7f to Color(0xFF6B8AFF).copy(alpha = 0.5f * beamIntensity + 0.3f),
-                    1.0f to Color(0xFF94A3B8).copy(alpha = 0.6f)
+                    0.0f to Color(0xFFFFFFFF).copy(alpha = 0.98f), // Crisp white top crest
+                    0.25f to Color(0xFFE2E8F0).copy(alpha = 0.85f), // Polished platinum
+                    0.65f to Color(0xFFA0AAB8).copy(alpha = 0.70f + 0.25f * beamIntensity), // Liquid silver
+                    1.0f to Color(0xFF475569).copy(alpha = 0.75f)  // Slate metallic base
                 )
             }
 
-            // Delicate glass crest reflection
+            // Specular glass crest reflection
             val crestBrush = remember(beamIntensity) {
                 Brush.verticalGradient(
                     0.0f to Color(0xFFFFFFFF),
-                    0.5f to Color(0xFFFFFFFF).copy(alpha = 0.4f * beamIntensity),
+                    0.45f to Color(0xFFFFFFFF).copy(alpha = 0.45f * beamIntensity),
                     1.0f to Color.Transparent
                 )
             }
@@ -177,16 +177,16 @@ fun RefractedBrandText(
                 Box(
                     modifier = Modifier.offset(y = yOffset)
                 ) {
-                    // Layer 1: Ambient dispersed spectral bloom behind glyph
+                    // Layer 1: Ambient dispersed silver bloom behind glyph (pure luminous white & silver)
                     Text(
                         text = char,
                         style = TextStyle(
                             fontFamily = outfitFont,
                             fontWeight = FontWeight.Black,
                             fontSize = fontSize,
-                            color = Color(0xFF6B8AFF).copy(alpha = 0.28f * beamIntensity),
+                            color = Color(0xFFCBD5E1).copy(alpha = 0.35f * beamIntensity),
                             shadow = Shadow(
-                                color = Color(0xFFFFFFFF).copy(alpha = 0.45f * beamIntensity),
+                                color = Color(0xFFFFFFFF).copy(alpha = 0.50f * beamIntensity),
                                 offset = Offset(0f, 0f),
                                 blurRadius = with(density) { (12.dp * beamIntensity).toPx() }
                             )
@@ -205,7 +205,7 @@ fun RefractedBrandText(
                         )
                     )
 
-                    // Layer 3: Main refracted liquid glass body (solid fill)
+                    // Layer 3: Main refracted liquid titanium glass body (solid fill)
                     Text(
                         text = char,
                         style = TextStyle(
