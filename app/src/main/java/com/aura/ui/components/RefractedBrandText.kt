@@ -34,9 +34,10 @@ import kotlin.math.sin
 /**
  * AURA Refracted Brand Name Component.
  * 100% Native Jetpack Compose implementation calibrated directly to the AURA Brand Identity:
- * - Single continuous canvas-space light wave flowing seamlessly across the entire word (zero per-letter step lighting)
+ * - Truly slow, continuous, endless liquid light flow across the entire wordmark (zero pauses, zero static intervals)
+ * - Seamless cyclic harmonic wave equation with Shader.TileMode.REPEAT (100% mathematically continuous, zero loop seams)
  * - Liquid Titanium Silver, Polished Chrome, Cool Slate, and Pure Radiant White highlights
- * - Staggered character lift entrance (liftDuration = 1.75s, stagger = 0.55, power4.out easing, no opacity fade)
+ * - Staggered character lift entrance on startup (liftDuration = 1.75s, stagger = 0.55, power4.out easing, no opacity fade)
  * - Buttery-smooth 120 FPS hardware-accelerated Skia rendering with zero WebView dependencies or crashes
  */
 @Composable
@@ -157,87 +158,61 @@ fun RefractedBrandText(
     val liftDuration = 1.75f
     val stagger = 0.55f
 
-    // Seamless, organic traveling light flow across the ENTIRE word:
-    // Continuous 4.5s cycle: 2.6s smooth sweep across the word + 1.9s resting breath
-    val loopPeriod = 4.5f
-    val sweepDuration = 2.6f
-    val cycleTime = elapsedSec % loopPeriod
+    // ---- Truly Slow, Endless, Continuous Harmonic Light Wave ----
+    // Period = 6.8 seconds for a calm, slow, hypnotic, luxurious flow.
+    // The wave never stops, never pauses, and never becomes static.
+    val period = 6.8f
+    val wavelength = totalWordWidth * 1.55f
+    val velocity = wavelength / period
+    val offset = (elapsedSec * velocity) % wavelength
 
-    // Width of the traveling light beam in word coordinates
-    val beamWidth = totalWordWidth * 0.72f
-    val startX = -beamWidth * 1.1f
-    val endX = totalWordWidth + beamWidth * 1.1f
+    // Diagonal angle: 22 degrees for a refined metallic refraction slant
+    val angleRad = 22f * (PI.toFloat() / 180f)
+    val dx = cos(angleRad) * wavelength
+    val dy = sin(angleRad) * heightPx
 
-    // Single unified beam position in global word coordinates (pixels)
-    val beamCenterPx = if (cycleTime < sweepDuration) {
-        val p = (cycleTime / sweepDuration).coerceIn(0f, 1f)
-        val smoothP = p * p * (3f - 2f * p) // Smoothstep easing
-        startX + (endX - startX) * smoothP
-    } else {
-        endX + 200f // Completely parked off-screen during the serene rest
-    }
-
-    // Diagonal beam geometry (25 degree sheen)
-    val angleRad = 25f * (PI.toFloat() / 180f)
-    val dx = cos(angleRad) * (beamWidth / 2f)
-    val dy = sin(angleRad) * (heightPx / 2f)
-
-    // Palette: Liquid Titanium Silver, Polished Chrome, Cool Slate, Pure White
-    val substrateColor = AndroidColor.rgb(0x64, 0x74, 0x8B) // Slate titanium resting body
-    val chromeLight = AndroidColor.rgb(0xCB, 0xD5, 0xE1)    // Approaching platinum
-    val pureWhite = AndroidColor.rgb(0xFF, 0xFF, 0xFF)      // Diamond radiant core
+    // Liquid Titanium Silver & Polished Chrome Palette
+    // Start (0.0) and end (1.0) colors are identical, guaranteeing 100% seamless cyclic repetition
+    val substrateColor = AndroidColor.rgb(0x64, 0x74, 0x8B) // Slate titanium substrate
+    val frostedSilver = AndroidColor.rgb(0x94, 0xA3, 0xB8)  // Frosted slate-silver
+    val polishedChrome = AndroidColor.rgb(0xCB, 0xD5, 0xE1) // Liquid titanium silver
     val champagneGlint = AndroidColor.rgb(0xF5, 0xEF, 0xEB) // Warm champagne glint
-    val platinumEdge = AndroidColor.rgb(0xD4, 0xD9, 0xE2)   // Departing silver
-    val deepShadow = AndroidColor.rgb(0x47, 0x55, 0x69)     // Shadow base
+    val pureWhite = AndroidColor.rgb(0xFF, 0xFF, 0xFF)      // Diamond radiant crest
+    val platinumEdge = AndroidColor.rgb(0xD4, 0xD9, 0xE2)   // Polished platinum
 
     val gradientColors = intArrayOf(
-        substrateColor,
-        chromeLight,
-        champagneGlint,
-        pureWhite,
-        pureWhite,
-        platinumEdge,
-        substrateColor
+        substrateColor,  // 0.00: Resting slate titanium
+        frostedSilver,   // 0.18: Leading metallic curve
+        polishedChrome,  // 0.36: Chrome swell
+        champagneGlint,  // 0.45: Warm champagne glint
+        pureWhite,       // 0.50: Pure radiant diamond-white specular peak
+        pureWhite,       // 0.52: Specular core plateau
+        champagneGlint,  // 0.57: Trailing glint
+        platinumEdge,    // 0.68: Departing platinum
+        frostedSilver,   // 0.84: Trailing silver
+        substrateColor   // 1.00: Resting slate titanium (seamlessly meets 0.00!)
     )
     val gradientStops = floatArrayOf(
         0.00f,
-        0.28f,
-        0.44f,
-        0.49f,
-        0.53f,
-        0.72f,
+        0.18f,
+        0.36f,
+        0.45f,
+        0.50f,
+        0.52f,
+        0.57f,
+        0.68f,
+        0.84f,
         1.00f
     )
 
-    // Compute whether the beam is currently touching any part of the word
-    val beamLeftEdge = beamCenterPx - dx
-    val beamRightEdge = beamCenterPx + dx
-    val beamTouchingWord = beamRightEdge > 0f && beamLeftEdge < totalWordWidth
-
-    // One shared word-space LinearGradient for the entire text
-    val unifiedBodyShader = if (beamTouchingWord) {
-        LinearGradient(
-            beamCenterPx - dx, -dy,
-            beamCenterPx + dx, heightPx + dy,
-            gradientColors,
-            gradientStops,
-            Shader.TileMode.CLAMP
-        )
-    } else {
-        // Resting Liquid Titanium Silver vertical gradient
-        LinearGradient(
-            0f, 0f, 0f, heightPx,
-            intArrayOf(
-                AndroidColor.rgb(0xFF, 0xFF, 0xFF), // Upper crest reflection
-                AndroidColor.rgb(0xE2, 0xE8, 0xF0), // Polished platinum
-                AndroidColor.rgb(0xCB, 0xD5, 0xE1), // Liquid titanium silver
-                AndroidColor.rgb(0x94, 0xA3, 0xB8), // Frosted slate
-                AndroidColor.rgb(0x47, 0x55, 0x69)  // Deep titanium shadow
-            ),
-            floatArrayOf(0.00f, 0.20f, 0.50f, 0.78f, 1.00f),
-            Shader.TileMode.CLAMP
-        )
-    }
+    // Continuous, endlessly repeating LinearGradient across the entire canvas space
+    val unifiedBodyShader = LinearGradient(
+        offset - dx, -dy,
+        offset, heightPx,
+        gradientColors,
+        gradientStops,
+        Shader.TileMode.REPEAT
+    )
 
     // Stroke expansion bevel gradient (vertical polished chrome)
     val strokeShader = LinearGradient(
@@ -267,19 +242,13 @@ fun RefractedBrandText(
     strokeExpansionPaint.shader = strokeShader
     crestPaint.shader = crestShader
 
-    // Ambient bloom parameters
-    if (beamTouchingWord) {
-        val wordCenterPx = totalWordWidth / 2f
-        val distToWordCenter = kotlin.math.abs(beamCenterPx - wordCenterPx)
-        val maxDist = totalWordWidth / 2f + beamWidth / 2f
-        val bloomAlpha = ((1f - (distToWordCenter / maxDist).coerceIn(0f, 1f)).pow(1.5f) * 110f).toInt()
-        bloomPaint.color = AndroidColor.argb(bloomAlpha, 0xCB, 0xD5, 0xE1)
-        bloomPaint.setShadowLayer(
-            with(density) { 14.dp.toPx() },
-            0f, 0f,
-            AndroidColor.argb((bloomAlpha * 1.4f).toInt().coerceAtMost(255), 0xFF, 0xFF, 0xFF)
-        )
-    }
+    // Soft dispersed ambient bloom that travels in lockstep with the wave
+    bloomPaint.shader = unifiedBodyShader
+    bloomPaint.setShadowLayer(
+        with(density) { 14.dp.toPx() },
+        0f, 0f,
+        AndroidColor.argb(0x60, 0xFF, 0xFF, 0xFF)
+    )
 
     Canvas(
         modifier = modifier
@@ -290,34 +259,34 @@ fun RefractedBrandText(
             val canvas = composeCanvas.nativeCanvas
 
             for (i in 0 until glyphCount) {
-                // Character lift entrance physics
-                val staggerDelay = if (glyphCount > 1) {
-                    (i.toFloat() / (glyphCount - 1)) * (liftDuration * stagger)
-                } else 0f
-                val charDuration = liftDuration - (liftDuration * stagger)
-                val charElapsed = (elapsedSec - staggerDelay).coerceAtLeast(0f)
-                val liftProgress = (charElapsed / charDuration).coerceIn(0f, 1f)
-                val easedLift = 1f - (1f - liftProgress).pow(5) // power4.out formula
-
-                // Starts below baseline, lifts up into place
-                val yOffset = (1f - easedLift) * heightPx
+                // Character lift entrance physics (during initial 1.75s launch)
+                val yOffset = if (elapsedSec < liftDuration) {
+                    val staggerDelay = if (glyphCount > 1) {
+                        (i.toFloat() / (glyphCount - 1)) * (liftDuration * stagger)
+                    } else 0f
+                    val charDuration = liftDuration - (liftDuration * stagger)
+                    val charElapsed = (elapsedSec - staggerDelay).coerceAtLeast(0f)
+                    val liftProgress = (charElapsed / charDuration).coerceIn(0f, 1f)
+                    val easedLift = 1f - (1f - liftProgress).pow(5) // power4.out formula
+                    (1f - easedLift) * heightPx
+                } else {
+                    0f // Settled permanently at baseline
+                }
 
                 val charX = charPositions[i]
                 val charW = charWidths[i]
 
                 canvas.save()
-                // Physical clipping to this letter's slot so it emerges from below cleanly without opacity fade
+                // Physical clipping to each letter's cell during entrance lift
                 canvas.clipRect(charX - 4f, 0f, charX + charW + 4f, heightPx)
 
-                // Layer 1: Ambient dispersed bloom (when beam passes near)
-                if (beamTouchingWord) {
-                    canvas.drawText(characters[i], charX, baselineY + yOffset, bloomPaint)
-                }
+                // Layer 1: Dispersed liquid bloom (smoothly gliding with the wave)
+                canvas.drawText(characters[i], charX, baselineY + yOffset, bloomPaint)
 
                 // Layer 2: ExtraBold stroke expansion (solid 3D contour weight)
                 canvas.drawText(characters[i], charX, baselineY + yOffset, strokeExpansionPaint)
 
-                // Layer 3: Main liquid titanium body (filled with ONE shared continuous word-space gradient!)
+                // Layer 3: Main liquid titanium body (filled with the continuous traveling wave!)
                 canvas.drawText(characters[i], charX, baselineY + yOffset, bodyPaint)
 
                 // Layer 4: Razor-sharp specular crest highlight
