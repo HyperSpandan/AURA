@@ -1,3 +1,4 @@
+import { RefractedText } from '@/components/refracted-text';
 import { useRemoteConfig } from '@/config/remote';
 import { syncPublished } from '@/addons/client';
 import { Clock, RefreshCw, Settings, Sparkles, ListMusic } from 'lucide-react';
@@ -51,16 +52,64 @@ export default function HomePage() {
     return () => observer.disconnect();
   }, [home.hasNextPage, home.isFetchingNextPage, home.isFetchNextPageError, home.fetchNextPage, runtime.sections]);
 
-  const hour = new Date().getHours();
-  const greeting = hour < 5 ? 'Late night' : hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
-  const heading = <header className="ot-home-heading"><div><p>{greeting}</p><h1>What's playing?</h1></div><div>
-    <button className="ot-circle-button" aria-label="Refresh recommendations" disabled={home.isFetching || missing} onClick={() => {
-      void syncPublished(true);
-      void queryClient.resetQueries({ queryKey: ['music', 'home'] });
-      void queryClient.invalidateQueries({ queryKey: ['music', 'library'] });
-    }}><RefreshCw size={20} className={home.isFetching ? 'animate-spin' : ''} /></button>
-    <PrefetchLink className="ot-circle-button" to="/settings" aria-label="Settings"><Settings size={20} /></PrefetchLink>
-  </div></header>;
+  const heading = (
+    <header className="ot-home-heading">
+      <div>
+        <div style={{ maxWidth: '240px', marginBottom: '8px', containerType: 'inline-size' }}>
+          <RefractedText
+            text={"AURA"}
+            theme={"dark"}
+            topColor={"auto"}
+            bottomColor={"auto"}
+            beamColor={"auto"}
+            spectrumWarmColor={"auto"}
+            spectrumMiddleColor={"auto"}
+            spectrumCoolColor={"auto"}
+            reveal={true}
+            stagger={0.55}
+            liftDuration={1.75}
+            ease={"power4.out"}
+            beamFollowsLift={false}
+            animateBeam={true}
+            openingDuration={6.9}
+            duration={13.2}
+            intensity={1.2}
+            dispersion={1}
+            colorIntensity={1}
+            beamPosition={0.5}
+            fixedBeam={false}
+            paused={false}
+            cursorMovesBeam={false}
+            fontSize={"400px"}
+            fontFamily={"'ReactDrops Square Display', 'Arial Black', sans-serif"}
+            fontWeight={900}
+            letterSpacing={"normal"}
+            extraBold={2.25}
+            fontHeight={80}
+            cornerRounding={1}
+          />
+        </div>
+        <h1>What's playing?</h1>
+      </div>
+      <div>
+        <button
+          className="ot-circle-button"
+          aria-label="Refresh recommendations"
+          disabled={home.isFetching || missing}
+          onClick={() => {
+            void syncPublished(true);
+            void queryClient.resetQueries({ queryKey: ['music', 'home'] });
+            void queryClient.invalidateQueries({ queryKey: ['music', 'library'] });
+          }}
+        >
+          <RefreshCw size={20} className={home.isFetching ? 'animate-spin' : ''} />
+        </button>
+        <PrefetchLink className="ot-circle-button" to="/settings" aria-label="Settings">
+          <Settings size={20} />
+        </PrefetchLink>
+      </div>
+    </header>
+  );
   const banners = runtime.banners.filter(b => b.enabled && b.platforms.includes('web')).map(b => (
     <section className="ot-banner" key={b.id} aria-label={b.title}><h2>{b.title}</h2><p>{b.body}</p><div><a href={b.url} target="_blank" rel="noreferrer">{b.action} ↗</a></div></section>
   ));
