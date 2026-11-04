@@ -794,11 +794,6 @@ internal fun LyricLineView(
     val base = lyricsStyle().copy(textAlign = align, textDirection = if (rtl) TextDirection.Rtl else TextDirection.Ltr)
     val style = if ((motion.glow || ui.lyricsGlow) && isActive) base.copy(shadow = Shadow(bright.copy(alpha = 0.55f), blurRadius = 24f)) else base
     val text = remember(line) { if (line.words.isEmpty()) line.text else line.words.joinToString("") { it.text } }
-    val effectiveLine = remember(line) {
-        if (line.words.isNotEmpty()) line
-        else line.copy(words = com.aura.data.lyrics.LrcParser.spreadWords(line.text, line.startMs, line.endMs))
-    }
-    val particleSystem = remember { LyricParticleSystem(poolSize = 12) }
     val layout = remember(text) { mutableStateOf<TextLayoutResult?>(null) }
     // Where each word sits, worked out once per layout rather than every frame.
     // A word's trailing space is left out, and a word that still runs across a
@@ -880,37 +875,10 @@ internal fun LyricLineView(
                 .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
                 .padding(GLOW_BLEED)
                 .drawWithCache {
-                    val boxes = wordBoxesOf(layout.value, effectiveLine, text)
+                    val boxes = wordBoxesOf(layout.value, line, text)
                     onDrawWithContent {
-                        val pos = position()
-                        if (isActive && effectiveLine.words.isNotEmpty()) {
-                            var activeBox: Rect? = null
-                            var vocalEnergy = 0f
-                            effectiveLine.words.forEachIndexed { idx, word ->
-                                if (pos in word.startMs..word.endMs) {
-                                    val span = (word.endMs - word.startMs).coerceAtLeast(1)
-                                    val t = ((pos - word.startMs).toFloat() / span).coerceIn(0f, 1f)
-                                    val pulse = kotlin.math.sin(t * Math.PI.toFloat())
-                                    vocalEnergy = pulse
-                                    boxes.getOrNull(idx)?.forEach { box ->
-                                        if (activeBox == null) activeBox = box
-                                        drawAppleWordBloom(box, pulse, bright)
-                                    }
-                                }
-                            }
-                            particleSystem.onFrame(
-                                drawScope = this,
-                                isActive = true,
-                                activeBox = activeBox,
-                                vocalEnergy = vocalEnergy,
-                                currentPosMs = pos,
-                                glowColor = bright,
-                            )
-                        }
                         drawContent()
-                        if (sweep || (isActive && effectiveLine.words.isNotEmpty())) {
-                            sweepDim(effectiveLine, boxes, pos, 0.4f, rtl)
-                        }
+                        if (sweep) sweepDim(line, boxes, position(), 0.4f, rtl)
                     }
                 },
         )
@@ -994,11 +962,6 @@ internal fun wordBoxesOf(layout: TextLayoutResult?, line: LyricLine, text: Strin
 internal fun SungLine(line: LyricLine, position: () -> Long, style: androidx.compose.ui.text.TextStyle, modifier: Modifier = Modifier) {
     val bright = MaterialTheme.colorScheme.onSurface
     val text = remember(line) { if (line.words.isEmpty()) line.text else line.words.joinToString("") { it.text } }
-    val effectiveLine = remember(line) {
-        if (line.words.isNotEmpty()) line
-        else line.copy(words = com.aura.data.lyrics.LrcParser.spreadWords(line.text, line.startMs, line.endMs))
-    }
-    val particleSystem = remember { LyricParticleSystem(poolSize = 12) }
     val layout = remember(text) { mutableStateOf<TextLayoutResult?>(null) }
     val rtl = remember(line) { com.aura.data.lyrics.readsRightToLeft(line) }
     Text(
@@ -1011,35 +974,10 @@ internal fun SungLine(line: LyricLine, position: () -> Long, style: androidx.com
         modifier = modifier
             .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
             .drawWithCache {
-                val boxes = wordBoxesOf(layout.value, effectiveLine, text)
+                val boxes = wordBoxesOf(layout.value, line, text)
                 onDrawWithContent {
-                    val pos = position()
-                    if (effectiveLine.words.isNotEmpty()) {
-                        var activeBox: Rect? = null
-                        var vocalEnergy = 0f
-                        effectiveLine.words.forEachIndexed { idx, word ->
-                            if (pos in word.startMs..word.endMs) {
-                                val span = (word.endMs - word.startMs).coerceAtLeast(1)
-                                val t = ((pos - word.startMs).toFloat() / span).coerceIn(0f, 1f)
-                                val pulse = kotlin.math.sin(t * Math.PI.toFloat())
-                                vocalEnergy = pulse
-                                boxes.getOrNull(idx)?.forEach { box ->
-                                    if (activeBox == null) activeBox = box
-                                    drawAppleWordBloom(box, pulse, bright)
-                                }
-                            }
-                        }
-                        particleSystem.onFrame(
-                            drawScope = this,
-                            isActive = true,
-                            activeBox = activeBox,
-                            vocalEnergy = vocalEnergy,
-                            currentPosMs = pos,
-                            glowColor = bright,
-                        )
-                    }
                     drawContent()
-                    sweepDim(effectiveLine, boxes, pos, 0.55f, rtl)
+                    if (line.wordSynced) sweepDim(line, boxes, position(), 0.55f, rtl)
                 }
             },
     )
