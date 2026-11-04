@@ -538,14 +538,17 @@ object Innertube {
 
     /**
      * Ensures playlist/album IDs carry the required "VL" prefix for YouTube Music's browse endpoint.
-     * YouTube Music rejects bare playlist IDs (OLAK..., PL..., RD..., LM, SE...) with HTTP 400 Bad Request.
+     * YouTube Music rejects bare playlist IDs (OLAK..., PL..., RD..., RMM..., LM, LL, WL, FL, BL, etc.)
+     * with HTTP 400 Bad Request. Artist IDs (UC...), album browse IDs (MPRE...), podcast shows (MPSP...),
+     * feature/explore tabs (FE...), and local synthetic mix IDs are preserved without prefixing.
      */
     fun normalizeBrowseId(browseId: String): String = when {
         browseId.startsWith("VL") -> browseId
-        browseId.startsWith("PL") || browseId.startsWith("OLAK") ||
-            browseId.startsWith("RD") || browseId == "LM" ||
-            browseId.startsWith("SE") -> "VL$browseId"
-        else -> browseId
+        browseId.startsWith("UC") || browseId.startsWith("MP") ||
+            browseId.startsWith("FE") ||
+            browseId.startsWith("seed:") || browseId.startsWith("spotify:") ||
+            browseId in setOf("artist0", "artist1", "artist2", "time", "repeat", "rediscover") -> browseId
+        else -> "VL$browseId"
     }
 
     suspend fun browse(browseId: String, params: String? = null): JsonObject =

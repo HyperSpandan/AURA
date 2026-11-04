@@ -36,7 +36,11 @@ object DailyMixes {
 
     fun updateCache(mixes: List<Mix>) {
         if (mixes.isNotEmpty()) {
-            cachedMixes = mixes
+            val existing = cachedMixes.associateBy { it.id }.toMutableMap()
+            for (m in mixes) {
+                existing[m.id] = m
+            }
+            cachedMixes = existing.values.toList()
         }
     }
 

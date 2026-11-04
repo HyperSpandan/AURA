@@ -508,7 +508,8 @@ object MusicRepository {
      * Finds a local, client-generated mix (DailyMix, seed mix, spotify mix) without calling YouTube Music.
      */
     fun localCollection(browseId: String): Collection? {
-        val mix = com.aura.data.history.DailyMixes.findOrBuild(browseId, com.aura.data.history.History.records.value)
+        val mix = com.aura.data.history.DailyMixes.findMix(browseId)
+            ?: com.aura.data.history.DailyMixes.findOrBuild(browseId, com.aura.data.history.History.records.value)
         if (mix != null) {
             return Collection(
                 browseId = browseId,
@@ -519,7 +520,8 @@ object MusicRepository {
             )
         }
         if (browseId.startsWith("seed:")) {
-            val seedMix = com.aura.data.reco.HomeSeed.findMix(browseId, seeds.value)
+            val seedMix = com.aura.data.history.DailyMixes.findMix(browseId)
+                ?: com.aura.data.reco.HomeSeed.findMix(browseId, seeds.value)
             if (seedMix != null) {
                 return Collection(
                     browseId = browseId,
@@ -532,14 +534,17 @@ object MusicRepository {
         }
         if (browseId.startsWith("spotify:")) {
             val spotifyId = browseId.removePrefix("spotify:")
-            val spotifyMix = com.aura.data.spotify.SpotifySync.mixes.value.firstOrNull { it.id == spotifyId }
+            val spotifyMix = com.aura.data.history.DailyMixes.findMix(browseId)
+                ?: com.aura.data.spotify.SpotifySync.mixes.value.firstOrNull { it.id == spotifyId }?.let {
+                    com.aura.data.history.DailyMixes.Mix(browseId, it.name, it.readableDescription, it.songs.map { s -> s.toSong() })
+                }
             if (spotifyMix != null) {
                 return Collection(
                     browseId = browseId,
-                    title = spotifyMix.name,
-                    subtitle = spotifyMix.readableDescription,
+                    title = spotifyMix.title,
+                    subtitle = spotifyMix.subtitle,
                     thumbnailUrl = spotifyMix.songs.firstOrNull()?.thumbnailUrl,
-                    songs = spotifyMix.songs.map { it.toSong() },
+                    songs = spotifyMix.songs,
                 )
             }
         }
@@ -551,9 +556,41 @@ object MusicRepository {
             onPage?.invoke(local)
             return@io local
         }
-        val normalizedId = Innertube.normalizeBrowseId(browseId)
         val owner = com.aura.data.library.LibraryCache.owner()
-        val mixId = normalizedId.removePrefix("VL").takeIf { it.startsWith("RD") }
+        val isLocal = browseId.startsWith("seed:") || browseId.startsWith("spotify:") ||
+            browseId in setOf("artist0", "artist1", "artist2", "time", "repeat", "rediscover")
+        if (isLocal) {
+            if (browseId.startsWith("seed:")) {
+                val artistId = browseId.removePrefix("seed:")
+                val seedCol = runCatching {
+                    val page = InnertubeParser.parseArtistPage(Innertube.browse(artistId))
+                    val top = ContentFilter.songs(page.songs)
+                    val radio = top.firstOrNull()?.let { runCatching { Recommendations.youtube(it.videoId) }.getOrNull() }.orEmpty()
+                    val songs = ExploreFeed.weave(listOf(top, radio)).distinctBy { it.videoId }.take(30)
+                    if (songs.isNotEmpty()) {
+                        Collection(
+                            browseId = browseId,
+                            title = "${page.name ?: "Artist"} mix",
+                            subtitle = "${page.name ?: "Artist"} and artists like them",
+                            thumbnailUrl = songs.firstOrNull()?.thumbnailUrl ?: page.thumbnailUrl,
+                            songs = songs,
+                        )
+                    } else null
+                }.getOrNull()
+                if (seedCol != null) {
+                    com.aura.data.library.LibraryCache.save(seedCol, owner)
+                    onPage?.invoke(seedCol)
+                    return@io seedCol
+                }
+            }
+            com.aura.data.library.LibraryCache.collection(browseId, owner)?.let { cached ->
+                onPage?.invoke(cached)
+                return@io cached
+            }
+            throw java.io.IOException("This mix is currently unavailable. Please try again later.")
+        }
+        val normalizedId = Innertube.normalizeBrowseId(browseId)
+        val mixId = normalizedId.removePrefix("VL").takeIf { it.startsWith("RD") || it.startsWith("RMM") }
         val response = try {
             Innertube.browse(normalizedId)
         } catch (e: kotlinx.coroutines.CancellationException) {

@@ -82,8 +82,15 @@ class DailyMixesTest {
         assertEquals("VLOLAK5uy_test", com.aura.data.innertube.Innertube.normalizeBrowseId("VLOLAK5uy_test"))
         assertEquals("VLRDCLAK", com.aura.data.innertube.Innertube.normalizeBrowseId("RDCLAK"))
         assertEquals("VLLM", com.aura.data.innertube.Innertube.normalizeBrowseId("LM"))
+        assertEquals("VLLL", com.aura.data.innertube.Innertube.normalizeBrowseId("LL"))
+        assertEquals("VLRMM", com.aura.data.innertube.Innertube.normalizeBrowseId("RMM"))
+        assertEquals("VLWL", com.aura.data.innertube.Innertube.normalizeBrowseId("WL"))
+        assertEquals("VLFL", com.aura.data.innertube.Innertube.normalizeBrowseId("FL"))
         assertEquals("MPREb_album", com.aura.data.innertube.Innertube.normalizeBrowseId("MPREb_album"))
         assertEquals("UC12345", com.aura.data.innertube.Innertube.normalizeBrowseId("UC12345"))
         assertEquals("FEmusic_home", com.aura.data.innertube.Innertube.normalizeBrowseId("FEmusic_home"))
+        assertEquals("seed:UC123", com.aura.data.innertube.Innertube.normalizeBrowseId("seed:UC123"))
+        assertEquals("artist0", com.aura.data.innertube.Innertube.normalizeBrowseId("artist0"))
+        assertEquals("time", com.aura.data.innertube.Innertube.normalizeBrowseId("time"))
     }
 }

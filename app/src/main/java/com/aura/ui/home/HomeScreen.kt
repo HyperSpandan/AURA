@@ -193,7 +193,9 @@ fun HomeScreen(
             .map { it.copy(top = hidden.songs(it.top), radio = hidden.songs(it.radio)) }
     }
     val mixes = remember(records, seeds, hidden) {
-        com.aura.data.reco.HomeSeed.mixes(com.aura.data.history.DailyMixes.build(records, hidden = hidden), seeds, records.size)
+        val built = com.aura.data.reco.HomeSeed.mixes(com.aura.data.history.DailyMixes.build(records, hidden = hidden), seeds, records.size)
+        com.aura.data.history.DailyMixes.updateCache(built)
+        built
     }
     val ui by AppSettings.ui.collectAsState()
     // Spotify's own mixes for the listener, when Spotify is connected (see SpotifySync).
@@ -204,7 +206,7 @@ fun HomeScreen(
         else spotifyMixesAll.mapNotNull { m ->
             val songs = hidden.songs(m.songs.map { it.toSong() })
             if (songs.size < 6) null else com.aura.data.history.DailyMixes.Mix("spotify:${m.id}", m.name, m.readableDescription, songs)
-        }
+        }.also { com.aura.data.history.DailyMixes.updateCache(it) }
     }
     val topPicks = remember(speedDial, feed, mixes, spotifyMixes, ui.hideCommunityPlaylists) {
         val items = mutableListOf<ShelfItem>()

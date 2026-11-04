@@ -339,9 +339,10 @@ object InnertubeParser {
                 if (moreSongs == null) {
                     // The heading used to be the link; the current layout puts
                     // a "Show all" under the rows instead.
-                    moreSongs = shelf.o("title").a("runs")?.firstOrNull()
+                    moreSongs = (shelf.o("title").a("runs")?.firstOrNull()
                         .o("navigationEndpoint").o("browseEndpoint").s("browseId")
-                        ?: shelf.o("bottomEndpoint").o("browseEndpoint").s("browseId")
+                        ?: shelf.o("bottomEndpoint").o("browseEndpoint").s("browseId"))
+                        ?.let(Innertube::normalizeBrowseId)
                 }
             }
             section.o("musicCarouselShelfRenderer")?.let { carousel ->
@@ -363,7 +364,7 @@ object InnertubeParser {
                             ?: it.o("musicNavigationButtonRenderer").o("navigationEndpoint").o("browseEndpoint")
                     }
                     ?: header.o("navigationEndpoint").o("browseEndpoint")
-                val moreBrowseId = moreEndpoint.s("browseId")
+                val moreBrowseId = moreEndpoint.s("browseId")?.let(Innertube::normalizeBrowseId)
                 val moreParams = moreEndpoint.s("params")
                 if (title.isNotBlank() && items.isNotEmpty()) {
                     shelves += HomeShelf(

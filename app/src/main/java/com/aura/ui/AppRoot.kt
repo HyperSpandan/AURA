@@ -288,6 +288,7 @@ fun AppRoot(vm: PlayerViewModel) {
     val openItem: (ShelfItem) -> Unit = remember(nav, vm) { { item ->
         val browseId = item.browseId
         when {
+            item.videoId != null -> item.toSong()?.let { vm.play(it, "Home") }
             browseId != null -> nav.openBrowse(browseId)
             else -> item.toSong()?.let { vm.play(it, "Home") }
         }

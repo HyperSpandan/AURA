@@ -23,7 +23,10 @@ internal class CollectionLoader(
     private val owner: String,
     private val fetch: suspend ((Collection) -> Unit) -> Collection = { progress -> MusicRepository.collection(browseId, progress) },
     private val cached: suspend () -> Collection? = {
-        withContext(Dispatchers.IO) { LibraryCache.collection(browseId, owner)?.let { it.copy(songs = ContentFilter.songs(it.songs)) } }
+        withContext(Dispatchers.IO) {
+            MusicRepository.localCollection(browseId)
+                ?: LibraryCache.collection(browseId, owner)?.let { it.copy(songs = ContentFilter.songs(it.songs)) }
+        }
     },
     private val fresh: suspend () -> Boolean = { withContext(Dispatchers.IO) { LibraryCache.fresh(browseId, owner) } },
 ) : ViewModel() {
