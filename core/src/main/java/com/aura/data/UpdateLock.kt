@@ -33,7 +33,7 @@ import okhttp3.Request
 object UpdateLock {
     /** How many releases the installed version may trail the newest one by. */
     const val MAX_BEHIND = 2
-    private const val SITE_LIST = "https://justshivv.github.io/AURA/releases.json"
+    private const val SITE_LIST = "https://hyperspandan.github.io/AURA/releases.json"
     private const val API_LIST = "https://api.github.com/repos/HyperSpandan/AURA/releases?per_page=20"
     private const val EVERY_MS = 60L * 60 * 1000
     private const val PREFS = "update-lock"

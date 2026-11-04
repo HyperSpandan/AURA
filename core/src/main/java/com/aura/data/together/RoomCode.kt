@@ -35,7 +35,7 @@ class RoomCode private constructor(val raw: String) {
 
     /** A link that opens the room in AURA. */
     val appLink: String get() = "aura://together/$raw"
-    val link: String get() = "https://justshivv.github.io/AURA/together/#code=$raw"
+    val link: String get() = "https://hyperspandan.github.io/AURA/together/#code=$raw"
 
     override fun equals(other: Any?) = other is RoomCode && other.raw == raw
     override fun hashCode() = raw.hashCode()
@@ -57,7 +57,7 @@ class RoomCode private constructor(val raw: String) {
             val uri = runCatching { java.net.URI(value) }.getOrNull()
             val candidate = when {
                 uri?.scheme.equals("aura", ignoreCase = true) && uri?.host == "together" -> uri.path.trim('/')
-                uri?.scheme == "https" && uri.host == "justshivv.github.io" && uri.path.trimEnd('/') == "/AURA/together" ->
+                uri?.scheme == "https" && (uri.host == "hyperspandan.github.io" || uri.host == "justshivv.github.io") && uri.path.trimEnd('/') == "/AURA/together" ->
                     uri.fragment?.takeIf { it.startsWith("code=") }?.removePrefix("code=") ?: return null
                 uri?.scheme != null -> return null
                 else -> value

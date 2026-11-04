@@ -13,7 +13,7 @@ import org.json.JSONObject
  */
 object CommunityAddons {
     const val API_BASE = "https://aura-usage.aura-music.workers.dev"
-    private const val CONFIG = "https://justshivv.github.io/AURA/usage-config.json"
+    private const val CONFIG = "https://hyperspandan.github.io/AURA/usage-config.json"
     /** The owner's server, and the Cloudflare Worker it took over from. */
     private val CATALOG_HOSTS = setOf("aura-usage.aura-music.workers.dev")
     private val mutex = Mutex()
