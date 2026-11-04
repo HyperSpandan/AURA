@@ -65,11 +65,11 @@ fun AmbientLights(
                 // Slower while paused, as if the room went quiet.
                 time.floatValue += dt * if (playing) 1f else 0.4f
                 bright.floatValue += ((if (playing) 1f else 0.6f) - bright.floatValue) * (dt * 1.5f).coerceAtMost(1f)
-                val level = if (playing) AudioLevels.at(System.nanoTime())?.let { it.bass * 0.7f + it.level * 0.3f } ?: 0f else 0f
-                peak = maxOf(level, peak * (1f - dt * 0.3f)).coerceAtLeast(0.02f)
+                val level = if (playing) AudioLevels.at(System.nanoTime())?.let { it.bass * 0.8f + it.level * 0.2f } ?: 0f else 0f
+                peak = maxOf(level, peak * (1f - dt * 0.35f)).coerceAtLeast(0.025f)
                 val target = (level / peak).coerceIn(0f, 1f)
-                // Heavily smoothed: the light breathes with the music, it doesn't flash.
-                swell.floatValue += (target - swell.floatValue) * (dt * if (target > swell.floatValue) 3f else 1.2f).coerceAtMost(1f)
+                // Enhanced beat reactivity: punchier attack, smooth organic decay
+                swell.floatValue += (target - swell.floatValue) * (dt * if (target > swell.floatValue) 6.5f else 2.2f).coerceAtMost(1f)
             }
         }
     }
@@ -90,15 +90,16 @@ fun AmbientLights(
         val w = size.width
         val h = size.height
         val t = time.floatValue
-        val lift = 1f + 0.15f * swell.floatValue
+        val s = swell.floatValue
+        val lift = 1f + 0.32f * s
         val light = bright.floatValue
-        // A pale wash rising from the bottom edge, the way light pools at the foot of a sky.
+        // A pale wash rising from the bottom edge, surging with the beat
         val wash = lerp(shown[1], Color.White, 0.35f)
         if (!field) drawRect(
             Brush.verticalGradient(
                 0f to wash.copy(alpha = 0f),
-                0.55f to wash.copy(alpha = 0.10f * light * lift),
-                1f to wash.copy(alpha = 0.38f * light * lift),
+                0.55f to wash.copy(alpha = (0.12f + 0.18f * s) * light * lift),
+                1f to wash.copy(alpha = (0.38f + 0.28f * s) * light * lift),
             ),
         )
         for (i in 0 until GLOWS) {
@@ -107,9 +108,9 @@ fun AmbientLights(
             val x = w * (path[0] + 0.24f * sin(t * path[2] + path[4]) + 0.1f * cos(t * path[3] * 1.7f + i))
             val rest = if (field) FIELD_Y[i] else path[1]
             val y = h * (rest + (if (field) 0.2f else 0.14f) * cos(t * path[3] + path[4]) + 0.05f * sin(t * path[2] * 1.3f + i * 2))
-            val r = w * (0.72f + 0.08f * sin(t * 0.21f + i)) * lift
+            val r = w * (0.75f + 0.12f * sin(t * 0.21f + i)) * lift
             val c = lerp(shown[i], Color.White, 0.15f)
-            val a = ((if (field) 0.34f else 0.42f) * light).coerceIn(0f, 1f)
+            val a = (((if (field) 0.36f else 0.44f) + 0.15f * s) * light).coerceIn(0f, 1f)
             // A falloff close to a bell curve, so no glow shows an edge.
             drawCircle(
                 Brush.radialGradient(
