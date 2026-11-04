@@ -156,7 +156,7 @@ async function loadAll() {
     (async () => {
       try {
         const releases = [];
-        for (let page = 1; ; page++) { const batch = await response(`https://api.github.com/repos/justshivv/Opentune/releases?per_page=100&page=${page}`, signal); releases.push(...batch.filter(release => !release.draft)); if (batch.length < 100) break; }
+        for (let page = 1; ; page++) { const batch = await response(`https://api.github.com/repos/HyperSpandan/AURA/releases?per_page=100&page=${page}`, signal); releases.push(...batch.filter(release => !release.draft)); if (batch.length < 100) break; }
         if (signal.aborted) return;
         const rows = releases.map(release => [release.tag_name, release.assets.filter(asset => asset.name.toLowerCase().endsWith('.apk')).reduce((total, asset) => total + asset.download_count, 0)]);
         $('all-downloads').textContent = fmt(rows.reduce((total, row) => total + row[1], 0));

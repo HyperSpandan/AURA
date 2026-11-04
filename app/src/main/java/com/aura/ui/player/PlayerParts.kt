@@ -175,6 +175,8 @@ fun PlayerBackdrop(
     canvasBehindText: Boolean = false,
     fullCoverVisible: Boolean = true,
     artworkMotion: com.aura.ui.components.ArtworkMotion? = null,
+    /** Apple's animated motion cover for the album, looped over the full-screen cover. */
+    coverVideo: com.aura.data.covers.AppleMotionArt.Motion? = null,
 ) {
     // On a TV the backdrop holds still: redrawn every frame across a big picture, it cost the remote its quickness.
     val animate = animate && !com.aura.ui.tv.LocalIsTv.current
@@ -248,7 +250,21 @@ fun PlayerBackdrop(
                         Modifier.matchParentSize(),
                         shape = RectangleShape,
                         imageModifier = Modifier.livingArt(playing, movingCover, artworkMotion),
-                    )
+                    ) {
+                        if (coverVideo != null) {
+                            val quality = com.aura.data.settings.AppSettings.ui.collectAsState().value.motionQuality
+                            androidx.compose.runtime.key(quality, coverVideo.url) {
+                                LoopingVideo(
+                                    coverVideo.url,
+                                    playing,
+                                    Modifier.matchParentSize(),
+                                    fallbackUrl = coverVideo.fallbackUrl,
+                                    maxPx = quality.maxPx,
+                                    maxBitrate = quality.maxBitrate,
+                                )
+                            }
+                        }
+                    }
                     Box(Modifier.matchParentSize().background(Brush.verticalGradient(0f to Color.Black.copy(alpha = 0.35f), 0.2f to Color.Transparent)))
                 }
                 }

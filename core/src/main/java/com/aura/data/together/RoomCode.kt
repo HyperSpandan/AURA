@@ -19,11 +19,11 @@ class RoomCode private constructor(val raw: String) {
     val pretty: String get() = raw.chunked(4).joinToString("-")
 
     /** What relays index the room's events by; reveals nothing about the code. */
-    val tag: String by lazy { sha256("opentune/together/tag/$raw").toHex().take(32) }
+    val tag: String by lazy { sha256("aura/together/tag/$raw").toHex().take(32) }
 
     /** AES-256 key for the room's messages, stretched so the code can't be guessed quickly from the tag. */
     private val key: SecretKeySpec by lazy {
-        val spec = PBEKeySpec(raw.toCharArray(), "opentune/together/key".toByteArray(), ITERATIONS, 256)
+        val spec = PBEKeySpec(raw.toCharArray(), "aura/together/key".toByteArray(), ITERATIONS, 256)
         SecretKeySpec(SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256").generateSecret(spec).encoded, "AES")
     }
 
@@ -35,7 +35,7 @@ class RoomCode private constructor(val raw: String) {
 
     /** A link that opens the room in AURA. */
     val appLink: String get() = "aura://together/$raw"
-    val link: String get() = "https://justshivv.github.io/Opentune/together/#code=$raw"
+    val link: String get() = "https://justshivv.github.io/AURA/together/#code=$raw"
 
     override fun equals(other: Any?) = other is RoomCode && other.raw == raw
     override fun hashCode() = raw.hashCode()
@@ -56,8 +56,8 @@ class RoomCode private constructor(val raw: String) {
             val value = text.trim()
             val uri = runCatching { java.net.URI(value) }.getOrNull()
             val candidate = when {
-                (uri?.scheme.equals("aura", ignoreCase = true) || uri?.scheme.equals("opentune", ignoreCase = true)) && uri?.host == "together" -> uri.path.trim('/')
-                uri?.scheme == "https" && uri.host == "justshivv.github.io" && uri.path.trimEnd('/') == "/Opentune/together" ->
+                uri?.scheme.equals("aura", ignoreCase = true) && uri?.host == "together" -> uri.path.trim('/')
+                uri?.scheme == "https" && uri.host == "justshivv.github.io" && uri.path.trimEnd('/') == "/AURA/together" ->
                     uri.fragment?.takeIf { it.startsWith("code=") }?.removePrefix("code=") ?: return null
                 uri?.scheme != null -> return null
                 else -> value
@@ -110,7 +110,7 @@ class RoomKey(internal val bytes: ByteArray, private val tag: String) {
         }
 
         private fun admitKey(shared: ByteArray) =
-            SecretKeySpec(MessageDigest.getInstance("SHA-256").digest("opentune/together/admit".toByteArray() + shared), "AES")
+            SecretKeySpec(MessageDigest.getInstance("SHA-256").digest("aura/together/admit".toByteArray() + shared), "AES")
     }
 }
 

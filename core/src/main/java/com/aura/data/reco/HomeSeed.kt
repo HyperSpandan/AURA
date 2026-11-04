@@ -63,6 +63,15 @@ object HomeSeed {
         return fromHistory + seeded
     }
 
+    fun findMix(id: String, seeds: List<Artist>): DailyMixes.Mix? {
+        if (!id.startsWith("seed:")) return null
+        val artistId = id.removePrefix("seed:")
+        val a = seeds.firstOrNull { it.browseId == artistId } ?: return null
+        val songs = ExploreFeed.weave(listOf(a.top, a.radio)).distinctBy { it.videoId }.take(MIX_MAX)
+        return if (songs.size < MIX_MIN) null
+        else DailyMixes.Mix(id, "${a.name} mix", "${a.name} and artists like them", songs)
+    }
+
     /** "A", "A and B", "A, B and C", "A, B and 2 more". */
     fun names(names: List<String>): String = when (names.size) {
         0 -> "these artists"

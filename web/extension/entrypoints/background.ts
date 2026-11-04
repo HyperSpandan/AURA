@@ -41,7 +41,7 @@ function allowed(sender: Browser.runtime.MessageSender): boolean {
   if (origin === OWN_ORIGIN && sender.id === browser.runtime.id) return true;
   if (!origin || !ALLOWED_ORIGINS.has(origin) || !sender.url) return false;
   const url = new URL(sender.url);
-  return origin !== 'https://justshivv.github.io' || url.pathname.startsWith('/Opentune/player/');
+  return origin !== 'https://justshivv.github.io' || url.pathname.startsWith('/AURA/player/') || url.pathname.startsWith('/Opentune/player/');
 }
 
 function failure(id: string, error: unknown): BridgeResponse {

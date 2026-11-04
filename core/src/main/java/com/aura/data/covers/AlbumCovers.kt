@@ -56,7 +56,7 @@ object AlbumCovers {
     /** Release kinds whose cover isn't the song's own album's. */
     private val SKIPPED_TYPES = setOf("Compilation", "DJ-mix", "Live", "Remix", "Mixtape/Street", "Demo")
     private const val LOCAL_ART = "content://media/external/audio/albumart"
-    private val USER_AGENT = "AURA/${BuildConfig.VERSION_NAME} ( https://github.com/justshivv/Opentune )"
+    private val USER_AGENT = "AURA/${BuildConfig.VERSION_NAME} ( https://github.com/HyperSpandan/AURA )"
 
     private val json = Json { ignoreUnknownKeys = true }
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -73,7 +73,8 @@ object AlbumCovers {
         // hide Apple's and Deezer's); every answer is looked up again.
         File(context.filesDir, "album-covers.json").delete()
         File(context.filesDir, "album-covers-v2.json").delete()
-        val f = File(context.filesDir, "album-covers-v3.json")
+        File(context.filesDir, "album-covers-v3.json").delete()
+        val f = File(context.filesDir, "album-covers-v4.json")
         file = f
         scope.launch {
             runCatching { json.decodeFromString(MapSerializer(String.serializer(), String.serializer()), f.readText()) }
@@ -130,7 +131,9 @@ object AlbumCovers {
 
     /** Apple's cover for the exact recording, as its catalogue lookup matched it. */
     private suspend fun apple(song: Song, durationMs: Long): String? =
-        com.aura.data.metadata.AppleTrackMetadataRepository.release(song, durationMs)?.artworkUrl
+        com.aura.data.metadata.AppleTrackMetadataRepository.coverArt(song, durationMs)
+            ?: com.aura.data.metadata.AppleTrackMetadataRepository.release(song, durationMs)?.artworkUrl
+            ?: com.aura.data.metadata.AppleTrackMetadataRepository.candidateReleases(song, durationMs).firstOrNull()?.artworkUrl
 
     /** Deezer's cover for the same title, artist and length (and album, when the song names one). */
     private suspend fun deezer(title: String, artist: String, album: String?, durationMs: Long): String? = withContext(Dispatchers.IO) {
@@ -158,8 +161,12 @@ object AlbumCovers {
                 kotlin.math.abs(seconds * 1000L - durationMs) <= 3_000
         }
         val sameAlbum = album?.takeIf { it.isNotBlank() }?.let { a -> matches.filter { normalize(it["album"].obj()["title"].string().orEmpty()) == normalize(a) } }
-        // With an album named, only that album's sleeve; without one, the top match's.
-        val pick = (if (album.isNullOrBlank()) matches else sameAlbum.orEmpty()).firstOrNull() ?: return null
+        val nonCompilation = matches.filter {
+            val albumTitle = it["album"].obj()["title"].string().orEmpty().lowercase(Locale.ROOT)
+            !albumTitle.contains("tribute") && !albumTitle.contains("karaoke") && !albumTitle.contains("instrumental")
+        }
+        val candidateList = if (nonCompilation.isNotEmpty()) nonCompilation else matches
+        val pick = (if (album.isNullOrBlank()) candidateList else sameAlbum.orEmpty()).firstOrNull() ?: return null
         return pick["album"].obj()["cover_xl"].string()?.takeIf { it.startsWith("https://") }
     }
 

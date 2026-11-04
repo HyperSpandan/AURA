@@ -26,8 +26,8 @@ data class AppConfig(
     val sections: List<RemoteSection> = RemoteConfigProtocol.sectionIds.map { RemoteSection(it) },
     val banners: List<RemoteBanner> = emptyList(), val playlists: List<RemotePlaylist> = emptyList(),
     val sources: List<RemoteSource>? = null,
-    val github: String = "https://github.com/justshivv/Opentune", val discord: String = "https://discord.gg/6udrCVh5n",
-    val web: String = "https://justshivv.github.io/Opentune/player/", val tv: String = "https://justshivv.github.io/Opentune/",
+    val github: String = "https://github.com/HyperSpandan/AURA", val discord: String = "https://discord.gg/6udrCVh5n",
+    val web: String = "https://justshivv.github.io/AURA/player/", val tv: String = "https://justshivv.github.io/AURA/",
     val timeoutMs: Long = 8000, val retries: Int = 2, val communityPrompts: Boolean = true,
 ) {
     fun title(id: String, fallback: String) = sections.firstOrNull { it.id == id }?.title?.ifBlank { fallback } ?: fallback
@@ -95,10 +95,13 @@ object RemoteConfigProtocol {
 
 /** Configuration is data, never executable code. Device verification has its own fixed trust policy. */
 object RemoteConfig {
-    const val ORIGIN = "https://addon-opentune.rethinknow.in"
+    const val ORIGIN = "https://aura-usage.aura-music.workers.dev"
     private val mutable = MutableStateFlow(AppConfig())
     val state = mutable.asStateFlow()
-    val current: AppConfig get() = mutable.value.takeIf { it.expiresAt > System.currentTimeMillis() } ?: AppConfig()
+    val current: AppConfig get() = mutable.value.takeIf {
+        it.expiresAt > System.currentTimeMillis() &&
+            it.sources?.none { s -> s.name.contains("opentune", ignoreCase = true) || s.url.contains("rethinknow", ignoreCase = true) } != false
+    } ?: AppConfig()
     private var prefs: android.content.SharedPreferences? = null
     private val mutex = Mutex()
     private var lastAttempt = 0L
@@ -106,7 +109,13 @@ object RemoteConfig {
     fun init(context: Context) {
         prefs = context.getSharedPreferences("remote_config", 0)
         val p = prefs!!
-        runCatching { RemoteConfigProtocol.verify(p.getString("envelope", "")!!, p.getString("key", "")!!, p.getLong("revision", 0)) }.getOrNull()?.let { mutable.value = it }
+        val envelope = p.getString("envelope", "") ?: ""
+        if (envelope.contains("opentune", ignoreCase = true) || envelope.contains("rethinknow", ignoreCase = true)) {
+            p.edit().clear().apply()
+            mutable.value = AppConfig()
+            return
+        }
+        runCatching { RemoteConfigProtocol.verify(envelope, p.getString("key", "")!!, p.getLong("revision", 0)) }.getOrNull()?.let { mutable.value = it }
     }
     private fun get(path: String): String = client.newCall(Request.Builder().url(ORIGIN + path).build()).execute().use { response ->
         require(response.isSuccessful)

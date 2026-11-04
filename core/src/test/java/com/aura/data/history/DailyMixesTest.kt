@@ -66,4 +66,24 @@ class DailyMixesTest {
     @Test fun nothingFromALittleListening() {
         assertEquals(emptyList<DailyMixes.Mix>(), DailyMixes.build(listOf(play("x", "A", at(1, 9))), at(2, 9), zone))
     }
+
+    @Test fun cacheAndFindOrBuildMixes() {
+        val h = history()
+        val mixes = DailyMixes.build(h, at(29, 9), zone)
+        assertTrue(mixes.isNotEmpty())
+        assertEquals(mixes.first().title, DailyMixes.findMix("artist0")?.title)
+        assertEquals(mixes.first().title, DailyMixes.findOrBuild("artist0", h)?.title)
+    }
+
+    @Test fun normalizeBrowseIdForInnertube() {
+        assertEquals("VLPL12345", com.aura.data.innertube.Innertube.normalizeBrowseId("PL12345"))
+        assertEquals("VLPL12345", com.aura.data.innertube.Innertube.normalizeBrowseId("VLPL12345"))
+        assertEquals("VLOLAK5uy_test", com.aura.data.innertube.Innertube.normalizeBrowseId("OLAK5uy_test"))
+        assertEquals("VLOLAK5uy_test", com.aura.data.innertube.Innertube.normalizeBrowseId("VLOLAK5uy_test"))
+        assertEquals("VLRDCLAK", com.aura.data.innertube.Innertube.normalizeBrowseId("RDCLAK"))
+        assertEquals("VLLM", com.aura.data.innertube.Innertube.normalizeBrowseId("LM"))
+        assertEquals("MPREb_album", com.aura.data.innertube.Innertube.normalizeBrowseId("MPREb_album"))
+        assertEquals("UC12345", com.aura.data.innertube.Innertube.normalizeBrowseId("UC12345"))
+        assertEquals("FEmusic_home", com.aura.data.innertube.Innertube.normalizeBrowseId("FEmusic_home"))
+    }
 }

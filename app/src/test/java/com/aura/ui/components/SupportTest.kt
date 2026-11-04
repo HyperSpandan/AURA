@@ -8,10 +8,10 @@ import org.junit.Test
 class SupportTest {
     @Test fun buildsAUpiLinkWithTheAmountFilledIn() {
         assertEquals(
-            "upi://pay?pa=whoosthis@axl&pn=AURA&am=99.00&cu=INR&tn=Support%20AURA",
+            "upi://pay?pa=auramusic@slc&pn=AURA&am=99.00&cu=INR&tn=Support%20AURA",
             Support.upiLink(99.0),
         )
-        assertEquals("upi://pay?pa=whoosthis@axl&pn=AURA&am=12.50&cu=INR&tn=Support%20AURA", Support.upiLink(12.5))
+        assertEquals("upi://pay?pa=auramusic@slc&pn=AURA&am=12.50&cu=INR&tn=Support%20AURA", Support.upiLink(12.5))
     }
 
     private fun days(value: Long) = java.util.concurrent.TimeUnit.DAYS.toMillis(value)

@@ -2,7 +2,7 @@
 
 This extends the existing GPL-3.0 BitChord React player and WXT browser extension at commit `edc1e6f36febf71a118e649411d2fc21b70ead45`. It reuses that implementation rather than rebuilding the web app. Upstream design/research notes are preserved under `docs/` with their original attribution.
 
-AURA changes include branding, GitHub/Discord community links, URL audio add-ons, measured direct-FLAC validation, background quality upgrades, a separate extension identity, and GitHub Pages routing under `/Opentune/player/`. Chrome and Firefox extensions use the same protocol. Google/Spotify session cookies remain inside the extension; the player receives metadata and request results.
+AURA changes include branding, GitHub/Discord community links, URL audio add-ons, measured direct-FLAC validation, background quality upgrades, a separate extension identity, and GitHub Pages routing under `/AURA/player/`. Chrome and Firefox extensions use the same protocol. Google/Spotify session cookies remain inside the extension; the player receives metadata and request results.
 
 ## Build
 
@@ -17,9 +17,9 @@ pnpm --filter @aura/extension icons
 pnpm build:site
 ```
 
-The test command downloads checksum-verified JSON fixtures from the pinned upstream commit if absent. There are no production API calls during those tests. `app/dist/` contains the site and packaged extensions under `downloads/`. The preview workflow uploads it as an artifact. GitHub Pages builds and publishes it at https://justshivv.github.io/Opentune/player/ on updates to main.
+The test command downloads checksum-verified JSON fixtures from the pinned upstream commit if absent. There are no production API calls during those tests. `app/dist/` contains the site and packaged extensions under `downloads/`. The preview workflow uploads it as an artifact. GitHub Pages builds and publishes it at https://justshivv.github.io/AURA/player/ on updates to main.
 
-For development run `pnpm dev` and `pnpm dev:ext`. The app uses a hash router so refreshing a nested route works on GitHub Pages. The production base is `/Opentune/player/`; set `AURA_WEB_BASE=/` for another root deployment and adjust extension allowed origins/paths deliberately.
+For development run `pnpm dev` and `pnpm dev:ext`. The app uses a hash router so refreshing a nested route works on GitHub Pages. The production base is `/AURA/player/`; set `AURA_WEB_BASE=/` for another root deployment and adjust extension allowed origins/paths deliberately.
 
 ## Audio add-ons
 

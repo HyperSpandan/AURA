@@ -54,9 +54,9 @@ class RoomTest {
         assertEquals(-200, clockOffset(10_000, 9_900, 10_200))
     }
 
-    /** Over real relays; run with OPENTUNE_LIVE_RELAYS=1. */
+    /** Over real relays; run with AURA_LIVE_RELAYS=1. */
     @Test fun aSealedMessageCrossesLiveRelays() = runBlocking {
-        assumeTrue(System.getenv("OPENTUNE_LIVE_RELAYS") == "1")
+        assumeTrue(System.getenv("AURA_LIVE_RELAYS") == "1")
         val code = RoomCode.generate()
         val filter = buildJsonObject {
             put("kinds", JsonArray(listOf(JsonPrimitive(Together.KIND))))

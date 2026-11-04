@@ -37,7 +37,7 @@ import java.util.concurrent.TimeUnit
 /** Ways to back the project: a star on GitHub, or money over UPI. */
 object Support {
     val REPO: String get() = com.aura.data.config.RemoteConfig.current.github
-    const val UPI_ID = "whoosthis@axl"
+    const val UPI_ID = "auramusic@slc"
     private const val PAYEE = "AURA"
     private const val NOTE = "Support AURA"
     /** Suggested amounts, in rupees. */
@@ -83,12 +83,12 @@ object Support {
         p.edit { putLong("lastDay", day); putInt("days", p.getInt("days", 0) + 1) }
     }
 
-    /** The invitation that's due now, if any; the star first when both are. */
+    /** The invitation that's due now, if any; the star only. */
     fun due(context: Context, now: Long = System.currentTimeMillis()): Invite? {
         if (!com.aura.data.config.RemoteConfig.current.communityPrompts) return null
         val p = prefs(context)
         val other = Invite.entries.maxOf { p.getLong(it.askedKey, 0) }
-        return Invite.entries.firstOrNull { invite ->
+        return Invite.entries.filter { it == Invite.STAR }.firstOrNull { invite ->
             val asked = p.getLong(invite.askedKey, 0)
             shouldAsk(p.getBoolean(invite.doneKey, false), p.getInt("days", 0), asked, now, invite.daysBefore) &&
                 (other == asked || now - other >= APART_MS)

@@ -45,7 +45,7 @@ class ReleasePresentationTest {
     }
 
     @Test fun smallScreenLargeTextKeepsUpdateActionVisible() {
-        val release = UpdateCheck.Release("0.4.16", "https://github.com/justshivv/Opentune/releases", "## Improvements\n" + (1..20).joinToString("\n") { "- Improvement $it with a readable description that wraps to fit your phone." }, UpdateCheck.Asset("app-arm64-v8a-release.apk", "https://example.com/app.apk", 30_000_000), null)
+        val release = UpdateCheck.Release("0.4.16", "https://github.com/HyperSpandan/AURA/releases", "## Improvements\n" + (1..20).joinToString("\n") { "- Improvement $it with a readable description that wraps to fit your phone." }, UpdateCheck.Asset("app-arm64-v8a-release.apk", "https://example.com/app.apk", 30_000_000), null)
         compose.setContent { MaterialTheme(lightColorScheme()) {
             CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, 1.4f)) {
                 UpdateDialog(release, onDismiss = {})

@@ -20,7 +20,7 @@ import org.junit.Test
 
 /**
  * Pictures of the window, drawn offscreen, for looking at a change without a
- * display. Off unless asked for: ./gradlew :desktop:test -Dopentune.shots=/some/folder
+ * display. Off unless asked for: ./gradlew :desktop:test -Daura.shots=/some/folder
  */
 class DesktopShots {
     private val folder = System.getProperty("aura.shots")?.takeIf { it.isNotBlank() }?.let(::File)

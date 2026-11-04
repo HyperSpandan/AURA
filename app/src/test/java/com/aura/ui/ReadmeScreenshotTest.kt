@@ -65,7 +65,7 @@ import org.robolectric.annotation.GraphicsMode
 /**
  * The README's screenshots: the app's own screens, drawn with real covers.
  * Covers aren't kept in the repository, so this runs only when
- * OPENTUNE_SHOT_ART points at a folder of them, and writes to
+ * AURA_SHOT_ART points at a folder of them, and writes to
  * build/screenshots/readme.
  */
 @RunWith(RobolectricTestRunner::class)

@@ -1,12 +1,12 @@
 # Private usage analytics with username and password
 
-Open https://justshivv.github.io/Opentune/usage/ to sign in. Login, analytics and sign-out all stay at this URL.
+Open https://justshivv.github.io/AURA/usage/ to sign in. Login, analytics and sign-out all stay at this URL.
 Google sign-in and Cloudflare Access are no longer used. Both the dashboard and read APIs
 require an owner session; anonymous app reporting continues to work.
 
 ## Set your username and password
 
-1. Open [GitHub repository secrets](https://github.com/justshivv/Opentune/settings/secrets/actions).
+1. Open [GitHub repository secrets](https://github.com/HyperSpandan/AURA/settings/secrets/actions).
 2. Add two **Repository secrets**:
    - `USAGE_ADMIN_USERNAME`: your chosen username (for example `owner`; 3–128 letters, numbers or ._@+- characters; email addresses work too).
    - `USAGE_ADMIN_PASSWORD`: a unique password or passphrase, 16–256 characters long.

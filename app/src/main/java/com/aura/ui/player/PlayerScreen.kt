@@ -728,6 +728,7 @@ fun PlayerLayout(
                     change = if (state.ui.reduceAnimation) com.aura.data.settings.CoverChange.FADE else state.ui.coverChange,
                     index = state.currentIndex,
                     songId = current.videoId,
+                    coverVideo = state.coverVideo,
                     canvas = state.canvasVideo,
                     titleTop = with(LocalDensity.current) { bigTitle?.top?.takeIf { it > 0f }?.toDp() },
                     // Lyrics and the queue are read over the whole page, so the Canvas frosts top to bottom.

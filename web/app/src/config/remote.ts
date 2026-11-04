@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { defaults, verifyConfig } from './protocol';
 
-const ORIGIN = 'https://addon-opentune.rethinknow.in';
+const ORIGIN = 'https://aura-usage.aura-music.workers.dev';
 const KEY = 'aura:remote-config';
 export const useRemoteConfig = create(() => ({ config: defaults() }));
 export const currentConfig = () => { const c = useRemoteConfig.getState().config; return c.expiresAt > Date.now() ? c : defaults(); };

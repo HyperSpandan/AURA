@@ -49,7 +49,7 @@ class TransportTest {
         assertTrue(Schnorr.verify(id, e.pubkey.hexToBytes(), e.sig.hexToBytes()))
         assertEquals(e, NostrEvent.parse(e.toJson()))
         // Saved so a live relay can be asked whether it accepts what this code signs.
-        File("build/nostr-event.json").writeText(NostrEvent.signed(sk, 21420, listOf(listOf("t", "opentune-test")), "aGk=").toJson().toString())
+        File("build/nostr-event.json").writeText(NostrEvent.signed(sk, 21420, listOf(listOf("t", "aura-test")), "aGk=").toJson().toString())
     }
 
     @Test fun roomCodesReadBackHoweverTheyAreTyped() {

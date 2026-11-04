@@ -1,5 +1,5 @@
 {
-  "name": "opentune-usage",
+  "name": "aura-usage",
   "main": "worker.mjs",
   "compatibility_date": "2026-10-09",
   "workers_dev": true,
@@ -10,8 +10,8 @@
   "vars": { "ALLOWED_ORIGINS": "https://justshivv.github.io" },
   "d1_databases": [{
     "binding": "DB",
-    "database_name": "opentune-usage",
-    "database_id": "0f977bd8-a4ec-46f9-985f-c1bc8bccac78"
+    "database_name": "aura-usage",
+    "database_id": "e35fa467-c2eb-47cd-b426-406c8d114181"
   }]
 }
 

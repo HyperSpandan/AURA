@@ -23,6 +23,7 @@ class AppleMotionArtTest {
         val motion = AppleMotionArt.motionOf(album(afterHours))!!
         assertEquals("https://mvod.itunes.apple.com/itunes-assets/HLSMusic126/square.m3u8", motion.url)
         assertEquals("https://mvod.itunes.apple.com/itunes-assets/HLSMusic126/tall.m3u8", motion.fallbackUrl)
+        assertEquals("https://mvod.itunes.apple.com/itunes-assets/HLSMusic126/tall.m3u8", motion.tallUrl)
     }
 
     @Test
@@ -30,6 +31,7 @@ class AppleMotionArtTest {
         val motion = AppleMotionArt.motionOf(album("""{"motionTallVideo3x4":{"video":"https://mvod.itunes.apple.com/t.m3u8"}}"""))!!
         assertEquals("https://mvod.itunes.apple.com/t.m3u8", motion.url)
         assertNull(motion.fallbackUrl)
+        assertEquals("https://mvod.itunes.apple.com/t.m3u8", motion.tallUrl)
     }
 
     @Test

@@ -127,12 +127,19 @@ object AddonResolver {
                     if (!permitted()) return@withTimeoutOrNull null
                     stage = "searching catalogue"
                     report("${addon.manifest.name}: $stage")
-                    val candidates = client.search("${song.title} ${song.artist}", manifest, tier)
+                    val cleaned = com.aura.data.lyrics.TrackNameCleaner.clean(song.title, song.artist)
+                    val primaryQuery = if (cleaned.title != song.title) "${cleaned.title} ${cleaned.artist}" else "${song.title} ${song.artist}"
+                    var candidates = client.search(primaryQuery, manifest, tier)
                         .filter { identity.matches(it.title, listOf(it.artist), it.album, it.durationMs) }
+                    if (candidates.isEmpty() && primaryQuery != "${song.title} ${song.artist}") {
+                        candidates = client.search("${song.title} ${song.artist}", manifest, tier)
+                            .filter { identity.matches(it.title, listOf(it.artist), it.album, it.durationMs) }
+                    }
                     if (candidates.isEmpty()) { report("${manifest.name}: no matching recording"); return@withTimeoutOrNull null }
                     // Its last link for this song broke: a new one, not the cached one.
                     val fresh = staleLinks.remove("${addon.key}:${song.videoId}")
-                    for (track in candidates.take(3)) {
+                    val sortedCandidates = candidates.sortedBy { kotlin.math.abs(it.durationMs - durationMs) }
+                    for (track in sortedCandidates.take(3)) {
                         if (!permitted()) return@withTimeoutOrNull null
                         stage = "resolving audio"
                         report("${addon.manifest.name}: $stage")
@@ -156,7 +163,7 @@ object AddonResolver {
                         stage = "checking audio header"
                         report("${addon.manifest.name}: $stage")
                         val checked = if (stream.transport == null && stream.codec == "flac") {
-                            val info = LosslessSource.flacInfo(probe(stream.url, 65536, true))
+                            val info = LosslessSource.flacInfo(probe(stream.url, 16384, true))
                             if (info == null || !LosslessSource.durationMatches(durationMs, info.durationMs)) {
                                 report("${manifest.name}: FLAC header or duration did not match"); continue
                             }
@@ -165,7 +172,7 @@ object AddonResolver {
                             val average = AddonHttp.lengthOf(stream.url)?.takeIf { info.durationMs > 0 }?.let { (it * 8 / info.durationMs).toInt() }
                             stream.copy(bits = info.bits, sampleRate = info.sampleRate, kbps = stream.kbps ?: average)
                         } else {
-                            val prefix = probe(stream.url, 65536, true)
+                            val prefix = probe(stream.url, 16384, true)
                             if (stream.transport != null) {
                                 val text = prefix.toString(Charsets.UTF_8)
                                 val valid = if (stream.transport == "hls") text.trimStart().startsWith("#EXTM3U") && !Regex("#EXT-X-(?:SESSION-)?KEY:.*METHOD=(?!NONE)").containsMatchIn(text)
@@ -273,7 +280,7 @@ object AddonResolver {
     /** How long an add-on whose file failed in playback is left for that song before it's asked again. */
     private const val FAILED_HOLD_MS = 20_000L
     /** Only a guard against a connection that never answers; a slow add-on is waited for. */
-    private const val ADDON_LIMIT_MS = 45_000L
+    private const val ADDON_LIMIT_MS = 15_000L
     /** Unknown quality never outranks measured CD quality; ties preserve source priority. */
     fun qualityScore(bits: Int?, rate: Int?): Long = (bits ?: 0).toLong() * (rate ?: 0)
 

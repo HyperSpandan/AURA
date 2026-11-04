@@ -1,5 +1,7 @@
 package com.aura.data.covers
 
+import com.aura.data.Http
+import okhttp3.Request
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -95,5 +97,12 @@ class ArtistSignaturesTest {
         assertNull(ArtistSignatures.parse("""{"signatures":[]}""", "A"))
         assertNull(ArtistSignatures.normalize("ftp://x"))
         assertEquals("https://proud-cascade-1654.de.deplexo.com", ArtistSignatures.normalize(" https://proud-cascade-1654.de.deplexo.com/ "))
+    }
+
+    @Test fun testArtistsLookup() = kotlinx.coroutines.runBlocking {
+        for (artist in listOf("Arijit Singh", "Diljit Dosanjh", "Karan Aujla", "Kanye West", "Kendrick Lamar", "Taylor Swift", "The Weeknd")) {
+            val s = ArtistSignatures.signatureFor(artist, ArtistSignatures.DEFAULT_API)
+            println("LOOKUP: $artist -> $s")
+        }
     }
 }

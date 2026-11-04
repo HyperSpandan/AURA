@@ -11,7 +11,7 @@ import org.junit.Test
 /**
  * Home, a stream and the relay, against YouTube itself.
  * Off unless asked for, since it needs the network:
- * ./gradlew :desktop:test -Dopentune.live=true
+ * ./gradlew :desktop:test -Daura.live=true
  */
 class LiveCheck {
     @Test fun aSongStreamsThroughTheRelay() = runBlocking {

@@ -6,7 +6,7 @@
  */
 export type Invitation = 'star' | 'discord';
 
-export const GITHUB_URL = 'https://github.com/justshivv/Opentune';
+export const GITHUB_URL = 'https://github.com/HyperSpandan/AURA';
 export const DISCORD_URL = 'https://discord.gg/6udrCVh5n';
 
 const KEY = 'aura:invitations';

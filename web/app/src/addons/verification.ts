@@ -1,4 +1,4 @@
-export const OFFICIAL_ADDON = 'https://addon-opentune.rethinknow.in';
+export const OFFICIAL_ADDON = 'https://aura-lossless.aura-music.workers.dev';
 type Session = { key: CryptoKey; session: string; expires: number; offset: number };
 export type Pairing = { id: string; poll: string; code: string; link: string; expires: number; key: CryptoKey };
 const bytes = (s: string) => new TextEncoder().encode(s);

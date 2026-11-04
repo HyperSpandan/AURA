@@ -17,6 +17,27 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.ui.text.style.TextAlign
+import kotlin.math.absoluteValue
+import com.aura.ui.components.CardMenu
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.border
+import androidx.compose.ui.zIndex
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Album
+import com.aura.data.model.HEADER_ART_PX
+import com.aura.ui.components.menuAnchor
+import com.aura.ui.components.menuClickable
+import com.aura.ui.components.MenuAnchor
+import com.aura.ui.components.rememberHaptics
+import com.aura.ui.components.CardPreview
+import com.aura.ui.components.SongContextMenu
+import com.aura.ui.components.CollectionContextMenu
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -102,6 +123,7 @@ fun HomeScreen(
     covered: Boolean = false,
     /** Opens every Speed dial pick on a page of its own. */
     onOpenSpeedDial: () -> Unit = {},
+    onMoodClick: ((com.aura.data.model.MoodGenre) -> Unit)? = null,
 ) {
     val platform = if (com.aura.ui.tv.LocalIsTv.current) "tv" else "android"
     val runtime by com.aura.data.config.RemoteConfig.state.collectAsState()
@@ -183,6 +205,31 @@ fun HomeScreen(
             val songs = hidden.songs(m.songs.map { it.toSong() })
             if (songs.size < 6) null else com.aura.data.history.DailyMixes.Mix("spotify:${m.id}", m.name, m.readableDescription, songs)
         }
+    }
+    val topPicks = remember(speedDial, feed, mixes, spotifyMixes, ui.hideCommunityPlaylists) {
+        val items = mutableListOf<ShelfItem>()
+        val hideCommunity = ui.hideCommunityPlaylists
+        val dialAlbums = speedDial.filter { it.browseId != null && (!hideCommunity || !isCommunityItem(it)) }
+        val cardAlbums = feed.cards
+            .let { if (hideCommunity) it.filterNot(::isCommunityShelf) else it }
+            .flatMap { it.items }
+            .filter { it.browseId != null && (!hideCommunity || !isCommunityItem(it)) }
+        val mixItems = mixes.map { m ->
+            ShelfItem(m.title, m.subtitle, m.songs.firstOrNull()?.thumbnailUrl, null, m.id)
+        }
+        val spotifyItems = spotifyMixes.map { m ->
+            ShelfItem(m.title, m.subtitle, m.songs.firstOrNull()?.thumbnailUrl, null, m.id)
+        }
+
+        val maxLen = maxOf(dialAlbums.size, cardAlbums.size, mixItems.size, spotifyItems.size)
+        for (i in 0 until maxLen) {
+            dialAlbums.getOrNull(i)?.let { if (!items.any { x -> x.browseId == it.browseId }) items.add(it) }
+            cardAlbums.getOrNull(i)?.let { if (!items.any { x -> x.browseId == it.browseId }) items.add(it) }
+            mixItems.getOrNull(i)?.let { if (!items.any { x -> x.browseId == it.browseId }) items.add(it) }
+            spotifyItems.getOrNull(i)?.let { if (!items.any { x -> x.browseId == it.browseId }) items.add(it) }
+        }
+
+        items.take(12)
     }
     val signedIn by AccountStore.signedIn.collectAsState()
     val account by AccountStore.account.collectAsState()
@@ -286,6 +333,15 @@ fun HomeScreen(
                     }
                 }
             }
+            if (topPicks.isNotEmpty()) {
+                item(key = "top-picks") {
+                    TopPicksSection(
+                        items = topPicks,
+                        onItemClick = onItemClick,
+                        onOpenAll = onOpenSpeedDial,
+                    )
+                }
+            }
             item(key = "festival") { FestivalCard() }
             itemsIndexed(runtime.banners.filter { platform in it.platforms }, key = { _, banner -> "remote-banner:${banner.id}" }) { _, banner ->
                 RemoteBannerCard(banner)
@@ -318,7 +374,7 @@ fun HomeScreen(
                     MixesShelf(spotifyMixes, actions, "Spotify's mixes for you, from your likes and listening there",
                         title = runtime.title(section.id, "Made for you on Spotify"))
                 }
-                "featured-playlists" -> if (runtime.playlists.isNotEmpty()) item(key = "featured-playlists") {
+                "featured-playlists" -> if (!ui.hideCommunityPlaylists && runtime.playlists.isNotEmpty()) item(key = "featured-playlists") {
                     HomeShelfView(HomeShelf(runtime.title(section.id, "From the community"), runtime.playlists.map {
                         ShelfItem(it.title, "AURA picks", it.artwork, null, it.browseId)
                     }), onItemClick, songRows = false, covers = covers, coverKey = "featured-playlists")
@@ -412,12 +468,48 @@ internal data class HomeSections(val quickPicks: HomeShelf?, val cards: List<Hom
 private const val SPEED_DIAL_MIN = 3
 
 /**
+ * Detects whether a shelf is a community-created playlist shelf (e.g. "Trending community playlists",
+ * "From the community", "Community playlists").
+ */
+internal fun isCommunityShelf(shelf: HomeShelf): Boolean {
+    val title = shelf.title.lowercase()
+    return title.contains("community")
+}
+
+/**
+ * Detects whether an item is a user-created / community playlist rather than an official studio release or mix.
+ * User playlists typically have browseId starting with "VLPL" or "PL", "Playlist • [User]" subtitles,
+ * and unaesthetic multi-split thumbnails.
+ * Official albums (MPRE, OLAK, VLOLAK) and official mixes (RD, VLRD, seed:, spotify:) are preserved.
+ */
+internal fun isCommunityItem(item: ShelfItem): Boolean {
+    val id = item.browseId ?: return false
+    // Official albums on YouTube Music
+    if (id.startsWith("MPRE") || id.startsWith("OLAK") || id.startsWith("VLOLAK")) return false
+    // Official mixes and daily client mixes
+    if (id.startsWith("RD") || id.startsWith("VLRD") || id.startsWith("seed:") || id.startsWith("spotify:")) return false
+    if (id in setOf("artist0", "artist1", "artist2", "time", "repeat", "rediscover")) return false
+    // User playlists in YouTube Music always start with VLPL or PL
+    if (id.startsWith("VLPL") || id.startsWith("PL")) return true
+    // Subtitle indicates a user-generated playlist (e.g. "Playlist • ChannelName")
+    val sub = item.subtitle.lowercase()
+    if (sub.startsWith("playlist") && !sub.contains("album") && !sub.contains("ep") && !sub.contains("single")) {
+        return true
+    }
+    if (sub.contains("community")) return true
+    if (item.title.lowercase().contains("community playlist")) return true
+    return false
+}
+
+/**
  * One track list, then collections and varied card shelves. Keep every recommendation.
  * The picks are the followed artists' seed while there's little history (it's
  * only made then), else the radio off the last song, else the first songs shelf.
  */
 internal fun arrangeHomeShelves(shelves: List<HomeShelf>): HomeSections {
-    val all = shelves.filter { it.items.isNotEmpty() }
+    val hideCommunity = com.aura.data.settings.AppSettings.ui.value.hideCommunityPlaylists
+    val filteredShelves = if (hideCommunity) shelves.filterNot(::isCommunityShelf) else shelves
+    val all = filteredShelves.filter { it.items.isNotEmpty() }
     // YouTube Music's Speed dial has its own place at the top, not among the cards.
     // Known by its title in English, or in any language by the account's photo by its heading.
     fun isDial(shelf: HomeShelf) = com.aura.data.history.SpeedDial.isSpeedDial(shelf.title) || shelf.personal
@@ -616,4 +708,217 @@ private fun LocalActivityLifecycle(): androidx.lifecycle.Lifecycle? {
     var c: android.content.Context? = androidx.compose.ui.platform.LocalContext.current
     while (c is android.content.ContextWrapper && c !is androidx.lifecycle.LifecycleOwner) c = c.baseContext
     return (c as? androidx.lifecycle.LifecycleOwner)?.lifecycle
+}
+
+/**
+ * "Top Picks for You" 3D Carousel section:
+ * The current card is scaled up, flat to the viewer, with deep elevation shadow.
+ * Adjacent cards scale down, rotate slightly inwards along the Y-axis (Cover Flow 3D effect),
+ * and sit behind the active card in z-space.
+ */
+@Composable
+private fun TopPicksSection(
+    items: List<ShelfItem>,
+    onItemClick: (ShelfItem) -> Unit,
+    onOpenAll: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    if (items.isEmpty()) return
+
+    Column(modifier.fillMaxWidth().padding(top = 10.dp, bottom = 12.dp)) {
+        // Section Header: "Top Picks for You >"
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .clickable(onClickLabel = "Open all top picks", onClick = onOpenAll)
+                .padding(horizontal = 20.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = com.aura.ui.theme.tr("Top Picks for You"),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Spacer(Modifier.width(4.dp))
+                Icon(
+                    imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                    contentDescription = "Open all",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(24.dp),
+                )
+            }
+        }
+
+        // 3D Carousel Pager
+        val pagerState = rememberPagerState(initialPage = 0, pageCount = { items.size })
+        val density = androidx.compose.ui.platform.LocalDensity.current
+
+        BoxWithConstraints(Modifier.fillMaxWidth().padding(top = 8.dp)) {
+            val screenWidth = maxWidth
+            // Card dimensions: ~72% screen width, capped at 290.dp
+            val cardWidth = minOf(285.dp, screenWidth * 0.72f)
+            val cardHeight = cardWidth * 1.34f
+            val horizontalPadding = ((screenWidth - cardWidth) / 2).coerceAtLeast(20.dp)
+
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(cardHeight + 28.dp),
+                contentPadding = PaddingValues(horizontal = horizontalPadding),
+                pageSpacing = 16.dp,
+                verticalAlignment = Alignment.CenterVertically,
+            ) { page ->
+                val item = items[page]
+                val pageOffset = (pagerState.currentPage - page) + pagerState.currentPageOffsetFraction
+                val absOffset = pageOffset.absoluteValue.coerceIn(0f, 2f)
+
+                // 3D transformations:
+                val scale = 1f - (absOffset.coerceAtMost(1f) * 0.14f)
+                val alpha = 1f - (absOffset.coerceAtMost(1f) * 0.35f)
+                val rotationY = (pageOffset.coerceIn(-1.5f, 1.5f) * -16f)
+                val zIndex = (10f - absOffset).coerceAtLeast(0f)
+
+                Box(
+                    modifier = Modifier
+                        .width(cardWidth)
+                        .height(cardHeight)
+                        .zIndex(zIndex)
+                        .graphicsLayer {
+                            this.scaleX = scale
+                            this.scaleY = scale
+                            this.rotationY = rotationY
+                            this.cameraDistance = 12f * density.density
+                            this.alpha = alpha
+                            val shadowRadius = (20.dp * (1f - absOffset.coerceAtMost(1f))).toPx()
+                            this.shadowElevation = shadowRadius
+                            this.shape = RoundedCornerShape(26.dp)
+                            this.clip = false
+                        },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    TopPickCard(
+                        item = item,
+                        onClick = { onItemClick(item) },
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Single card for the 3D "Top Picks for You" carousel.
+ * Matches the reference image: full-bleed artwork with rounded corners,
+ * and a frosted translucent glass container at the bottom with centered title and artist.
+ */
+@Composable
+private fun TopPickCard(
+    item: ShelfItem,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val menu = item.cardMenu()
+    val shape = RoundedCornerShape(26.dp)
+    val innerShape = RoundedCornerShape(20.dp)
+    val anchor = remember { MenuAnchor() }
+    val view = androidx.compose.ui.platform.LocalView.current
+    val haptics = rememberHaptics()
+    var contextOpen by remember { mutableStateOf(false) }
+    val at = anchor.rect
+    if (contextOpen && at != null && menu != null) {
+        val preview: @Composable () -> Unit = {
+            CardPreview(item.title, item.subtitle, item.thumbnailUrl, round = false)
+        }
+        when (menu) {
+            is CardMenu.ForSong -> SongContextMenu(menu.song, at, onDismiss = { contextOpen = false }, preview = preview)
+            is CardMenu.ForList -> CollectionContextMenu(menu.list, at, onDismiss = { contextOpen = false }, preview = preview)
+        }
+    }
+
+    Box(
+        modifier = modifier
+            .menuAnchor(anchor, view)
+            .clip(shape)
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+            .border(1.dp, Color.White.copy(alpha = 0.15f), shape)
+            .then(
+                if (menu == null) Modifier.clickable(onClick = onClick)
+                else Modifier.menuClickable(onClick = onClick, onLongClick = { haptics.press(); contextOpen = true }),
+            ),
+    ) {
+        Artwork(
+            item.thumbnailUrl.artworkAt(HEADER_ART_PX),
+            Modifier.fillMaxSize(),
+            shape = androidx.compose.ui.graphics.RectangleShape,
+            placeholder = Icons.Filled.Album,
+        )
+
+        // Bottom gradient shade
+        Box(
+            Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        0f to Color.Transparent,
+                        0.40f to Color.Transparent,
+                        0.72f to Color.Black.copy(alpha = 0.40f),
+                        1f to Color.Black.copy(alpha = 0.72f),
+                    ),
+                ),
+        )
+
+        // Frosted glass bottom container (matching reference image)
+        Box(
+            Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .padding(14.dp)
+                .clip(innerShape)
+                .background(
+                    Brush.verticalGradient(
+                        0f to Color.Black.copy(alpha = 0.52f),
+                        1f to Color.Black.copy(alpha = 0.82f),
+                    ),
+                )
+                .border(0.75.dp, Color.White.copy(alpha = 0.18f), innerShape)
+                .padding(horizontal = 14.dp, vertical = 12.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = item.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.Center,
+                )
+                val cleanSubtitle = item.subtitle
+                    .removePrefix("Album • ")
+                    .removePrefix("Single • ")
+                    .removePrefix("EP • ")
+                    .removePrefix("album • ")
+                    .removePrefix("single • ")
+                    .removePrefix("ep • ")
+                    .trim()
+                if (cleanSubtitle.isNotBlank()) {
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = cleanSubtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.White.copy(alpha = 0.82f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        textAlign = TextAlign.Center,
+                    )
+                }
+            }
+        }
+    }
 }

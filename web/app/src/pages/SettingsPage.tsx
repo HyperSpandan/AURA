@@ -329,7 +329,7 @@ export default function SettingsPage() {
             <section className={settingsUi.group}>
               <ExternalRow href={config.androidAppUrl} icon={<Glyph Icon={Smartphone} color="#2fa84f" />} title="AURA for Android" value="Download" />
               <ExternalRow href={links.tv} icon={<Glyph Icon={Tv} color="#3478f6" />} title="AURA on TV" />
-              <ExternalRow href="https://justshivv.github.io/Opentune/addons/" icon={<Glyph Icon={Wrench} color="#e5483a" />} title="Build an add-on" />
+              <ExternalRow href="https://justshivv.github.io/AURA/addons/" icon={<Glyph Icon={Wrench} color="#e5483a" />} title="Build an add-on" />
               <ExternalRow href={links.github} icon={<Glyph Icon={SiGithub} color="#24292f" />} title="Source code" value="GitHub" />
               <ExternalRow href={links.discord} icon={<Glyph Icon={SiDiscord} color="#5865f2" />} title="Community" value="Discord" />
             </section>

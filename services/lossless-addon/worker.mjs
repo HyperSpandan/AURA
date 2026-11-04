@@ -9,7 +9,7 @@ const ARCHIVE = 'https://archive.org';
 const NETEASE = 'https://music.163.com';
 const METING = 'https://api.qijieya.cn/meting/';
 const MUSOPEN_ITEM = 'musopen-dvd-in-lossless-flac-format';
-const UA = 'AURA-Lossless-Addon/0.1 (+https://github.com/justshivv/Opentune)';
+const UA = 'AURA-Lossless-Addon/0.1 (+https://github.com/HyperSpandan/AURA)';
 const MAX_JSON = 2 * 1024 * 1024;
 const MAX_HEADER = 65536;
 const encoder = new TextEncoder();
@@ -23,13 +23,13 @@ class SourceError extends Error {
   constructor(message, status = 502, retryAfter = null) { super(message); this.status = status; this.retryAfter = retryAfter; }
 }
 const sources = {
-  netease: { id: 'org.opentune.netease', name: 'AURA · NetEase',
+  netease: { id: 'com.aura.netease', name: 'AURA · NetEase',
     description: 'NetEase catalogue with public Meting audio resolution. Native FLAC is checked before playback; availability and original resolution vary by recording.' },
-  monochrome: { id: 'org.opentune.monochrome', name: 'AURA · Monochrome',
+  monochrome: { id: 'com.aura.monochrome', name: 'AURA · Monochrome',
     description: 'Independent adapter for Monochrome’s public Track Streamer. Availability and quotas depend on that service.' },
-  archive: { id: 'org.opentune.archive', name: 'AURA · Internet Archive',
+  archive: { id: 'com.aura.archive', name: 'AURA · Internet Archive',
     description: 'FLAC recordings from Internet Archive. Catalogue includes live recordings and independent releases; it is not a substitute for a studio catalogue.' },
-  musopen: { id: 'org.opentune.musopen', name: 'AURA · Musopen Classical',
+  musopen: { id: 'com.aura.musopen', name: 'AURA · Musopen Classical',
     description: 'Musopen Kickstarter collection on Internet Archive. Original classical FLAC recordings; collection credits are preserved when performer metadata is absent. Not a popular-music catalogue or a guaranteed hi-res tier.' },
 };
 function manifest(source) {
@@ -118,7 +118,7 @@ export function createAddon({ fetcher = fetch, now = Date.now } = {}) {
     const host = new URL(url).host;
     const wait = Math.ceil(((cooldown.get(host) || 0) - now()) / 1000);
     if (wait > 0) throw new SourceError('Source rate limit: please retry later', 429, wait);
-    const deadline = AbortSignal.timeout(6000);
+    const deadline = AbortSignal.timeout(4000);
     try {
       const options = { redirect: neteaseLink || neteaseMedia ? 'manual' : 'follow', signal: signal ? AbortSignal.any([signal, deadline]) : deadline,
         headers: { 'User-Agent': UA, Accept: media ? 'audio/flac, application/octet-stream' : 'application/json',

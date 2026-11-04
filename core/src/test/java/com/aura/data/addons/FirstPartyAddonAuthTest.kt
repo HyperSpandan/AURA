@@ -28,8 +28,7 @@ class FirstPartyAddonAuthTest {
             assertTrue(origin, FirstPartyAddonAuth.protects("$origin/netease/search?q=hello".toHttpUrl()))
             assertFalse(origin, FirstPartyAddonAuth.protects("$origin/netease/manifest.json".toHttpUrl()))
         }
-        assertTrue(FirstPartyAddonAuth.protects("https://addon-opentune.rethinknow.in/archive/stream/x".toHttpUrl()))
-        assertTrue(FirstPartyAddonAuth.protects("https://opentune-lossless-addon.create-a-new-site-with-sites.workers.dev/archive/stream/x".toHttpUrl()))
+        assertTrue(FirstPartyAddonAuth.protects("https://aura-lossless.aura-music.workers.dev/archive/stream/x".toHttpUrl()))
         assertFalse(FirstPartyAddonAuth.protects("https://other.rethinknow.in/archive/stream/x".toHttpUrl()))
     }
 }

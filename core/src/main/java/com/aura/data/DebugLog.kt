@@ -21,26 +21,26 @@ object DebugLog {
 
     fun i(tag: String, message: String) {
         AppLog.add('I', tag, message)
-        if (BuildConfig.DEBUG) Log.i(tag, message)
+        Log.i(tag, message)
     }
 
     fun w(tag: String, message: String) {
         AppLog.add('W', tag, message)
-        if (BuildConfig.DEBUG) Log.w(tag, message)
+        Log.w(tag, message)
     }
 
     fun w(tag: String, message: String, error: Throwable) {
         AppLog.add('W', tag, message, error)
-        if (BuildConfig.DEBUG) Log.w(tag, message, error)
+        Log.w(tag, message, error)
     }
 
     fun e(tag: String, message: String) {
         AppLog.add('E', tag, message)
-        if (BuildConfig.DEBUG) Log.e(tag, message)
+        Log.e(tag, message)
     }
 
     fun e(tag: String, message: String, error: Throwable) {
         AppLog.add('E', tag, message, error)
-        if (BuildConfig.DEBUG) Log.e(tag, message, error)
+        Log.e(tag, message, error)
     }
 }

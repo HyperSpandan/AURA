@@ -65,7 +65,7 @@ export class RoomCode {
   }
   /** The website's invite page, which opens the room in the app or here. */
   get link(): string {
-    return `https://justshivv.github.io/Opentune/together/#code=${this.raw}`;
+    return `https://justshivv.github.io/AURA/together/#code=${this.raw}`;
   }
 
   seal(plain: string) {
@@ -77,10 +77,10 @@ export class RoomCode {
 
   /** Derives the tag and the lobby key: PBKDF2, stretched so the code can't be guessed quickly from the tag. */
   static async of(raw: string): Promise<RoomCode> {
-    const tag = toHex(await sha256(`opentune/together/tag/${raw}`)).slice(0, 32);
+    const tag = toHex(await sha256(`aura/together/tag/${raw}`)).slice(0, 32);
     const base = await crypto.subtle.importKey('raw', enc.encode(raw), 'PBKDF2', false, ['deriveBits']);
     const bits = await crypto.subtle.deriveBits(
-      { name: 'PBKDF2', hash: 'SHA-256', salt: enc.encode('opentune/together/key'), iterations: ITERATIONS },
+      { name: 'PBKDF2', hash: 'SHA-256', salt: enc.encode('aura/together/key'), iterations: ITERATIONS },
       base,
       256,
     );
@@ -96,7 +96,7 @@ export class RoomCode {
   static parse(text: string | null | undefined): string | null {
     if (!text) return null;
     let value = text.trim();
-    const link = value.match(/^(?:https:\/\/justshivv\.github\.io\/Opentune\/together\/?#code=|opentune:\/\/together\/)([A-Za-z0-9-]+)/i);
+    const link = value.match(/^(?:https:\/\/justshivv\.github\.io\/AURA\/together\/?#code=|aura:\/\/together\/)([A-Za-z0-9-]+)/i);
     if (link) value = link[1]!;
     else if (/^[a-z]+:\/\//i.test(value)) return null;
     if (!/^[A-Za-z0-9\s-]+$/.test(value)) return null;
@@ -148,7 +148,7 @@ export class RoomKey {
 }
 
 async function admitKey(shared: Uint8Array): Promise<CryptoKey> {
-  const label = enc.encode('opentune/together/admit');
+  const label = enc.encode('aura/together/admit');
   const both = new Uint8Array(label.length + shared.length);
   both.set(label);
   both.set(shared, label.length);

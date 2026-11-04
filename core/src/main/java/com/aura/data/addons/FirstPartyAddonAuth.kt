@@ -32,12 +32,12 @@ import java.util.concurrent.TimeUnit
 object FirstPartyAddonAuth {
     class VerificationFailure(message: String, cause: Throwable? = null) : IOException(message, cause)
     /** The add-on on AURA's own server (services/lossless-addon/vps); browsers pair through it. */
-    const val ORIGIN = "https://addon-opentune.rethinknow.in"
+    const val ORIGIN = "https://aura-lossless.aura-music.workers.dev"
     /** The same add-on as a Cloudflare Worker, where it ran first. */
-    const val WORKER_ORIGIN = "https://opentune-lossless-addon.create-a-new-site-with-sites.workers.dev"
-    val ORIGINS = listOf(ORIGIN, WORKER_ORIGIN)
+    const val WORKER_ORIGIN = "https://aura-lossless.aura-music.workers.dev"
+    val ORIGINS = listOf(ORIGIN, WORKER_ORIGIN).distinct()
     private val HOSTS = ORIGINS.map { it.removePrefix("https://") }.toSet()
-    private const val ALIAS = "opentune.addon.attestation.v1"
+    private const val ALIAS = "aura.addon.attestation.v1"
     /** The Worker keeps the key and session made before there were two servers. */
     private fun aliasFor(origin: String) = if (origin == WORKER_ORIGIN) ALIAS else "$ALIAS.${origin.removePrefix("https://")}"
     private val mutex = Mutex()

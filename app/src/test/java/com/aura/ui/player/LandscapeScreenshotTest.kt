@@ -88,7 +88,7 @@ class LandscapeScreenshotTest {
     }
 }
 
-/** A cover to draw with: a real one from OPENTUNE_SHOT_ART when set, else a red study in light and shadow. */
+/** A cover to draw with: a real one from AURA_SHOT_ART when set, else a red study in light and shadow. */
 internal fun coverArt(): Bitmap {
     (System.getenv("AURA_SHOT_ART") ?: System.getenv("OPENTUNE_SHOT_ART"))?.let { File(it, "00hd.jpg") }?.takeIf { it.isFile }?.let { f ->
         android.graphics.BitmapFactory.decodeFile(f.path)?.let { return it }

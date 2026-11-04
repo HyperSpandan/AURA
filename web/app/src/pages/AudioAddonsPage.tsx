@@ -95,7 +95,7 @@ export default function AudioAddonsPage() {
       </form>
       <p className={settingsUi.footer}>The web player plays direct FLAC from servers that allow it. Sources that need a verified lossless output are skipped, because a browser can’t confirm that route, and segmented add-on playback is in the Android app only.</p>
       <p className="mx-4 mt-4">
-        <a href="https://justshivv.github.io/Opentune/addons/" target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 type-body-emphasized text-key hover:underline">
+        <a href="https://justshivv.github.io/AURA/addons/" target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 type-body-emphasized text-key hover:underline">
           Build an AURA add-on <ArrowUpRight size={14} />
         </a>
       </p>

@@ -59,7 +59,7 @@ object MusicLinks {
 
     private suspend fun get(url: String): String? = runInterruptible(Dispatchers.IO) {
         runCatching {
-            Http.client.newCall(Request.Builder().url(url).header("User-Agent", "AURA (+https://github.com/justshivv/Opentune)").build()).execute()
+            Http.client.newCall(Request.Builder().url(url).header("User-Agent", "AURA (+https://github.com/HyperSpandan/AURA)").build()).execute()
                 .use { if (it.isSuccessful) it.body?.string() else null }
         }.getOrNull()
     }

@@ -126,8 +126,16 @@ class ChromeScrollConnection(private val thresholdPx: Float) : NestedScrollConne
     /** Pages holding the dock out while they're shown; see [KeepChromeOut]. */
     internal var holds = 0
 
+    /** When true (e.g. on Explore or Album pages), scrolling up won't auto-expand the dock and cover options. */
+    var lockCapsule by mutableStateOf(false)
+
     fun expand() {
         inline = false
+        accumulated = 0f
+    }
+
+    fun fold() {
+        inline = true
         accumulated = 0f
     }
 
@@ -140,7 +148,7 @@ class ChromeScrollConnection(private val thresholdPx: Float) : NestedScrollConne
         if (accumulated <= -thresholdPx && !inline) {
             inline = true
             accumulated = 0f
-        } else if (accumulated >= thresholdPx && inline) {
+        } else if (accumulated >= thresholdPx && inline && !lockCapsule) {
             inline = false
             accumulated = 0f
         }

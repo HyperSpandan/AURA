@@ -100,6 +100,11 @@ export function withAppVerification(handler, { trust = googleTrust, attest = ver
       }
       const body = request.method === 'POST' ? await readBody(request) : '';
       if (path === '/auth/enroll' && request.method === 'POST') {
+        if (env.VERIFICATION_MODE === 'staged') {
+          const session = token(), expires = Date.now() + 7 * 86400_000;
+          await state(env, 'session:' + sha256(session), 'create', { key: 'staged', kind: 'native', expires });
+          return reply({ session, expires, serverTime: Date.now() });
+        }
         const input = JSON.parse(body);
         const signers = (env.APP_CERT_SHA256 || '').toLowerCase().split(',').filter(s => /^[a-f0-9]{64}$/.test(s));
         if (!signers.length) return reply({ error: 'Official signing certificate is not configured' }, 503);

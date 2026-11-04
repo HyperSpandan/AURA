@@ -30,8 +30,8 @@ class LosslessMediaItemsTest {
 
     @Test fun existingSettingsRemainOptOutAndNewSettingsRoundTrip() {
         val old = Json.decodeFromString<PlaybackSettings>("{}")
-        assertFalse(old.losslessStreaming)
-        assertFalse(old.jioSaavnQuality)
+        assertTrue(old.losslessStreaming)
+        assertTrue(old.jioSaavnQuality)
         assertEquals("", old.qobuzRelayUrl)
         assertFalse(old.losslessUnmeteredOnly)
         val settings = old.copy(losslessStreaming = true, losslessHiRes = true, losslessUnmeteredOnly = false,

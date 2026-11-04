@@ -31,6 +31,26 @@ object DailyMixes {
     /** Plays this close together count as one sitting. */
     private const val SITTING = 30 * 60 * 1000L
 
+    @Volatile
+    private var cachedMixes: List<Mix> = emptyList()
+
+    fun updateCache(mixes: List<Mix>) {
+        if (mixes.isNotEmpty()) {
+            cachedMixes = mixes
+        }
+    }
+
+    fun findMix(id: String): Mix? = cachedMixes.firstOrNull { it.id == id }
+
+    fun findOrBuild(id: String, records: List<PlayRecord>, hidden: HiddenList = HiddenList.EMPTY): Mix? {
+        findMix(id)?.let { return it }
+        if (records.isNotEmpty()) {
+            val built = build(records, hidden = hidden)
+            return built.firstOrNull { it.id == id }
+        }
+        return null
+    }
+
     /**
      * @param hidden songs and artists the user said not to suggest. Their
      *   plays are left out before anything is counted, so a hidden artist
@@ -90,7 +110,7 @@ object DailyMixes {
         val rediscover = older.groupBy { it.videoId }.values.filter { it.size >= 2 }.sortedByDescending { it.size }.map { it.first().toSong() }
         mix("rediscover", "Rediscover", "Old favourites you haven't played lately", shuffle(rediscover, today + 53))?.let(mixes::add)
 
-        return mixes
+        return mixes.also(::updateCache)
     }
 
     private enum class Part(val title: String, val line: String) {

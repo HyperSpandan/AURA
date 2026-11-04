@@ -504,16 +504,63 @@ object MusicRepository {
         InnertubeParser.parseSearchSuggestions(Innertube.searchSuggestions(input))
     }
 
+    /**
+     * Finds a local, client-generated mix (DailyMix, seed mix, spotify mix) without calling YouTube Music.
+     */
+    fun localCollection(browseId: String): Collection? {
+        val mix = com.aura.data.history.DailyMixes.findOrBuild(browseId, com.aura.data.history.History.records.value)
+        if (mix != null) {
+            return Collection(
+                browseId = browseId,
+                title = mix.title,
+                subtitle = mix.subtitle,
+                thumbnailUrl = mix.songs.firstOrNull()?.thumbnailUrl,
+                songs = mix.songs,
+            )
+        }
+        if (browseId.startsWith("seed:")) {
+            val seedMix = com.aura.data.reco.HomeSeed.findMix(browseId, seeds.value)
+            if (seedMix != null) {
+                return Collection(
+                    browseId = browseId,
+                    title = seedMix.title,
+                    subtitle = seedMix.subtitle,
+                    thumbnailUrl = seedMix.songs.firstOrNull()?.thumbnailUrl,
+                    songs = seedMix.songs,
+                )
+            }
+        }
+        if (browseId.startsWith("spotify:")) {
+            val spotifyId = browseId.removePrefix("spotify:")
+            val spotifyMix = com.aura.data.spotify.SpotifySync.mixes.value.firstOrNull { it.id == spotifyId }
+            if (spotifyMix != null) {
+                return Collection(
+                    browseId = browseId,
+                    title = spotifyMix.name,
+                    subtitle = spotifyMix.readableDescription,
+                    thumbnailUrl = spotifyMix.songs.firstOrNull()?.thumbnailUrl,
+                    songs = spotifyMix.songs.map { it.toSong() },
+                )
+            }
+        }
+        return null
+    }
+
     suspend fun collection(browseId: String, onPage: ((Collection) -> Unit)? = null): Collection = io {
+        localCollection(browseId)?.let { local ->
+            onPage?.invoke(local)
+            return@io local
+        }
+        val normalizedId = Innertube.normalizeBrowseId(browseId)
         val owner = com.aura.data.library.LibraryCache.owner()
-        val mixId = browseId.removePrefix("VL").takeIf { it.startsWith("RD") }
+        val mixId = normalizedId.removePrefix("VL").takeIf { it.startsWith("RD") }
         val response = try {
-            Innertube.browse(browseId)
+            Innertube.browse(normalizedId)
         } catch (e: kotlinx.coroutines.CancellationException) {
             throw e
         } catch (e: Exception) {
             // A mix whose page is refused still plays: its songs come as the player's queue.
-            mixId?.let { id -> mixCollection(browseId, id)?.let { return@io it } }
+            mixId?.let { id -> mixCollection(normalizedId, id)?.let { return@io it } }
             throw e
         }
         val header = InnertubeParser.parseBrowseHeader(response)
@@ -521,7 +568,7 @@ object MusicRepository {
         // A song on two pages of the playlist, as on one, shows once.
         val songs = (page?.songs?.takeIf { it.isNotEmpty() } ?: InnertubeParser.collectSongsDeep(response)).distinctBy { it.videoId }.toMutableList()
         // Signed out, no page has a save button, which would read as "owned".
-        val owned = if (Innertube.cookie != null && InnertubeParser.isEditablePlaylist(browseId)) {
+        val owned = if (Innertube.cookie != null && InnertubeParser.isEditablePlaylist(normalizedId)) {
             InnertubeParser.parsePlaylistOwned(response)
         } else {
             false
@@ -553,7 +600,7 @@ object MusicRepository {
 
     /** A mix read as the player's queue for it, or null when that has no songs either. */
     private suspend fun mixCollection(browseId: String, playlistId: String): Collection? {
-        val response = Innertube.mixQueue(playlistId)
+        val response = runCatching { Innertube.mixQueue(playlistId) }.getOrNull() ?: return null
         val songs = ContentFilter.songs(InnertubeParser.parseWatchQueue(response))
         if (songs.isEmpty()) return null
         val title = InnertubeParser.mixTitle(response)
@@ -729,7 +776,9 @@ object MusicRepository {
         browseId.startsWith("UC") -> BrowseType.ARTIST
         browseId.startsWith("MPREb") -> BrowseType.ALBUM
         browseId.startsWith("VL") || browseId.startsWith("PL") || browseId.startsWith("RD") ||
-            browseId.startsWith("OLAK") || browseId.startsWith("MPSP") -> BrowseType.PLAYLIST
+            browseId.startsWith("OLAK") || browseId.startsWith("MPSP") ||
+            browseId.startsWith("seed:") || browseId.startsWith("spotify:") ||
+            browseId in setOf("artist0", "artist1", "artist2", "time", "repeat", "rediscover") -> BrowseType.PLAYLIST
         else -> BrowseType.OTHER
     }
 

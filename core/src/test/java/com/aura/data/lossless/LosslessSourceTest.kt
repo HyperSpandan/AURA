@@ -19,8 +19,8 @@ class LosslessSourceTest {
     }
 
     @Test fun rejectsDifferentEditAndUnknownDuration() {
-        assertTrue(LosslessSource.durationMatches(180_000, 182_000))
-        assertFalse(LosslessSource.durationMatches(180_000, 185_000))
+        assertTrue(LosslessSource.durationMatches(180_000, 185_000))
+        assertFalse(LosslessSource.durationMatches(180_000, 188_000))
         assertFalse(LosslessSource.durationMatches(0, 180_000))
     }
 

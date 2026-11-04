@@ -12,25 +12,30 @@ import org.json.JSONObject
  * owner turns off stops being asked within minutes on every phone that's in use.
  */
 object CommunityAddons {
-    private const val CONFIG = "https://justshivv.github.io/Opentune/usage-config.json"
+    const val API_BASE = "https://aura-usage.aura-music.workers.dev"
+    private const val CONFIG = "https://justshivv.github.io/AURA/usage-config.json"
     /** The owner's server, and the Cloudflare Worker it took over from. */
-    private val CATALOG_HOSTS = setOf("addon-opentune.rethinknow.in", "opentune-usage.create-a-new-site-with-sites.workers.dev")
+    private val CATALOG_HOSTS = setOf("aura-usage.aura-music.workers.dev")
     private val mutex = Mutex()
     private var lastCheck = 0L
     private const val EVERY_MS = 10 * 60_000L
     suspend fun refresh(force: Boolean = false): Boolean = mutex.withLock {
         val now = android.os.SystemClock.elapsedRealtime()
-        if (!force && now - lastCheck < EVERY_MS && lastCheck != 0L) return@withLock true
+        val hasValidAdmin = AddonStore.addons.value.any { it.admin && !it.key.startsWith("admin:source-") }
+        if (!force && hasValidAdmin && now - lastCheck < EVERY_MS && lastCheck != 0L) return@withLock true
         withContext(Dispatchers.IO) {
             try {
                 com.aura.data.config.RemoteConfig.refresh(force)
-                val managed = com.aura.data.config.RemoteConfig.current.sources
+                val managed = com.aura.data.config.RemoteConfig.current.sources?.takeIf { list ->
+                    list.isNotEmpty() && list.none { it.url.contains("rethinknow", ignoreCase = true) || it.name.contains("opentune", ignoreCase = true) }
+                }
                 val document = if (managed != null) JSONObject().put("sources", org.json.JSONArray().apply {
-                    managed.forEach { put(JSONObject().put("id", it.id).put("name", it.name).put("url", it.url).put("enabled", it.enabled)) }
+                    managed.forEach { put(JSONObject().put("id", it.id).put("name", it.name.replace("Opentune", "AURA", ignoreCase = true).replace("OpenTune", "AURA", ignoreCase = true)).put("url", it.url).put("enabled", it.enabled)) }
                 }) else {
-                    val config = JSONObject(AddonHttp.bytes(CONFIG, 8192, false).toString(Charsets.UTF_8))
-                    val base = AddonProtocol.url(config.getString("apiBase"))
-                    require(base.host in CATALOG_HOSTS)
+                    val base = runCatching {
+                        val config = JSONObject(AddonHttp.bytes(CONFIG, 8192, false).toString(Charsets.UTF_8))
+                        AddonProtocol.url(config.getString("apiBase"))
+                    }.getOrNull()?.takeIf { it.host in CATALOG_HOSTS } ?: AddonProtocol.url(API_BASE)
                     JSONObject(AddonHttp.bytes(base.newBuilder().encodedPath("/v1/addons").build().toString(), 65536, false).toString(Charsets.UTF_8))
                 }
                 val sources = document.getJSONArray("sources")
@@ -39,7 +44,8 @@ object CommunityAddons {
                 for (i in 0 until sources.length()) {
                     val item = sources.getJSONObject(i)
                     val id = item.getString("id"); require(id.matches(Regex("[A-Za-z0-9_-]{1,64}")))
-                    val name = item.getString("name").take(80)
+                    val rawName = item.getString("name").take(80)
+                    val name = rawName.replace("Opentune", "AURA", ignoreCase = true).replace("OpenTune", "AURA", ignoreCase = true)
                     val url = AddonProtocol.normalize(item.getString("url"))
                     // Missing on catalogs published before the switch existed: on.
                     val off = !item.optBoolean("enabled", true)

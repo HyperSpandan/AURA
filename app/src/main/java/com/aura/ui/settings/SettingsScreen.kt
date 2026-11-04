@@ -1187,6 +1187,9 @@ private fun settingsSections(
                 Entry("Speed dial", "home most played quick grid shortcuts favourites top") {
                     ToggleRow("Speed dial", ui.speedDial, { v -> AppSettings.updateUi { it.copy(speedDial = v) } }, summary = "Your most-played songs, albums and artists at the top of Home", icon = Icons.Rounded.GridView)
                 },
+                Entry("Hide community playlists", "community playlists home trending unaesthetic user recommendations") {
+                    ToggleRow("Hide community playlists", ui.hideCommunityPlaylists, { v -> AppSettings.updateUi { it.copy(hideCommunityPlaylists = v) } }, summary = "Hide unaesthetic user-generated playlists to keep official albums and studio mixes", icon = Icons.Rounded.FilterAlt)
+                },
                 Entry("Separate Explore tab", "explore tab dock search page navigation moods genres own") {
                     ToggleRow(
                         "Separate Explore tab",
@@ -1563,7 +1566,6 @@ private fun settingsSections(
                         icon = Icons.Rounded.Info,
                     )
                 },
-                Entry("AURA community", "github discord community addons developer") { CommunityBanner() },
                 Entry("Support AURA", "donate upi pay money tip support developer") {
                     NavRow("Support AURA", { supportDialog = true }, summary = "A small thank-you helps keep AURA going", icon = Icons.Rounded.Favorite)
                 },
@@ -1574,8 +1576,8 @@ private fun settingsSections(
                 },
                 Entry("Source code", "github open source license gpl") {
                     NavRow("Source code", {
-                        runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, "https://github.com/justshivv/Opentune".toUri())) }
-                    }, summary = "github.com/justshivv/Opentune · GPL v3", icon = Icons.Rounded.Code)
+                        runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, com.aura.ui.components.Support.REPO.toUri())) }
+                    }, summary = "github.com/HyperSpandan/AURA · GPL v3", icon = Icons.Rounded.Code)
                 },
                 Entry("Export diagnostics", "log share troubleshooting bug report") {
                     NavRow("Export diagnostics", {

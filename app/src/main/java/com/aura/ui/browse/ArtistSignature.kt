@@ -40,55 +40,122 @@ import coil3.request.allowHardware
 import coil3.request.transformations
 import coil3.size.Size
 import coil3.transform.Transformation
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.ColorMatrix
+import androidx.compose.ui.graphics.graphicsLayer
+import com.aura.data.DebugLog
 import com.aura.data.covers.ArtistSignature
 import com.aura.data.covers.ArtistSignatures
 import com.aura.data.settings.AppSettings
 import kotlinx.coroutines.launch
 
+private val InvertToWhiteMatrix = ColorMatrix(
+    floatArrayOf(
+        -1f,  0f,  0f, 0f, 255f,
+         0f, -1f,  0f, 0f, 255f,
+         0f,  0f, -1f, 0f, 255f,
+         0f,  0f,  0f, 1f,   0f,
+    ),
+)
+
 /**
  * The artist's name over their photo: their handwritten signature in white
- * with "Signed by" and the name under it, when the signature service has one
- * (Settings → Appearance → Artist signatures), and the name in big type
- * otherwise, or until the signature has loaded.
+ * with "Signed by" and the name under it, when the signature archive has one,
+ * and the artist's name in bold type otherwise, or until the signature has loaded.
  */
 @Composable
-internal fun ArtistNameOrSignature(name: String) {
+internal fun ArtistNameOrSignature(name: String, compact: Boolean = false) {
     val ui by AppSettings.ui.collectAsState()
     val api = ui.signatureApi
     var signature by remember(name, api) { mutableStateOf(if (ui.artistSignatures) ArtistSignatures.cached(name, api) else null) }
     var drawn by remember(name, api) { mutableStateOf(false) }
     var failed by remember(name, api) { mutableStateOf(false) }
+
     LaunchedEffect(name, api, ui.artistSignatures) {
-        signature = if (ui.artistSignatures) ArtistSignatures.signatureFor(name, api) else null
+        if (ui.artistSignatures) {
+            val cached = ArtistSignatures.cached(name, api)
+            if (cached != null) {
+                signature = cached
+            } else {
+                signature = ArtistSignatures.signatureFor(name, api)
+            }
+        } else {
+            signature = null
+        }
     }
+
     val sig = signature?.takeIf { !failed }
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.padding(horizontal = 16.dp),
+    ) {
         if (sig != null) {
             // Loaded off screen first, so the name doesn't blink out for an empty space.
-            SignatureImage(sig, name, onDrawn = { drawn = true }, onFailed = { failed = true }, shown = drawn)
+            SignatureImage(
+                sig = sig,
+                name = name,
+                onDrawn = { drawn = true },
+                onFailed = {
+                    DebugLog.w("ArtistSignature", "Signature drawing failed for $name")
+                    failed = true
+                },
+                shown = drawn,
+                compact = compact,
+            )
         }
-        AnimatedContent(sig != null && drawn, transitionSpec = { fadeIn(tween(420)) togetherWith fadeOut(tween(200)) }, label = "signed") { signed ->
-            if (signed) {
+
+        AnimatedContent(
+            targetState = (sig != null && drawn),
+            transitionSpec = { fadeIn(tween(350)) togetherWith fadeOut(tween(200)) },
+            label = "signature_signed_state",
+        ) { isSigned ->
+            if (isSigned) {
                 Text(
-                    buildAnnotatedString {
+                    text = buildAnnotatedString {
                         append("Signed by ")
                         withStyle(SpanStyle(fontWeight = FontWeight.SemiBold)) { append(name) }
                     },
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f),
+                    style = if (compact) MaterialTheme.typography.bodySmall else MaterialTheme.typography.bodyMedium,
+                    color = Color.White.copy(alpha = 0.85f),
                     textAlign = TextAlign.Center,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp),
+                    modifier = Modifier.padding(top = 2.dp),
                 )
             } else {
                 Text(
-                    name,
-                    style = MaterialTheme.typography.displaySmall.copy(fontSize = 40.sp, lineHeight = 44.sp),
+                    text = name,
+                    style = if (compact) {
+                        MaterialTheme.typography.headlineMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 28.sp,
+                            lineHeight = 32.sp,
+                            color = Color.White,
+                            shadow = androidx.compose.ui.graphics.Shadow(
+                                color = Color.Black.copy(alpha = 0.95f),
+                                blurRadius = 14f,
+                                offset = androidx.compose.ui.geometry.Offset(0f, 3f),
+                            ),
+                        )
+                    } else {
+                        MaterialTheme.typography.displaySmall.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 40.sp,
+                            lineHeight = 44.sp,
+                            color = Color.White,
+                            shadow = androidx.compose.ui.graphics.Shadow(
+                                color = Color.Black.copy(alpha = 0.95f),
+                                blurRadius = 16f,
+                                offset = androidx.compose.ui.geometry.Offset(0f, 4f),
+                            ),
+                        )
+                    },
                     textAlign = TextAlign.Center,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(horizontal = 24.dp),
                 )
             }
         }
@@ -96,44 +163,83 @@ internal fun ArtistNameOrSignature(name: String) {
 }
 
 @Composable
-private fun SignatureImage(sig: ArtistSignature, name: String, onDrawn: () -> Unit, onFailed: () -> Unit, shown: Boolean) {
+private fun SignatureImage(
+    sig: ArtistSignature,
+    name: String,
+    onDrawn: () -> Unit,
+    onFailed: () -> Unit,
+    shown: Boolean,
+    compact: Boolean = false,
+) {
     val context = LocalContext.current
-    // The vector when the signature came as one, drawn at the size it's shown; Wikimedia's
-    // raster of it if the vector won't load.
-    var vector by remember(sig) { mutableStateOf(sig.svgUrl != null) }
-    val request = remember(sig, vector) {
+    val url = remember(sig) { sig.imageUrl.ifBlank { sig.svgUrl.orEmpty() } }
+    val request = remember(url) {
         ImageRequest.Builder(context)
-            .data(if (vector) sig.svgUrl else sig.imageUrl)
-            // A signature is wide and thin; it never needs more than this across.
+            .data(url)
             .size(Size(1200, 600))
-            .allowHardware(false)
-            .transformations(WhiteInk)
             .build()
     }
     // Tall signatures stay short enough to leave the photo showing; wide ones fill the width.
-    val height = if (sig.aspect >= 1.4f) 120.dp else 150.dp
+    val height = if (compact) {
+        if (sig.aspect >= 1.4f) 64.dp else 80.dp
+    } else {
+        if (sig.aspect >= 1.4f) 120.dp else 150.dp
+    }
+    val colorFilter = if (sig.isWhiteInk) null else ColorFilter.colorMatrix(InvertToWhiteMatrix)
+
     AsyncImage(
-        request,
+        model = request,
         contentDescription = "$name's signature",
         contentScale = ContentScale.Fit,
+        colorFilter = colorFilter,
         onSuccess = { onDrawn() },
-        onError = { if (vector) vector = false else onFailed() },
-        alpha = if (shown) 1f else 0f,
-        modifier = Modifier.padding(horizontal = 40.dp).widthIn(max = 420.dp).fillMaxWidth().height(if (shown) height else 1.dp),
+        onError = { err ->
+            DebugLog.w("ArtistSignature", "Failed to load signature $url: ${err.result.throwable.message}")
+            onFailed()
+        },
+        modifier = Modifier
+            .padding(horizontal = if (compact) 16.dp else 40.dp)
+            .widthIn(max = if (compact) 280.dp else 420.dp)
+            .fillMaxWidth()
+            .height(if (shown) height else 1.dp)
+            .graphicsLayer {
+                alpha = if (shown) 1f else 0f
+                if (!sig.isWhiteInk) {
+                    blendMode = BlendMode.Screen
+                }
+            },
     )
 }
 
 /** A signature as white ink on clear, the paper of a scan dropped away ([ArtistSignatures.whiteInk]). */
 internal object WhiteInk : Transformation() {
-    override val cacheKey = "aura.whiteInk.v3"
+    override val cacheKey = "aura.whiteInk.v4"
 
     override suspend fun transform(input: Bitmap, size: Size): Bitmap {
-        val w = input.width
-        val h = input.height
+        val safeInput = if (input.config == Bitmap.Config.HARDWARE) {
+            input.copy(Bitmap.Config.ARGB_8888, false) ?: input
+        } else {
+            input
+        }
+        val w = safeInput.width
+        val h = safeInput.height
         val px = IntArray(w * h)
-        input.getPixels(px, 0, w, 0, 0, w, h)
-        // A photograph, not writing: failing here leaves the artist's name in its place.
-        val ink = ArtistSignatures.whiteInk(px, w, h) ?: throw IllegalStateException("Not a signature")
+        safeInput.getPixels(px, 0, w, 0, 0, w, h)
+        // Safely isolate dark strokes, or transform luma into white ink
+        val ink = ArtistSignatures.whiteInk(px, w, h) ?: run {
+            IntArray(w * h) { i ->
+                val c = px[i]
+                val a = c ushr 24
+                if (a < 16) 0 else {
+                    val r = (c shr 16) and 0xFF
+                    val g = (c shr 8) and 0xFF
+                    val b = c and 0xFF
+                    val luma = (0.2126f * r + 0.7152f * g + 0.0722f * b).toInt()
+                    val strokeAlpha = ((255 - luma) * a / 255).coerceIn(0, 255)
+                    (strokeAlpha shl 24) or 0x00FFFFFF
+                }
+            }
+        }
         return Bitmap.createBitmap(ink, w, h, Bitmap.Config.ARGB_8888)
     }
 }

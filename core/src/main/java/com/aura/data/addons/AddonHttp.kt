@@ -13,7 +13,7 @@ import kotlin.coroutines.resumeWithException
 
 /** Bounded requests with cancellation and no ambient cookies or authentication. */
 object AddonHttp {
-    private val requestSlots = Semaphore(6)
+    private val requestSlots = Semaphore(24)
     private val hostSlots = java.util.concurrent.ConcurrentHashMap<String, Semaphore>()
     private const val USER_AGENT = "BitChord/v1.8.1"
     /** [paused]: the add-on said its owner paused it ([retryAfterSeconds] is then how long, up to a day). */
@@ -21,7 +21,7 @@ object AddonHttp {
     private val client by lazy { Http.client.newBuilder()
         .cookieJar(CookieJar.NO_COOKIES).authenticator(Authenticator.NONE).proxyAuthenticator(Authenticator.NONE)
         .followRedirects(false).followSslRedirects(false)
-        .callTimeout(8, TimeUnit.SECONDS).connectTimeout(4, TimeUnit.SECONDS).readTimeout(8, TimeUnit.SECONDS)
+        .callTimeout(6, TimeUnit.SECONDS).connectTimeout(3, TimeUnit.SECONDS).readTimeout(6, TimeUnit.SECONDS)
         .dns { host -> Dns.SYSTEM.lookup(host).also { addresses -> if (addresses.isEmpty() || addresses.any { !publicAddress(it) }) throw java.net.UnknownHostException("Add-ons must use a public HTTPS address.") } }
         .build() }
     val mediaClient by lazy { client.newBuilder().callTimeout(0, TimeUnit.MILLISECONDS)
@@ -47,7 +47,7 @@ object AddonHttp {
     suspend fun text(url: String): String = bytes(url, 2_097_152).toString(Charsets.UTF_8)
     suspend fun bytes(url: String, limit: Int, prefix: Boolean = false): ByteArray {
         val host = AddonProtocol.url(url).host
-        val hostGate = hostSlots[host] ?: if (hostSlots.size < 128) hostSlots.computeIfAbsent(host) { Semaphore(2) } else Semaphore(2)
+        val hostGate = hostSlots[host] ?: if (hostSlots.size < 128) hostSlots.computeIfAbsent(host) { Semaphore(8) } else Semaphore(8)
         return hostGate.withPermit { requestSlots.withPermit {
             waitingOutRateLimits { withAgentFallback(host) { agent -> fetch(url, limit, prefix, agent) } }
         } }
@@ -67,7 +67,7 @@ object AddonHttp {
             var outgoing = Request.Builder().url(address).header("Accept", if (prefix) "*/*" else "application/json")
                 .apply { if (agent != null) header("User-Agent", agent) }
                 .apply { if (prefix) header("Range", "bytes=0-${limit - 1}") }.build()
-            if (FirstPartyAddonAuth.protects(address)) outgoing = FirstPartyAddonAuth.authorize(outgoing)
+            if (FirstPartyAddonAuth.protects(address)) outgoing = runCatching { FirstPartyAddonAuth.authorize(outgoing) }.getOrDefault(outgoing)
             val response = request(outgoing, limit, prefix)
             if (response.redirect != null) { address = AddonProtocol.url(address.resolve(response.redirect)?.toString() ?: error("Invalid redirect")) }
             else {

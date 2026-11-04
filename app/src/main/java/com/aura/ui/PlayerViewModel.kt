@@ -119,7 +119,11 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
                         }
                     }
                     if (motion && duration > 0) launch {
-                        com.aura.data.covers.AppleMotionArt.forSong(song, duration)?.let { motionFound.value = song.videoId to it }
+                        com.aura.data.DebugLog.i("PlayerVM", "searching AppleMotionArt for ${song.title} ($duration ms)")
+                        com.aura.data.covers.AppleMotionArt.forSong(song, duration)?.let {
+                            com.aura.data.DebugLog.i("PlayerVM", "AppleMotionArt matched for ${song.title}: ${it.url}")
+                            motionFound.value = song.videoId to it
+                        }
                     }
                     if (cookie != null && duration > 0) launch {
                         try {

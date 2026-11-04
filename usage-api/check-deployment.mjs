@@ -1,6 +1,6 @@
 // Read-only checks: never send synthetic activity reports or print credentials.
 import assert from 'node:assert/strict';
-const base='https://opentune-usage.create-a-new-site-with-sites.workers.dev';
+const base='https://aura-usage.aura-music.workers.dev';
 const read=(path,options={})=>fetch(base+path,{redirect:'manual',signal:AbortSignal.timeout(20000),...options});
 // Secret updates propagate separately from code. Retry only temporary 503s;
 // incorrect credentials and rate limits must still fail immediately.

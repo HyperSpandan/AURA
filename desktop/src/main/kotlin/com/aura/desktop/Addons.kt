@@ -127,8 +127,8 @@ internal object Addons {
     // ---- The published catalog ---------------------------------------------------
 
     /** Where the website says the owner's server is; the catalog is only ever read from one of these. */
-    private const val CONFIG_URL = "https://justshivv.github.io/Opentune/usage-config.json"
-    private val CATALOG_HOSTS = setOf("addon-opentune.rethinknow.in", "opentune-usage.create-a-new-site-with-sites.workers.dev")
+    private const val CONFIG_URL = "https://justshivv.github.io/AURA/usage-config.json"
+    private val CATALOG_HOSTS = setOf("aura-usage.aura-music.workers.dev")
     private const val REFRESH_MS = 15 * 60_000L
     @Volatile private var lastCheck = 0L
 
@@ -306,7 +306,7 @@ internal object Addons {
  * signed with it. Access lasts up to 12 hours; the key never leaves this computer.
  */
 internal object AddonPairing {
-    const val OFFICIAL = "https://addon-opentune.rethinknow.in"
+    const val OFFICIAL = "https://aura-lossless.aura-music.workers.dev"
     /** The Origin this app pairs under; the server and the phone know it (services/lossless-addon/auth.mjs). */
     private const val ORIGIN = "aura-desktop://app"
 

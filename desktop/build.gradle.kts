@@ -253,10 +253,10 @@ dependencies {
 }
 
 tasks.test {
-    // The live check runs only when asked: -Dopentune.live=true
+    // The live check runs only when asked: -Daura.live=true
     systemProperty("aura.live", System.getProperty("aura.live") ?: "false")
     System.getProperty("aura.video")?.let { systemProperty("aura.video", it) }
-    // Pictures of the window, drawn offscreen: -Dopentune.shots=/some/folder
+    // Pictures of the window, drawn offscreen: -Daura.shots=/some/folder
     System.getProperty("aura.shots")?.let { systemProperty("aura.shots", it) }
     testLogging { showStandardStreams = true }
 }

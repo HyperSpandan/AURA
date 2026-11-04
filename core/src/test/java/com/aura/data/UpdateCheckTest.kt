@@ -18,7 +18,7 @@ class UpdateCheckTest {
 
     private val release = Json.parseToJsonElement(
         """
-        {"tag_name":"v0.3.0","html_url":"https://github.com/justshivv/Opentune/releases/tag/v0.3.0","body":"Notes",
+        {"tag_name":"v0.3.0","html_url":"https://github.com/HyperSpandan/AURA/releases/tag/v0.3.0","body":"Notes",
          "assets":[
           {"name":"AURA-v0.3.0-armeabi-v7a.apk","browser_download_url":"https://x/v7a.apk","size":9000000},
           {"name":"AURA-v0.3.0-arm64-v8a.apk","browser_download_url":"https://x/arm64.apk","size":9300000},
@@ -60,14 +60,14 @@ class UpdateCheckTest {
     }
 
     @Test fun readsTheLatestReleaseFromWhereTheReleasesPageLeads() {
-        val r = UpdateCheck.fromPage("https://github.com/justshivv/Opentune/releases/tag/v0.3.3", listOf("arm64-v8a", "armeabi-v7a"))!!
+        val r = UpdateCheck.fromPage("https://github.com/HyperSpandan/AURA/releases/tag/v0.3.3", listOf("arm64-v8a", "armeabi-v7a"))!!
         assertEquals("0.3.3", r.version)
         assertEquals("AURA-v0.3.3-arm64-v8a.apk", r.apk?.name)
-        assertEquals("https://github.com/justshivv/Opentune/releases/download/v0.3.3/AURA-v0.3.3-arm64-v8a.apk", r.apk?.url)
-        assertEquals("https://github.com/justshivv/Opentune/releases/download/v0.3.3/SHA256SUMS.txt", r.sums?.url)
+        assertEquals("https://github.com/HyperSpandan/AURA/releases/download/v0.3.3/AURA-v0.3.3-arm64-v8a.apk", r.apk?.url)
+        assertEquals("https://github.com/HyperSpandan/AURA/releases/download/v0.3.3/SHA256SUMS.txt", r.sums?.url)
         // A processor releases have no APK of their own for gets the universal one.
-        assertEquals("AURA-v0.3.3-universal.apk", UpdateCheck.fromPage("https://github.com/justshivv/Opentune/releases/tag/v0.3.3", listOf("riscv64"))!!.apk?.name)
+        assertEquals("AURA-v0.3.3-universal.apk", UpdateCheck.fromPage("https://github.com/HyperSpandan/AURA/releases/tag/v0.3.3", listOf("riscv64"))!!.apk?.name)
         // No release yet: the page stays on the release list.
-        assertNull(UpdateCheck.fromPage("https://github.com/justshivv/Opentune/releases", listOf("arm64-v8a")))
+        assertNull(UpdateCheck.fromPage("https://github.com/HyperSpandan/AURA/releases", listOf("arm64-v8a")))
     }
 }

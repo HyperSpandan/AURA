@@ -28,8 +28,8 @@ object AppleMotionArt {
     private const val AMP = "https://amp-api.music.apple.com/v1/catalog"
     private const val MISS_TTL_MS = 6 * 60 * 60_000L
 
-    /** An HLS playlist: the square clip first, the next one as the retry. */
-    data class Motion(val url: String, val fallbackUrl: String?)
+    /** An HLS playlist: the square clip first, the next one as the retry, plus tall format if available. */
+    data class Motion(val url: String, val fallbackUrl: String?, val tallUrl: String? = null)
 
     private data class Entry(val motion: Motion?, val at: Long)
 
@@ -37,21 +37,44 @@ object AppleMotionArt {
     private val cache = object : LinkedHashMap<String, Entry>(64, 0.75f, true) {
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Entry>?) = size > 300
     }
+    private val albumCache = object : LinkedHashMap<String, Entry>(64, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Entry>?) = size > 300
+    }
+
+    /** Cached motion for [browseId] if already queried. */
+    fun cachedAlbum(browseId: String): Motion? = synchronized(albumCache) { albumCache[browseId]?.motion }
 
     /** The animated cover of the album [song] is on, or null when Apple has none or the match isn't certain. */
     suspend fun forSong(song: Song, durationMs: Long): Motion? {
-        val release = runCatching { AppleTrackMetadataRepository.release(song, durationMs) }
-            .onFailure { Log.w(TAG, "catalogue match failed", it) }.getOrNull() ?: return null
-        val key = "${release.storefront}/${release.albumId}"
-        synchronized(cache) { cache[key] }?.let { e ->
-            if (e.motion != null || System.currentTimeMillis() - e.at < MISS_TTL_MS) return e.motion
+        val singleRelease = runCatching { AppleTrackMetadataRepository.release(song, durationMs) }
+            .onFailure { Log.w(TAG, "catalogue match failed", it) }.getOrNull()
+        val candidates = if (singleRelease != null) {
+            listOf(singleRelease)
+        } else {
+            runCatching { AppleTrackMetadataRepository.candidateReleases(song, durationMs) }
+                .onFailure { Log.w(TAG, "candidate releases failed", it) }.getOrNull().orEmpty()
         }
-        val url = "$AMP/${release.storefront}/albums/${release.albumId}".toHttpUrl().newBuilder()
-            .addQueryParameter("extend", "editorialVideo").build().toString()
-        val body = runCatching { read(url) }.onFailure { Log.w(TAG, "album read failed", it) }.getOrNull() ?: return null
-        val motion = motionOf(json.parseToJsonElement(body).jsonObject)
-        synchronized(cache) { cache[key] = Entry(motion, System.currentTimeMillis()) }
-        return motion
+        Log.i(TAG, "forSong: ${song.title} (${song.artist}) [album=${song.albumName}, len=$durationMs] -> single=$singleRelease, cands=${candidates.size}")
+        if (candidates.isEmpty()) return null
+
+        for (release in candidates) {
+            val key = "${release.storefront}/${release.albumId}"
+            val cached = synchronized(cache) { cache[key] }
+            if (cached != null) {
+                if (cached.motion != null) return cached.motion
+                if (System.currentTimeMillis() - cached.at < MISS_TTL_MS) continue
+            }
+            val url = "$AMP/${release.storefront}/albums/${release.albumId}".toHttpUrl().newBuilder()
+                .addQueryParameter("extend", "editorialVideo").build().toString()
+            val body = runCatching { read(url) }.onFailure { Log.w(TAG, "album read failed for ${release.albumId}", it) }.getOrNull() ?: continue
+            val motion = motionOf(json.parseToJsonElement(body).jsonObject)
+            synchronized(cache) { cache[key] = Entry(motion, System.currentTimeMillis()) }
+            if (motion != null) {
+                Log.i(TAG, "forSong: ${song.title} motion found on ${release.album} (${release.albumId}): ${motion.url}")
+                return motion
+            }
+        }
+        return null
     }
 
     /** One catalogue read, with a fresh token once if Apple refuses the one held. */
@@ -96,6 +119,54 @@ object AppleMotionArt {
         val raw = link("motionDetailRaw")
         val tall = link("motionDetailTall") ?: link("motionTallVideo3x4")
         val url = square ?: raw ?: tall ?: return null
-        return Motion(url, listOf(square, raw, tall).firstOrNull { it != null && it != url })
+        val fallback = listOf(square, raw, tall).firstOrNull { it != null && it != url }
+        return Motion(url, fallback, tallUrl = tall)
+    }
+
+    /** The animated motion cover for an album, or null when Apple has none. */
+    suspend fun forAlbum(collection: com.aura.data.Collection): Motion? {
+        if (collection.browseId.isNotBlank()) {
+            val cached = synchronized(albumCache) { albumCache[collection.browseId] }
+            if (cached != null) {
+                if (cached.motion != null) return cached.motion
+                if (System.currentTimeMillis() - cached.at < MISS_TTL_MS) return null
+            }
+        }
+        val songs = collection.songs.filter { s ->
+            val ms = com.aura.data.reco.Recommendations.durationMs(s.durationText)
+            ms in 20_000..1800_000
+        }.take(4)
+        val artist = collection.subtitle.split("•").first().trim().ifBlank { collection.title }
+        val foundMotion: Motion? = if (songs.isEmpty()) {
+            val dummySong = Song(
+                videoId = collection.browseId,
+                title = collection.title,
+                artist = artist,
+                thumbnailUrl = collection.thumbnailUrl,
+                albumName = collection.title,
+            )
+            forSong(dummySong, 0L)
+        } else {
+            var m: Motion? = null
+            for (song in songs) {
+                val songArtist = song.artist.ifBlank { artist }
+                val candidate = song.copy(
+                    albumName = collection.title,
+                    artist = songArtist,
+                )
+                val durationMs = com.aura.data.reco.Recommendations.durationMs(song.durationText)
+                val motion = forSong(candidate, durationMs)
+                if (motion != null) {
+                    Log.i(TAG, "forAlbum: matched motion for ${collection.title} using track ${song.title} (${motion.tallUrl ?: motion.url})")
+                    m = motion
+                    break
+                }
+            }
+            m
+        }
+        if (collection.browseId.isNotBlank()) {
+            synchronized(albumCache) { albumCache[collection.browseId] = Entry(foundMotion, System.currentTimeMillis()) }
+        }
+        return foundMotion
     }
 }

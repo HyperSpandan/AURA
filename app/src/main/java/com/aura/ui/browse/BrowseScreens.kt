@@ -3,6 +3,14 @@ package com.aura.ui.browse
 import com.aura.ui.components.pinnedToTop
 import com.aura.ui.components.GlassPage
 import com.aura.ui.components.LocalHazeState
+import com.aura.ui.player.LoopingVideo
+import com.aura.data.covers.AppleMotionArt
+import com.aura.data.settings.AppSettings
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.draw.drawBehind
@@ -375,6 +383,168 @@ internal fun listMeta(kind: String, songs: List<com.aura.data.model.Song>): Stri
     return listOfNotNull(kind, count, length).joinToString(" · ")
 }
 
+private val ALBUM_HERO_FADE = Brush.verticalGradient(
+    0f to Color.Black,
+    0.55f to Color.Black,
+    0.78f to Color.Black.copy(alpha = 0.65f),
+    0.92f to Color.Black.copy(alpha = 0.20f),
+    1f to Color.Transparent,
+)
+
+/**
+ * Apple Music-style immersive animated header for albums: full-bleed motion art
+ * looping edge-to-edge behind the status bar and top navigation, fading softly into
+ * the page wash, with title, artist, and playback actions overlaid.
+ */
+@Composable
+private fun FullBleedAlbumHeader(
+    collection: com.aura.data.Collection,
+    motion: AppleMotionArt.Motion?,
+    listState: LazyListState,
+    band: com.aura.ui.components.RubberBandOverscroll? = null,
+    saved: Boolean,
+    onPlay: () -> Unit,
+    onShuffle: () -> Unit,
+    onSmartShuffle: () -> Unit,
+    onSave: (() -> Unit)?,
+) {
+    val ui by AppSettings.ui.collectAsState()
+    val still = ui.reduceAnimation
+    val quality = ui.motionQuality
+
+    // Apple Music parallax drift: the video drifts down at a fraction of the scroll
+    val drift: androidx.compose.ui.graphics.GraphicsLayerScope.() -> Unit = {
+        if (!still && listState.firstVisibleItemIndex == 0) {
+            translationY = listState.firstVisibleItemScrollOffset * 0.35f
+        }
+    }
+
+    BoxWithConstraints(Modifier.fillMaxWidth()) {
+        val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+        val screenHeight = configuration.screenHeightDp.dp
+        val heroHeight = (screenHeight * 0.72f).coerceIn(600.dp, 760.dp)
+
+        // 1. The Media Layer: edge-to-edge full-bleed video + static cover base
+        Box(
+            Modifier
+                .pinnedToTop(band)
+                .fillMaxWidth()
+                .height(heroHeight)
+                .clipToBounds()
+                .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+                .drawWithContent {
+                    drawContent()
+                    drawRect(ALBUM_HERO_FADE, blendMode = BlendMode.DstIn)
+                },
+        ) {
+            Artwork(
+                collection.thumbnailUrl.artworkAt(HEADER_ART_PX),
+                Modifier.fillMaxSize().graphicsLayer(drift),
+                shape = RectangleShape,
+                placeholder = Icons.Filled.Album,
+            )
+            if (motion != null && !still) {
+                val videoUrl = motion.tallUrl ?: motion.url
+                val fallback = motion.fallbackUrl ?: if (motion.tallUrl != null) motion.url else null
+                LoopingVideo(
+                    url = videoUrl,
+                    playing = true,
+                    modifier = Modifier.fillMaxSize().graphicsLayer(drift),
+                    fallbackUrl = fallback,
+                    maxPx = quality.maxPx,
+                    maxBitrate = quality.maxBitrate,
+                )
+            }
+        }
+
+        // 2. Top Scrim for status bar and navigation buttons (back, search, sort, more)
+        Box(
+            Modifier
+                .graphicsLayer { translationY = -(band?.pull ?: 0f) }
+                .fillMaxWidth()
+                .height(130.dp)
+                .background(
+                    Brush.verticalGradient(
+                        0f to Color.Black.copy(alpha = 0.6f),
+                        0.45f to Color.Black.copy(alpha = 0.22f),
+                        1f to Color.Transparent,
+                    ),
+                ),
+        )
+
+        // 3. Subtle dark gradient behind text & action buttons to ensure high contrast
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .height(heroHeight)
+                .background(
+                    Brush.verticalGradient(
+                        0f to Color.Transparent,
+                        0.40f to Color.Transparent,
+                        0.72f to Color.Black.copy(alpha = 0.35f),
+                        1f to Color.Black.copy(alpha = 0.72f),
+                    ),
+                ),
+        )
+
+        // 4. Overlaid titles and buttons (Apple Music layout)
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .align(Alignment.BottomCenter)
+                .padding(horizontal = 24.dp)
+                .padding(bottom = 16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                text = collection.title,
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
+                textAlign = TextAlign.Center,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+
+            val artist = collection.subtitle.split("•").firstOrNull()?.trim()?.ifBlank { collection.subtitle } ?: collection.subtitle
+            if (artist.isNotBlank()) {
+                Text(
+                    text = artist,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color.White.copy(alpha = 0.92f),
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(top = 4.dp),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+
+            val meta = listMeta("Album", collection.songs)
+            Text(
+                text = meta,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Medium,
+                color = Color.White.copy(alpha = 0.72f),
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(top = 4.dp),
+            )
+
+            Spacer(Modifier.height(18.dp))
+
+            ListPlayRow(
+                enabled = collection.songs.isNotEmpty(),
+                saved = saved,
+                onPlay = onPlay,
+                onShuffle = onShuffle,
+                onSmartShuffle = onSmartShuffle,
+                onSave = onSave,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+    }
+}
+
 /** Shared artwork, typography and spacing for YouTube, Spotify and local playlists. */
 @Composable
 internal fun PlaylistHeading(title: String, subtitle: String, thumbnail: String?, songs: List<com.aura.data.model.Song>,
@@ -535,8 +705,23 @@ fun CollectionScreen(
     val firstPage by loader.preview.collectAsState()
     val state = firstPage?.let { UiState.Success(it) } ?: loadingState
     val listState = rememberLazyListState()
-    val isAlbum = MusicRepository.typeOf(browseId) == BrowseType.ALBUM
+    val loaded = (state as? UiState.Success)?.data
+    val isAlbum = MusicRepository.typeOf(browseId) == BrowseType.ALBUM || browseId.startsWith("MPRE") || (loaded?.subtitle?.contains("Album", ignoreCase = true) == true)
     val title = (state as? UiState.Success)?.data?.title.orEmpty()
+    val uiSettings by AppSettings.ui.collectAsState()
+    val canAnimate = uiSettings.animatedCovers && !uiSettings.reduceAnimation && !(uiSettings.animatedCoversWifiOnly && AppSettings.onMeteredNetwork())
+    val isTv = com.aura.ui.tv.LocalIsTv.current
+    val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+    val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+    var albumMotion by remember(loaded?.browseId) {
+        mutableStateOf(loaded?.let { AppleMotionArt.cachedAlbum(it.browseId) })
+    }
+    LaunchedEffect(loaded?.browseId, canAnimate) {
+        val col = loaded
+        if (col != null && isAlbum && canAnimate && albumMotion == null) {
+            albumMotion = AppleMotionArt.forAlbum(col)
+        }
+    }
     // Looking through the list, its order, and the page's own menu, as BitChord has them.
     val search = remember(browseId) { PlaylistSearch() }
     val searching = search.open
@@ -547,7 +732,6 @@ fun CollectionScreen(
     var order by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(ListOrder.DEFAULT) }
     var sortOpen by remember { mutableStateOf(false) }
     var moreOpen by remember { mutableStateOf(false) }
-    val loaded = (state as? UiState.Success)?.data
     // Played from here: the album or playlist counts toward Speed dial.
     val actions = remember(pageActions, loaded) {
         loaded?.let { c ->
@@ -602,53 +786,77 @@ fun CollectionScreen(
                 val band = com.aura.ui.components.rememberRubberBand()
                 LazyColumn(state = listState, contentPadding = if (searching) PaddingValues(bottom = 16.dp) else contentPadding, modifier = Modifier.fillMaxSize().coverWash(tint).playlistSearchResults(search), overscrollEffect = band) {
                     if (!searching) item(key = "header") {
-                        Box {
-                            HeaderBackdrop(c?.thumbnailUrl.artworkAt(HEADER_ART_PX), Modifier.matchParentSize().pinnedToTop(band), into = tint)
-                            Column(
-                                Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.statusBars).padding(top = 64.dp, start = 24.dp, end = 24.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                            ) {
-                                if (c == null) {
-                                    Placeholder(Modifier.size(260.dp), MaterialTheme.shapes.large)
-                                    Placeholder(Modifier.padding(top = 20.dp).width(200.dp).height(24.dp))
-                                    Placeholder(Modifier.padding(top = 8.dp).width(140.dp).height(16.dp))
-                                } else {
-                                    PlaylistHeading(c.title, c.subtitle, c.thumbnailUrl, c.songs, isAlbum)
-                                }
-                                val savedLists by com.aura.data.library.LibraryStore.savedLists.collectAsState()
-                                val saved = c != null && savedLists.any { it.browseId == c.browseId }
-                                val own = c?.let { rememberOwnPlaylist(it) }
-                                // Already in the account's library (made there, or saved there): nothing for a plus to add.
-                                val accountLists by com.aura.data.library.LibraryCache.playlists.collectAsState()
-                                val inAccount = own != null || (c != null && accountLists.any { it.browseId?.removePrefix("VL") == c.browseId.removePrefix("VL") })
-                                ListPlayRow(
-                                    enabled = !c?.songs.isNullOrEmpty(),
-                                    saved = saved,
-                                    // While the list is searched or sorted, the buttons play what's shown, as it's shown.
-                                    onPlay = { c?.let { actions.playAll(shown.ifEmpty { it.songs }, 0, false, it.title) } },
-                                    onShuffle = { c?.let { actions.playAll(shown.ifEmpty { it.songs }, 0, true, it.title) } },
-                                    onSmartShuffle = { c?.let { actions.smartShuffle(shown.ifEmpty { it.songs }, it.title) } },
-                                    onSave = if (inAccount && !saved) null else ({
-                                        c?.let {
-                                            com.aura.data.library.LibraryStore.setSaved(
-                                                com.aura.data.library.SavedList(it.browseId, it.title, it.subtitle, it.thumbnailUrl), !saved,
-                                            )
-                                        }
-                                    }),
-                                    modifier = Modifier.fillMaxWidth().padding(top = 20.dp, bottom = 12.dp),
+                        val showFullBleed = isAlbum && !isTv && !isLandscape && loaded != null
+                        val savedLists by com.aura.data.library.LibraryStore.savedLists.collectAsState()
+                        val saved = c != null && savedLists.any { it.browseId == c.browseId }
+                        val own = c?.let { rememberOwnPlaylist(it) }
+                        val accountLists by com.aura.data.library.LibraryCache.playlists.collectAsState()
+                        val inAccount = own != null || (c != null && accountLists.any { it.browseId?.removePrefix("VL") == c.browseId.removePrefix("VL") })
+                        val onPlayAll = { c?.let { actions.playAll(shown.ifEmpty { it.songs }, 0, false, it.title) } ?: Unit }
+                        val onShuffleAll = { c?.let { actions.playAll(shown.ifEmpty { it.songs }, 0, true, it.title) } ?: Unit }
+                        val onSmartShuffleAll = { c?.let { actions.smartShuffle(shown.ifEmpty { it.songs }, it.title) } ?: Unit }
+                        val onSaveList: (() -> Unit)? = if (inAccount && !saved) null else ({
+                            c?.let {
+                                com.aura.data.library.LibraryStore.setSaved(
+                                    com.aura.data.library.SavedList(it.browseId, it.title, it.subtitle, it.thumbnailUrl), !saved,
                                 )
-                                if (c != null) {
-                                    // Your own playlist keeps its tools: privacy, sharing your copy.
-                                    if (own != null) com.aura.ui.library.ListTools(
-                                        c.songs, onAddSongs = null, Modifier.fillMaxWidth().padding(bottom = 16.dp),
-                                        list = com.aura.ui.library.DownloadedListInfo(c.browseId, c.title, c.subtitle, c.thumbnailUrl),
-                                        // No heart here: the plus beside Play already saves it.
-                                        onShare = { own.share() },
-                                        privacy = own.privacy,
-                                        onPrivacy = { own.choose() },
-                                    )
-                                }
+                            }
+                        })
 
+                        if (showFullBleed && loaded != null) {
+                            FullBleedAlbumHeader(
+                                collection = loaded,
+                                motion = albumMotion,
+                                listState = listState,
+                                band = band,
+                                saved = saved,
+                                onPlay = onPlayAll,
+                                onShuffle = onShuffleAll,
+                                onSmartShuffle = onSmartShuffleAll,
+                                onSave = onSaveList,
+                            )
+                            if (own != null) {
+                                com.aura.ui.library.ListTools(
+                                    loaded.songs, onAddSongs = null, Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp),
+                                    list = com.aura.ui.library.DownloadedListInfo(loaded.browseId, loaded.title, loaded.subtitle, loaded.thumbnailUrl),
+                                    onShare = { own.share() },
+                                    privacy = own.privacy,
+                                    onPrivacy = { own.choose() },
+                                )
+                            }
+                        } else {
+                            Box {
+                                HeaderBackdrop(c?.thumbnailUrl.artworkAt(HEADER_ART_PX), Modifier.matchParentSize().pinnedToTop(band), into = tint)
+                                Column(
+                                    Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.statusBars).padding(top = 64.dp, start = 24.dp, end = 24.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                ) {
+                                    if (c == null) {
+                                        Placeholder(Modifier.size(260.dp), MaterialTheme.shapes.large)
+                                        Placeholder(Modifier.padding(top = 20.dp).width(200.dp).height(24.dp))
+                                        Placeholder(Modifier.padding(top = 8.dp).width(140.dp).height(16.dp))
+                                    } else {
+                                        PlaylistHeading(c.title, c.subtitle, c.thumbnailUrl, c.songs, isAlbum)
+                                    }
+                                    ListPlayRow(
+                                        enabled = !c?.songs.isNullOrEmpty(),
+                                        saved = saved,
+                                        onPlay = onPlayAll,
+                                        onShuffle = onShuffleAll,
+                                        onSmartShuffle = onSmartShuffleAll,
+                                        onSave = onSaveList,
+                                        modifier = Modifier.fillMaxWidth().padding(top = 20.dp, bottom = 12.dp),
+                                    )
+                                    if (c != null && own != null) {
+                                        com.aura.ui.library.ListTools(
+                                            c.songs, onAddSongs = null, Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                                            list = com.aura.ui.library.DownloadedListInfo(c.browseId, c.title, c.subtitle, c.thumbnailUrl),
+                                            onShare = { own.share() },
+                                            privacy = own.privacy,
+                                            onPrivacy = { own.choose() },
+                                        )
+                                    }
+                                }
                             }
                         }
                     }

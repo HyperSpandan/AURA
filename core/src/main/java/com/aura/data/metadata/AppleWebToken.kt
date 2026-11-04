@@ -25,8 +25,26 @@ internal object AppleWebToken {
         token ?: run {
             val page = text("https://music.apple.com/us/new") ?: return@run null
             val script = INDEX_SCRIPT.find(page)?.value ?: return@run null
-            text("https://music.apple.com$script")?.let { TOKEN.find(it)?.value }
+            text("https://music.apple.com$script")?.let { extractCatalogToken(it) }
         }?.also { token = it }
+    }
+
+    /**
+     * Apple's web player script bundles multiple JWT tokens:
+     * - An internal playback token (issuer: AMPWebPlay) which gives HTTP 401 on catalog reads.
+     * - The public developer catalog tokens which give HTTP 200 on amp-api.music.apple.com.
+     */
+    internal fun extractCatalogToken(script: String): String? {
+        val matches = TOKEN.findAll(script).map { it.value }.toList()
+        return matches.firstOrNull { jwt ->
+            val parts = jwt.split('.')
+            if (parts.size >= 2) {
+                val payload = runCatching {
+                    String(java.util.Base64.getUrlDecoder().decode(parts[1]))
+                }.getOrNull() ?: ""
+                !payload.contains("AMPWebPlay") && payload.contains("apple.com")
+            } else false
+        } ?: matches.lastOrNull()
     }
 
     /** After a refusal: Apple has turned the token over, so the next read takes a fresh one. */

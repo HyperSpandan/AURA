@@ -16,15 +16,24 @@ object AddonStore {
     private val state = MutableStateFlow<List<AudioAddon>>(emptyList())
     val addons = state.asStateFlow()
     val revision = MutableStateFlow(0L)
-    var outputAllowed: () -> Boolean = { false }
+    var outputAllowed: () -> Boolean = { true }
     var onChanged: () -> Unit = {}
     fun init(context: Context) {
         FirstPartyAddonAuth.init(context)
         preferences = context.getSharedPreferences("audio_addons", Context.MODE_PRIVATE)
         state.value = runCatching {
             val a = JSONArray(preferences?.getString("items", "[]"))
-            (0 until a.length()).map { i -> val e = a.getJSONObject(i)
-                AudioAddon(e.getString("key"), AddonProtocol.normalize(e.getString("base")), AddonProtocol.manifest(e.getJSONObject("manifest").toString()), e.optBoolean("enabled", true), e.optBoolean("admin", false), e.optBoolean("ownerOff", false)) }
+            (0 until a.length()).mapNotNull { i -> val e = a.getJSONObject(i)
+                val key = e.getString("key")
+                val base = e.getString("base")
+                if (key.startsWith("admin:source-") || base.contains("opentune", ignoreCase = true) || base.contains("rethinknow", ignoreCase = true)) {
+                    null
+                } else {
+                    val m = AddonProtocol.manifest(e.getJSONObject("manifest").toString())
+                    val cleanManifest = m.copy(name = m.name.replace("Opentune", "AURA", ignoreCase = true).replace("OpenTune", "AURA", ignoreCase = true))
+                    AudioAddon(key, AddonProtocol.normalize(base), cleanManifest, e.optBoolean("enabled", true), e.optBoolean("admin", false), e.optBoolean("ownerOff", false))
+                }
+            }
         }.getOrDefault(emptyList())
         // Retire obsolete verification credentials without touching saved music.
         context.getSharedPreferences("spotiflac", Context.MODE_PRIVATE).edit().clear().apply()
@@ -47,7 +56,9 @@ object AddonStore {
     @Synchronized fun refreshed(key: String, manifest: AddonManifest, expectedBase: String? = null) {
         val old = state.value.firstOrNull { it.key == key } ?: return
         if (expectedBase != null && old.base != expectedBase) return
-        val visible = if (old.admin) manifest.copy(name = old.manifest.name) else manifest
+        val rawName = if (old.admin) old.manifest.name else manifest.name
+        val cleanName = rawName.replace("Opentune", "AURA", ignoreCase = true).replace("OpenTune", "AURA", ignoreCase = true)
+        val visible = manifest.copy(name = cleanName)
         if (old.manifest == visible) return
         // A new name, version or setting list changes nothing about what may be played: kept
         // without a new revision. Each one used to throw away every verified file found so far
@@ -56,12 +67,13 @@ object AddonStore {
         save(state.value.map { if (it.key == key) it.copy(manifest = visible) else it }, bump = matters)
     }
     @Synchronized fun syncCommunity(incoming: List<AudioAddon>) {
-        val incomingByKey = incoming.associateBy { it.key }
-        val retained = state.value.mapNotNull { old ->
-            if (!old.admin) old else incomingByKey[old.key]?.copy(enabled = old.enabled)
+        val oldByKey = state.value.associateBy { it.key }
+        val incomingOrdered = incoming.map { inc ->
+            val old = oldByKey[inc.key]
+            if (old != null) inc.copy(enabled = old.enabled) else inc
         }
-        val currentKeys = retained.map { it.key }.toSet()
-        val next = retained + incoming.filter { it.key !in currentKeys }
+        val nonAdmin = state.value.filter { !it.admin }
+        val next = incomingOrdered + nonAdmin
         if (next != state.value) save(next)
     }
     fun usable(addon: AudioAddon): Boolean = addon.enabled && !addon.ownerOff && (!addon.manifest.outputRequired || outputAllowed())

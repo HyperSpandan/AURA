@@ -3,14 +3,32 @@ package com.aura.data.lossless
 import java.text.Normalizer
 import java.util.Locale
 
-/** Conservative cross-catalog identity: no substring matches or removal of edit/version names. */
+/** Conservative cross-catalog identity: matches exact or cleaned YouTube titles while rejecting covers and remixes. */
 internal data class CatalogIdentity(val title: String, val artist: String, val album: String?, val durationMs: Long) {
-    fun matches(title: String, artists: List<String>, album: String?, durationMs: Long): Boolean =
-        key(this.title).isNotEmpty() && key(this.artist).isNotEmpty() &&
-            key(this.title) == key(title) && artistsMatch(this.artist, artists) &&
-            (this.album.isNullOrBlank() || key(this.album) == key(album.orEmpty())) &&
-            LosslessSource.durationMatches(this.durationMs, durationMs) &&
-            !otherVersion(title, album)
+    private val cleaned = com.aura.data.lyrics.TrackNameCleaner.clean(title, artist)
+
+    fun matches(title: String, artists: List<String>, album: String?, durationMs: Long): Boolean {
+        if (key(this.title).isEmpty() || key(this.artist).isEmpty()) return false
+        val candidateKey = key(title)
+        val ownKey = key(this.title)
+        val cleanKey = key(cleaned.title)
+        val candidateCleanKey = key(com.aura.data.lyrics.TrackNameCleaner.clean(title, artists.firstOrNull().orEmpty()).title)
+        val titleMatch = ownKey == candidateKey ||
+            (cleanKey.isNotEmpty() && cleanKey == candidateKey) ||
+            (candidateCleanKey.isNotEmpty() && (ownKey == candidateCleanKey || (cleanKey.isNotEmpty() && cleanKey == candidateCleanKey)))
+        if (!titleMatch) return false
+
+        val artistMatch = artistsMatch(this.artist, artists)
+        if (!artistMatch) return false
+
+        if (!this.album.isNullOrBlank() && !album.isNullOrBlank() && key(this.album) != key(album)) return false
+
+        if (!LosslessSource.durationMatches(this.durationMs, durationMs)) return false
+
+        if (otherVersion(title, album)) return false
+
+        return true
+    }
 
     /**
      * An instrumental, karaoke or other version filed under the song's own title, given
@@ -26,7 +44,9 @@ internal data class CatalogIdentity(val title: String, val artist: String, val a
     companion object {
         private val VERSION = Regex(
             "\\b(instrumentals?|karaoke|backing track|minus one|without vocals|no vocals|music only|" +
-                "acapella|a cappella|lofi|lo fi|slowed|reverb|sped up|8d|nightcore|remix|unplugged)\\b|伴奏",
+                "acapella|a cappella|lofi|lo fi|slowed|reverb|sped up|8d|nightcore|remix|unplugged|" +
+                "live|tribute|cover|acoustic|mashup|edit|mix)\\b|伴奏",
+            RegexOption.IGNORE_CASE,
         )
 
         private fun versionsIn(text: String): Set<String> =
@@ -34,13 +54,15 @@ internal data class CatalogIdentity(val title: String, val artist: String, val a
 
         // Queue bylines join performers, while catalog APIs return an array.
         // Keep exact band names first (e.g. Simon & Garfunkel), then require
-        // every named performer; a substring/one shared artist is not enough.
+        // either all named performers or the primary performer.
         private fun artistsMatch(credit: String, artists: List<String>): Boolean {
             if (artists.any { key(it) == key(credit) }) return true
             val separators = Regex("\\s*(?:,|&|;|\\u2022)\\s*|\\s+(?:feat\\.?|ft\\.?|featuring)\\s+", RegexOption.IGNORE_CASE)
             val wanted = credit.split(separators).map(::key).filter(String::isNotEmpty)
             val available = artists.flatMap { listOf(key(it)) + it.split(separators).map(::key) }.toSet()
-            return wanted.size > 1 && wanted.all { it in available }
+            if (wanted.isEmpty() || available.isEmpty()) return false
+            return (wanted.size > 1 && wanted.all { it in available }) ||
+                available.all { it in wanted }
         }
 
         fun key(text: String): String = Normalizer.normalize(text, Normalizer.Form.NFKC)

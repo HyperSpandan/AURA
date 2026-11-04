@@ -107,7 +107,7 @@ internal val SETTINGS_CATEGORIES = listOf(
     SettingsCategory(
         "library", "Home and Library", "Tabs, playlists, artist pages and what's hidden", Icons.Rounded.LibraryMusic,
         listOf(
-            "Home and tabs" to listOf("Separate Explore tab", "Speed dial", "Wide-screen layout"),
+            "Home and tabs" to listOf("Separate Explore tab", "Speed dial", "Hide community playlists", "Wide-screen layout"),
             "Playlists and songs" to listOf("Playlists in Library", "Import a playlist", "Swipe songs to queue them"),
             "Artist pages" to listOf("Artist signatures"),
             "New releases" to listOf("New-release alerts", "Followed artists"),
@@ -135,7 +135,7 @@ internal val SETTINGS_CATEGORIES = listOf(
         "about", "About", "Updates, source code and diagnostics", Icons.Rounded.Info,
         listOf(
             "Updates" to listOf("What's new", "Check for updates", "Check for updates automatically"),
-            "Community" to listOf("AURA community", "Support AURA", "Star on GitHub", "Source code"),
+            "Community" to listOf("Support AURA", "Star on GitHub", "Source code"),
             "Help" to listOf("Show the welcome again", "Count this phone in usage numbers", "Export diagnostics"),
         ),
     ),

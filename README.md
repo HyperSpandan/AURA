@@ -3,9 +3,9 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/justshivv/Opentune/releases/latest"><b>Download the latest APK</b></a>
+  <a href="https://github.com/HyperSpandan/AURA/releases/latest"><b>Download the latest APK</b></a>
   &nbsp;·&nbsp;
-  <a href="https://justshivv.github.io/Opentune/">Website</a>
+  <a href="https://justshivv.github.io/AURA/">Website</a>
   &nbsp;·&nbsp;
   <a href="https://discord.gg/6udrCVh5n">Discord</a>
   &nbsp;·&nbsp;
@@ -15,14 +15,14 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/justshivv/Opentune/actions/workflows/ci.yml"><img src="https://github.com/justshivv/Opentune/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/HyperSpandan/AURA/actions/workflows/ci.yml"><img src="https://github.com/HyperSpandan/AURA/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <img src="https://img.shields.io/badge/Android-8.0%2B-3DDC84?logo=android&logoColor=white" alt="Android 8.0+">
   <img src="https://img.shields.io/badge/Kotlin-Compose-7F52FF?logo=kotlin&logoColor=white" alt="Kotlin and Jetpack Compose">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0-blue" alt="GPL-3.0"></a>
-  <a href="https://justshivv.github.io/Opentune/usage/"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fopentune-usage.create-a-new-site-with-sites.workers.dev%2Fv1%2Fbadge%3Flabel%3Dactive%2520this%2520month&cacheSeconds=300" alt="Active installations this month"></a>
+  <a href="https://justshivv.github.io/AURA/usage/"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Faura-usage.aura-music.workers.dev%2Fv1%2Fbadge%3Flabel%3Dactive%2520this%2520month&cacheSeconds=300" alt="Active installations this month"></a>
 </p>
 
-[![Get it on Orion Store](https://raw.githubusercontent.com/RookieEnough/Orion-Store/refs/heads/main/assets/orion-badge.png)](https://rookieenough.github.io/Orion-Data/redirect.html?id=opentune&icon=https%3A%2F%2Fjustshivv.github.io%2FOpentune%2Ficon-512.png)
+[![Get it on Orion Store](https://raw.githubusercontent.com/RookieEnough/Orion-Store/refs/heads/main/assets/orion-badge.png)](https://rookieenough.github.io/Orion-Data/redirect.html?id=aura&icon=https%3A%2F%2Fjustshivv.github.io%2FAURA%2Ficon-512.png)
 
 # AURA
 
@@ -61,7 +61,7 @@ documented in [service integrations](docs/service-integrations.md).
 
 ## Install
 
-1. Open the [latest release](https://github.com/justshivv/Opentune/releases/latest)
+1. Open the [latest release](https://github.com/HyperSpandan/AURA/releases/latest)
    and download the APK for your phone. `arm64-v8a` fits almost every phone
    from the last several years; `universal` runs on anything.
 2. Open the file and allow your browser or file manager to install apps
@@ -86,7 +86,7 @@ AURA's native iOS build is an `.ipa`. It is not currently on the App Store or Te
    **Sources → Add source (+)** and paste this exact URL:
 
    ```text
-   https://justshivv.github.io/Opentune/ios/source.json
+   https://justshivv.github.io/AURA/ios/source.json
    ```
 
 3. Open the new AURA source, choose **AURA**, and tap **Install**. Let the
@@ -103,7 +103,7 @@ AURA's native iOS build is an `.ipa`. It is not currently on the App Store or Te
 
 **Alternative: install the IPA with a computer**
 
-1. Download [AURA-iOS.ipa](https://github.com/justshivv/Opentune/releases/download/ios/AURA-iOS.ipa)
+1. Download [AURA-iOS.ipa](https://github.com/HyperSpandan/AURA/releases/download/ios/AURA-iOS.ipa)
    and install [Sideloadly](https://sideloadly.io) on your PC or Mac.
 2. Connect and unlock your iPhone/iPad, tap **Trust this computer**, choose that device
    in Sideloadly, select the IPA, then follow its signing/install instructions.
@@ -121,7 +121,7 @@ AURA's native iOS build is an `.ipa`. It is not currently on the App Store or Te
 - **Signing/device limit error**: free Apple accounts have signing and active-app limits.
   Follow your installer's guidance to deactivate another app or wait for a signing slot.
 
-Without sideloading, you can also open the [web player](https://justshivv.github.io/Opentune/player/)
+Without sideloading, you can also open the [web player](https://justshivv.github.io/AURA/player/)
 from Safari and choose **Share → Add to Home Screen**. This installs the web app,
 not the native IPA. Safari on iOS cannot run our Chrome/Firefox session extension,
 so extension-dependent playback and account features are unavailable there.
@@ -145,7 +145,7 @@ Typing a password with a remote is no fun, so you sign the TV in from
 your phone instead:
 
 1. Install the same APK on the TV, from the
-   [releases](https://github.com/justshivv/Opentune/releases) page.
+   [releases](https://github.com/HyperSpandan/AURA/releases) page.
 2. On the TV, open Settings → Account and choose Sign in with your phone.
 3. Scan the QR code with a phone that has AURA, on the same Wi-Fi,
    and approve sharing your YouTube Music session. The code expires after
@@ -163,7 +163,7 @@ load a preview package in developer mode. Your library stays in that
 browser.
 
 Open it at
-[justshivv.github.io/Opentune/player](https://justshivv.github.io/Opentune/player/).
+[justshivv.github.io/AURA/player](https://justshivv.github.io/AURA/player/).
 
 It's a preview, so not everything from the Android app is there. Audio
 add-ons work for direct FLAC over CORS-enabled media, and the audio stays

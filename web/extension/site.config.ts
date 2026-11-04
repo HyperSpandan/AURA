@@ -2,5 +2,5 @@
 export const PRODUCTION_ORIGIN = 'https://justshivv.github.io';
 export const SITE_ORIGINS = [PRODUCTION_ORIGIN, ...(process.env.AURA_STORE_BUILD === '1' ? [] : ['http://localhost:5173'])];
 export function matchPatternsFor(origins: string[]): string[] {
-  return origins.map(o => o === PRODUCTION_ORIGIN ? `${o}/Opentune/player/*` : `${new URL(o).protocol}//${new URL(o).hostname}/*`);
+  return origins.flatMap(o => o === PRODUCTION_ORIGIN ? [`${o}/AURA/player/*`, `${o}/Opentune/player/*`] : [`${new URL(o).protocol}//${new URL(o).hostname}/*`]);
 }

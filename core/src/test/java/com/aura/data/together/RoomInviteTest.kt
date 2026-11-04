@@ -15,9 +15,9 @@ class RoomInviteTest {
     }
     @Test fun refusesUnrelatedHostsPathsAndPartialCodes() {
         assertNull(RoomCode.parse("https://evil.test/together/${code.raw}"))
-        assertNull(RoomCode.parse("https://justshivv.github.io.evil.test/Opentune/together/#code=${code.raw}"))
+        assertNull(RoomCode.parse("https://justshivv.github.io.evil.test/AURA/together/#code=${code.raw}"))
         assertNull(RoomCode.parse("https://justshivv.github.io/Other/together/#code=${code.raw}"))
         assertNull(RoomCode.parse("${code.appLink}AAAA"))
-        assertNull(RoomCode.parse("https://justshivv.github.io/Opentune/together/"))
+        assertNull(RoomCode.parse("https://justshivv.github.io/AURA/together/"))
     }
 }

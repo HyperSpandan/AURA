@@ -1,5 +1,6 @@
 package com.aura.ui
 
+import com.aura.data.settings.DockMotion
 import com.aura.ui.tv.tvMediaKeys
 import com.aura.ui.tv.TvMediaAction
 
@@ -241,6 +242,12 @@ fun AppRoot(vm: PlayerViewModel) {
 
     val entry by nav.currentBackStackEntryAsState()
     val route = entry?.destination?.route
+    val isCapsulePage = route == Tab.EXPLORE.route ||
+        route == "explore" ||
+        route?.startsWith("collection") == true ||
+        route?.startsWith("server/album") == true ||
+        route?.startsWith("playlist") == true ||
+        route?.startsWith("artist") == true
     var tab by rememberSaveable { mutableStateOf(Tab.HOME) }
     // Explore's tab turned off while on it: back to Home, Explore is on the Search page now.
     LaunchedEffect(separateExplore) {
@@ -251,7 +258,13 @@ fun AppRoot(vm: PlayerViewModel) {
     }
     LaunchedEffect(route) {
         Tab.entries.firstOrNull { it.route == route }?.let { tab = it }
-        chromeScroll.expand()
+        if (isCapsulePage) {
+            chromeScroll.lockCapsule = true
+            chromeScroll.fold()
+        } else {
+            chromeScroll.lockCapsule = false
+            chromeScroll.expand()
+        }
     }
     LaunchedEffect(playbackError) { playbackError?.let { com.aura.data.Pills.error(it) } }
     LaunchedEffect(Unit) { com.aura.data.together.Together.notices.collect { com.aura.data.Pills.info(it) } }
@@ -637,13 +650,14 @@ fun AppRoot(vm: PlayerViewModel) {
                             onRecognize = { nav.navigate("recognize") },
                             covered = playerCovers,
                             onOpenSpeedDial = { nav.navigate("speed-dial") },
+                            onMoodClick = openMood,
                         )
                     }
                     page("speed-dial") {
                         com.aura.ui.home.SpeedDialScreen(content, onItemClick = openItem, onBack = { nav.popBackStack() })
                     }
                     page(Tab.EXPLORE.route) {
-                        ExploreScreen(content, onMoodClick = openMood, onItemClick = openItem, onOpenSettings = { nav.navigate("settings") })
+                        ExploreScreen(content, onMoodClick = openMood, onItemClick = openItem, onOpenSettings = { nav.navigate("settings") }, onBack = { nav.popBackStack() }, actions = actions)
                     }
                     page(Tab.PODCASTS.route) {
                         com.aura.ui.podcasts.PodcastsScreen(content, actions, onOpenShow = { id -> nav.navigate("podcast/${Uri.encode(id)}") }, onOpenSettings = { nav.navigate("settings") })
@@ -674,7 +688,7 @@ fun AppRoot(vm: PlayerViewModel) {
                                 list.playlistId?.let { nav.navigate("playlist/${Uri.encode(it)}") } ?: list.browseId?.let { nav.openBrowse(it) }
                             },
                             explore = if (separateExplore) null else ({
-                                ExploreScreen(content, onMoodClick = openMood, onItemClick = openItem, showHeader = false)
+                                ExploreScreen(content, onMoodClick = openMood, onItemClick = openItem, showHeader = false, actions = actions)
                             }),
                         )
                     }
@@ -836,7 +850,7 @@ fun AppRoot(vm: PlayerViewModel) {
                     mini = if (song == null) null else { folded, m ->
                         MiniPlayerBar(vm, onExpand = { openPlayer(folded) }, modifier = m, inline = folded)
                     },
-                    motion = chromeUi.dockMotion,
+                    motion = if (isCapsulePage) DockMotion.CAPSULE else chromeUi.dockMotion,
                     lens = chromeUi.dockLens,
                     reduceMotion = chromeUi.reduceAnimation,
                 )

@@ -6,6 +6,7 @@ import com.aura.data.Collection
 import com.aura.data.ContentFilter
 import com.aura.data.MusicRepository
 import com.aura.data.library.LibraryCache
+import com.aura.data.model.BrowseType
 import com.aura.data.model.UiState
 import com.aura.ui.friendlyError
 import kotlinx.coroutines.CancellationException
@@ -47,6 +48,9 @@ internal class CollectionLoader(
                 val current = _preview.value
                 if (!force && current != null && fresh()) {
                     _state.value = UiState.Success(current)
+                    if (browseId.startsWith("MPRE") || MusicRepository.typeOf(browseId) == BrowseType.ALBUM || current.subtitle.contains("Album", ignoreCase = true)) {
+                        viewModelScope.launch(Dispatchers.IO) { com.aura.data.covers.AppleMotionArt.forAlbum(current) }
+                    }
                     return@launch
                 }
                 // Keep a complete cached list steady while refreshing. A new first page must not
@@ -56,6 +60,9 @@ internal class CollectionLoader(
                 _preview.value = complete
                 completePreview = true
                 _state.value = UiState.Success(complete)
+                if (browseId.startsWith("MPRE") || MusicRepository.typeOf(browseId) == BrowseType.ALBUM || complete.subtitle.contains("Album", ignoreCase = true)) {
+                    viewModelScope.launch(Dispatchers.IO) { com.aura.data.covers.AppleMotionArt.forAlbum(complete) }
+                }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {

@@ -114,7 +114,6 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="https" android:host="justshivv.github.io" android:pathPrefix="/Opentune/pair/" />
                 <data android:scheme="https" android:host="justshivv.github.io" android:pathPrefix="/AURA/pair/" />
             </intent-filter>
             <!-- Invites to a Listen together room: aura://together/<code>. -->
@@ -130,7 +129,6 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="https" android:host="justshivv.github.io" android:pathPrefix="/Opentune/together/" />
                 <data android:scheme="https" android:host="justshivv.github.io" android:pathPrefix="/AURA/together/" />
             </intent-filter>
             <!-- "Play … on AURA" from the Assistant. -->

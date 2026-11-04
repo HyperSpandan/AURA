@@ -246,12 +246,17 @@ object ExternalStreams {
             if (heard.size > 256) heard.clear()
             heard[videoId] = Heard(revision, heardAt, settledNow.toSet(), erredNow.toSet(), addonLines(detail))
         }
-        fun losslessRendition(track: LosslessSource.Track) = Rendition(java.util.UUID.randomUUID().toString(), track.url,
-            "${track.provider} · lossless requested", true, now(), provider = track.provider, bits = track.bits, sampleRate = track.sampleRate,
-            maximumSearch = beforePlayback, sessionRevision = com.aura.data.addons.AddonStore.revision.value, addonId = track.addonId, mimeType = track.mimeType,
-            trackId = track.trackId.ifEmpty { null }, tier = track.tier.ifEmpty { null }, codec = track.codec)
+        fun clean(text: String) = text.replace("Opentune", "AURA", ignoreCase = true).replace("OpenTune", "AURA", ignoreCase = true)
+        fun losslessRendition(track: LosslessSource.Track): Rendition {
+            val provider = clean(track.provider)
+            return Rendition(java.util.UUID.randomUUID().toString(), track.url,
+                "$provider · lossless requested", true, now(), provider = provider, bits = track.bits, sampleRate = track.sampleRate,
+                maximumSearch = beforePlayback, sessionRevision = com.aura.data.addons.AddonStore.revision.value, addonId = track.addonId, mimeType = track.mimeType,
+                trackId = track.trackId.ifEmpty { null }, tier = track.tier.ifEmpty { null }, codec = track.codec)
+        }
         val tracks = if (allowed(true) && !losslessMissed) LosslessSource.resolveAll(song, duration,
-            beforePlayback || AppSettings.playback.value.losslessHiRes, bestAvailable = beforePlayback, report = { line ->
+            beforePlayback || AppSettings.playback.value.losslessHiRes, bestAvailable = beforePlayback, report = { rawLine ->
+                val line = clean(rawLine)
                 synchronized(detail) {
                     val prefix = line.substringBefore(":", "")
                     if (prefix.isNotEmpty()) detail.removeAll { it.startsWith("$prefix:") }
@@ -272,7 +277,7 @@ object ExternalStreams {
                     fun score(x: Rendition) = com.aura.data.addons.AddonResolver.qualityScore(x.bits, x.sampleRate)
                     if (chosen == null || score(r) > score(chosen)) {
                         remember(videoId, r)
-                        report(videoId, (reports[videoId]?.let { "$it\n" } ?: "") + "${later.provider}: answered later with higher quality")
+                        report(videoId, (reports[videoId]?.let { "$it\n" } ?: "") + "${clean(later.provider)}: answered later with higher quality")
                         _improved.tryEmit(videoId)
                     }
                 }
@@ -290,7 +295,7 @@ object ExternalStreams {
             if (losslessSearched.size > 512) losslessSearched.clear()
             losslessSearched += videoId
         }
-        if (earlier != null && earlier === held && fresh == null) detail += "${earlier.provider}: verified FLAC, found earlier and available for playback"
+        if (earlier != null && earlier === held && fresh == null) detail += "${clean(earlier.provider)}: verified FLAC, found earlier and available for playback"
         if (allowed(true)) detail += if (track == null && earlier == null) "FLAC: no verified matching stream available" else "Verified FLAC available; the track info above shows the source currently playing"
         val askedSaavn = !losslessOnly && track == null && earlier == null && allowed(false) && !saavnMissed && (beforePlayback || StreamResolver.worthExternalUpgrade(videoId, 320))
         val saavn = if (askedSaavn) JioSaavnSource.resolve(song, duration, report = { detail += it }) else null

@@ -74,12 +74,21 @@ internal fun LoopingVideo(
                 .setForceHighestSupportedBitrate(true)
                 .build()
             var retried = false
+            com.aura.data.DebugLog.i("LoopingVideo", "init player for $url (fallback=$fallbackUrl)")
             addListener(object : Player.Listener {
-                override fun onRenderedFirstFrame() { drawn = true }
-                override fun onVideoSizeChanged(videoSize: VideoSize) { size = videoSize }
+                override fun onRenderedFirstFrame() {
+                    com.aura.data.DebugLog.i("LoopingVideo", "onRenderedFirstFrame: drawn=true for $url")
+                    drawn = true
+                }
+                override fun onVideoSizeChanged(videoSize: VideoSize) {
+                    com.aura.data.DebugLog.i("LoopingVideo", "onVideoSizeChanged: ${videoSize.width}x${videoSize.height}")
+                    size = videoSize
+                }
                 override fun onPlayerError(error: PlaybackException) {
+                    com.aura.data.DebugLog.w("LoopingVideo", "player error: ${error.message}", error)
                     if (retried || fallbackUrl == null) return
                     retried = true
+                    com.aura.data.DebugLog.i("LoopingVideo", "retrying with fallback: $fallbackUrl")
                     setMediaItem(MediaItem.fromUri(fallbackUrl))
                     prepare()
                 }

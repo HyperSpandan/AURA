@@ -313,10 +313,10 @@ data class PlaybackSettings(
     /** Swap to a clearly better stream mid-song when one turns up. */
     val qualityUpgrade: Boolean = true,
     /** Community FLAC lookup runs after playback starts. Downloads remain YouTube audio. */
-    val losslessStreaming: Boolean = false,
+    val losslessStreaming: Boolean = true,
     val losslessUnmeteredOnly: Boolean = false,
-    val losslessHiRes: Boolean = false,
-    val jioSaavnQuality: Boolean = false,
+    val losslessHiRes: Boolean = true,
+    val jioSaavnQuality: Boolean = true,
     /** Optional base URL implementing Meld's /api/get-music and /api/download-music protocol. */
     val qobuzRelayUrl: String = "",
     /** Overlap the end of a song with the start of the next; 0 is off. */
@@ -340,6 +340,8 @@ val DEFAULT_SPONSORBLOCK_CATEGORIES = setOf("music_offtopic", "sponsor", "selfpr
 @Serializable
 data class InterfaceSettings(
     val playlistGrid: Boolean = false,
+    /** Hide community-created / user playlists from Home and recommendations. */
+    val hideCommunityPlaylists: Boolean = true,
     /** Playlists on Library as a list down the page, grouped by where they're from, rather than a row of tiles. */
     val playlistList: Boolean = false,
     /** Playlists pinned to the top of Library, first pinned first: a local playlist's id, or a YouTube Music browse id. */

@@ -234,7 +234,7 @@ fun List<LyricLine>.activeIndex(positionMs: Long): Int {
  */
 object TrackNameCleaner {
     private val NOISE = Regex(
-        """\s*[(\[](?:[^)\]]*\b(?:official|lyrics?|lyric video|audio|video|visuali[sz]er|mv|m/v|hd|hq|4k|remaster(?:ed)?|explicit|clean|color coded|deluxe|bonus|mono|stereo|radio edit|(?:single|album) version)\b[^)\]]*)[)\]]""",
+        """\s*[(\[](?:[^)\]]*\b(?:official|lyrics?|lyric video|audio|video|visuali[sz]er|mv|m/v|hd|hq|4k|remaster(?:ed)?|explicit|clean|color coded|deluxe|bonus|mono|stereo|radio edit|(?:single|album) version|from\s+.*|soundtrack|motion picture|ost|theme from)\b[^)\]]*)[)\]]""",
         RegexOption.IGNORE_CASE,
     )
     private val FEAT = Regex("""\s*[(\[]?\s*\b(?:feat\.?|ft\.?|featuring)\s.*$""", RegexOption.IGNORE_CASE)
@@ -250,6 +250,10 @@ object TrackNameCleaner {
     fun clean(title: String, artist: String): Cleaned {
         var t = RELEASE_SUFFIX.replace(NOISE.replace(title, ""), "")
         var a = CHANNEL_SUFFIX.replace(artist.trim(), "").trim()
+        val pipe = t.indexOf('|')
+        if (pipe > 0) {
+            t = t.substring(0, pipe).trim()
+        }
         // "Artist - Title" uploads: take the artist from the title when it
         // agrees with the channel (which is often the same name, unspaced).
         val dash = Regex("""\s+[-–—]\s+""").find(t)

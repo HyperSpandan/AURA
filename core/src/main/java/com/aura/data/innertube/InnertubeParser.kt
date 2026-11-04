@@ -154,7 +154,8 @@ object InnertubeParser {
 
     private fun parseBrowseItem(renderer: JsonObject): BrowseItem? {
         val endpoint = renderer.o("navigationEndpoint").o("browseEndpoint") ?: return null
-        val browseId = endpoint.s("browseId") ?: return null
+        val rawBrowseId = endpoint.s("browseId") ?: return null
+        val browseId = Innertube.normalizeBrowseId(rawBrowseId)
         val pageType = endpoint.o("browseEndpointContextSupportedConfigs")
             .o("browseEndpointContextMusicConfig").s("pageType").orEmpty()
 
@@ -819,7 +820,8 @@ object InnertubeParser {
     /** Artist, album and playlist cards use the same promoted-search container as a song. */
     private fun parseCardShelfBrowse(renderer: JsonObject): BrowseItem? {
         val endpoint = renderer.o("onTap").o("browseEndpoint") ?: return null
-        val browseId = endpoint.s("browseId") ?: return null
+        val rawBrowseId = endpoint.s("browseId") ?: return null
+        val browseId = Innertube.normalizeBrowseId(rawBrowseId)
         val pageType = endpoint.o("browseEndpointContextSupportedConfigs")
             .o("browseEndpointContextMusicConfig").s("pageType").orEmpty()
         val title = renderer.o("title").runs()
@@ -889,7 +891,7 @@ object InnertubeParser {
         var credits = Credits()
         runs.forEach { run ->
             val browse = run.o("navigationEndpoint").o("browseEndpoint")
-            val id = browse.s("browseId") ?: return@forEach
+            val id = browse.s("browseId")?.let(Innertube::normalizeBrowseId) ?: return@forEach
             val pageType = browse.o("browseEndpointContextSupportedConfigs")
                 .o("browseEndpointContextMusicConfig").s("pageType").orEmpty()
             credits = when {
@@ -1353,7 +1355,7 @@ object InnertubeParser {
         // the actual video id, not a real browsable page.
         val videoId = endpoint.o("watchEndpoint").s("videoId")
             ?: browseId?.takeIf { it.startsWith("MPED") }?.removePrefix("MPED")
-        val resolvedBrowseId = browseId?.takeUnless { it.startsWith("MPED") }
+        val resolvedBrowseId = browseId?.takeUnless { it.startsWith("MPED") }?.let(Innertube::normalizeBrowseId)
         val thumbnails = renderer.o("thumbnailRenderer").o("musicThumbnailRenderer")
             .o("thumbnail").a("thumbnails")
         val subtitle = renderer.o("subtitle").runs()

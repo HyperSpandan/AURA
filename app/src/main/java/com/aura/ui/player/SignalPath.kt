@@ -124,7 +124,8 @@ fun SignalPathDialog(format: AudioFormatInfo?, onDismiss: () -> Unit, song: com.
             emptyList(),
             content = {
                 TrackInfo(
-                    source = source?.provider?.removePrefix("YouTube · ") ?: "Waiting for the stream",
+                    source = (source?.provider?.removePrefix("YouTube · ") ?: "Waiting for the stream")
+                        .replace("Opentune", "AURA", ignoreCase = true).replace("OpenTune", "AURA", ignoreCase = true),
                     specs = listOfNotNull(
                         codec,
                         if (isLossless) bits?.let { "$it-bit" } else null,
@@ -229,7 +230,8 @@ internal data class SourceAnswer(val who: String?, val said: String, val outcome
  * is Qobuz saying no; a line with no name before a colon stands on its own.
  * The add-ons' summary line is named as theirs.
  */
-internal fun sourceAnswers(detail: String): List<SourceAnswer> = detail.lines().map { it.trim() }.filter { it.isNotEmpty() }.map { line ->
+internal fun sourceAnswers(detail: String): List<SourceAnswer> = detail.lines().map { it.trim() }.filter { it.isNotEmpty() }.map { rawLine ->
+    val line = rawLine.replace("Opentune", "AURA", ignoreCase = true).replace("OpenTune", "AURA", ignoreCase = true)
     val m = Regex("""^([^:]{1,40}):\s+(.+)$""").find(line)
     val who = m?.groupValues?.get(1)?.let { if (it == "FLAC") "Add-ons" else it }
     val said = m?.groupValues?.get(2) ?: line

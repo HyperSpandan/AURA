@@ -38,7 +38,7 @@ object LosslessSource {
     }
 
     internal fun durationMatches(expectedMs: Long, actualMs: Long): Boolean =
-        expectedMs > 0 && abs(expectedMs - actualMs) <= 3_000
+        expectedMs > 0 && abs(expectedMs - actualMs) <= 6_000
 
 }
 

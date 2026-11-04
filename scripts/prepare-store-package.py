@@ -29,10 +29,10 @@ def prepare(commit, output):
     (output / 'release.json').write_text(json.dumps({
         'name': 'AURA', 'packageName': 'com.aura', 'versionName': version,
         'versionCode': code, 'sourceCommit': commit,
-        'website': 'https://justshivv.github.io/Opentune/',
-        'privacyPolicy': 'https://justshivv.github.io/Opentune/privacy/',
-        'sourceCode': 'https://github.com/justshivv/Opentune',
-        'releasePage': 'https://github.com/justshivv/Opentune/releases/latest',
+        'website': 'https://justshivv.github.io/AURA/',
+        'privacyPolicy': 'https://justshivv.github.io/AURA/privacy/',
+        'sourceCode': 'https://github.com/HyperSpandan/AURA',
+        'releasePage': 'https://github.com/HyperSpandan/AURA/releases/latest',
         'fdroidStatus': 'Submission draft; source build and scanner review required',
     }, indent=2) + '\n')
     shutil.copy(ROOT / 'docs/publishing.md', output / 'PUBLISHING.md')

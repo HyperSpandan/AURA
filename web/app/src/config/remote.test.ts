@@ -17,11 +17,11 @@ it('pins the bootstrap key, retains signed state offline and expires safely with
   const { refreshConfig, currentConfig } = await import('./remote');
   await refreshConfig(true);
   expect(currentConfig().revision).toBe(1);
-  expect(mockFetch.mock.calls[0]?.[0]).toBe('https://addon-opentune.rethinknow.in/v1/app-config/key');
+  expect(mockFetch.mock.calls[0]?.[0]).toBe('https://aura-usage.aura-music.workers.dev/v1/app-config/key');
   mockFetch.mockRejectedValue(new Error('offline'));
   await refreshConfig(true);
   expect(currentConfig().revision).toBe(1);
-  expect(mockFetch.mock.calls.at(-1)?.[0]).toBe('https://addon-opentune.rethinknow.in/v1/app-config');
+  expect(mockFetch.mock.calls.at(-1)?.[0]).toBe('https://aura-usage.aura-music.workers.dev/v1/app-config');
   vi.mocked(Date.now).mockReturnValue(fixture.now + 8 * 86400000);
   await refreshConfig(true);
   expect(currentConfig().revision).toBe(0);
@@ -36,5 +36,5 @@ it('starts offline from the validated stored copy and rejects a tampered network
   await refreshConfig(true);
   expect(currentConfig().revision).toBe(1);
   expect(mockFetch).toHaveBeenCalledTimes(1);
-  expect(mockFetch.mock.calls[0]?.[0]).toBe('https://addon-opentune.rethinknow.in/v1/app-config');
+  expect(mockFetch.mock.calls[0]?.[0]).toBe('https://aura-usage.aura-music.workers.dev/v1/app-config');
 });

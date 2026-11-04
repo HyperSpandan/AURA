@@ -16,7 +16,7 @@ class AddonApprovalActivity : ComponentActivity() {
         FirstPartyAddonAuth.init(this)
         val uri = intent?.data
         val id = uri?.getQueryParameter("id").orEmpty()
-        if (uri?.scheme != "aura" && uri?.scheme != "opentune" || uri.host != "addon-approve" || !id.matches(Regex("[A-Za-z0-9_-]{43}"))) { finish(); return }
+        if (uri?.scheme != "aura" || uri?.host != "addon-approve" || !id.matches(Regex("[A-Za-z0-9_-]{43}"))) { finish(); return }
         val waiting = AlertDialog.Builder(this).setTitle("Verify AURA").setMessage("Checking this device and browser request…")
             .setNegativeButton("Cancel") { _, _ -> finish() }.setOnCancelListener { finish() }.show()
         lifecycleScope.launch {
