@@ -34,7 +34,7 @@ No accounts required. No subscription fees. No ads. Just pure music, audiophile-
 
 ## ✨ Key Highlights
 
-- 🎨 **Next-Gen Visual Design**: Living beat-reactive glow, 3D Cover Flow, 3D vinyl record crate browser, full-bleed animated covers, and fluid morphing capsule dock.
+- 🎨 **Next-Gen Visual Design**: 3D Cover Flow carousel, full-bleed animated album artwork, and fluid morphing capsule dock.
 - 🎧 **Audiophile Sound Quality**: Lossless FLAC add-on integrations, 15-band EQ, AutoEq correction for 8,000+ headphones, bit-perfect USB DAC output, and loudness normalization.
 - 🎤 **Pure Synced Lyrics**: Real-time word-by-word synced lyrics powered by LRCLIB, KuGou, and NetEase with organic glyph bloom and zero blocky borders.
 - 👥 **Listen Together**: Synchronized, end-to-end encrypted rooms powered by decentralized Nostr relays—listen to tracks in exact step with friends.
@@ -74,8 +74,6 @@ No accounts required. No subscription fees. No ads. Just pure music, audiophile-
 - **Offline Downloads**: High-speed track and album downloads with embedded metadata and synced lyrics for full offline playback.
 
 ### 🎨 Visuals & Modern Experience
-- **Beat-Reactive Glow & Living Aura**: Ambient multi-layer plasma radiance and subtle album cover thump reacting dynamically to kick transients and bass drops.
-- **📦 3D "Record Crate" for Library**: Flip forward and backward through your albums with realistic $22^\circ$ forward angle tilt, depth perspective, and flippable 3D sleeves revealing tracklists and Hi-Res badges.
 - **3D Cover Flow Carousel**: Interactive gesture-driven cover flow on Explore spotlighting trending artists and top picks.
 - **Fluid Morphing Capsule Dock**: An adaptive glass dock that expands when browsing and minimizes into a compact floating capsule when scrolling or playing.
 - **Apple Music Animated Artwork**: Loops high-resolution motion art natively on supported albums and Spotify Canvas clips.
