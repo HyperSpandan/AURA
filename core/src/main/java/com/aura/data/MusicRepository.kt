@@ -590,20 +590,34 @@ object MusicRepository {
             throw java.io.IOException("This mix is currently unavailable. Please try again later.")
         }
         val normalizedId = Innertube.normalizeBrowseId(browseId)
-        val mixId = normalizedId.removePrefix("VL").takeIf { it.startsWith("RD") || it.startsWith("RMM") }
+        val rawPlaylistId = normalizedId.removePrefix("VL")
         val response = try {
             Innertube.browse(normalizedId)
         } catch (e: kotlinx.coroutines.CancellationException) {
             throw e
         } catch (e: Exception) {
-            // A mix whose page is refused still plays: its songs come as the player's queue.
-            mixId?.let { id -> mixCollection(normalizedId, id)?.let { return@io it } }
-            throw e
+            // If browse failed (e.g. 400 Bad Request), try the alternate ID (bare or prefixed)
+            val altId = if (normalizedId.startsWith("VL")) rawPlaylistId else "VL$normalizedId"
+            val altResponse = runCatching { Innertube.browse(altId) }.getOrNull()
+            if (altResponse != null) {
+                altResponse
+            } else {
+                // If browse endpoint failed completely, fall back to /next queue for any playlist/mix/album
+                mixCollection(browseId, rawPlaylistId)?.let { return@io it }
+                throw e
+            }
         }
         val header = InnertubeParser.parseBrowseHeader(response)
         val page = InnertubeParser.parsePlaylistShelf(response)
         // A song on two pages of the playlist, as on one, shows once.
         val songs = (page?.songs?.takeIf { it.isNotEmpty() } ?: InnertubeParser.collectSongsDeep(response)).distinctBy { it.videoId }.toMutableList()
+        // If browse returned an empty shell (e.g. track radios like RDAMVM), fetch via /next watch queue
+        if (songs.isEmpty()) {
+            mixCollection(browseId, rawPlaylistId)?.let { mixCol ->
+                onPage?.invoke(mixCol)
+                return@io mixCol
+            }
+        }
         // Signed out, no page has a save button, which would read as "owned".
         val owned = if (Innertube.cookie != null && InnertubeParser.isEditablePlaylist(normalizedId)) {
             InnertubeParser.parsePlaylistOwned(response)
@@ -811,7 +825,7 @@ object MusicRepository {
     /** What a browse id opens, read off its prefix. */
     fun typeOf(browseId: String): BrowseType = when {
         browseId.startsWith("UC") -> BrowseType.ARTIST
-        browseId.startsWith("MPREb") -> BrowseType.ALBUM
+        browseId.startsWith("MPRE") -> BrowseType.ALBUM
         browseId.startsWith("VL") || browseId.startsWith("PL") || browseId.startsWith("RD") ||
             browseId.startsWith("OLAK") || browseId.startsWith("MPSP") ||
             browseId.startsWith("seed:") || browseId.startsWith("spotify:") ||
