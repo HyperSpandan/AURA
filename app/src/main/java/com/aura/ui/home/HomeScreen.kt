@@ -300,30 +300,30 @@ fun HomeScreen(
                 // one entered for Listen together.
                 val firstName = (account?.name ?: com.aura.data.together.Together.savedName)
                     .substringBefore(' ').trim().takeIf { it.isNotBlank() }
+                val shownAt by page.currentStateFlow.collectAsState()
+                val hour = remember(shownAt.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) {
+                    java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+                }
+                val greeting = when (hour) {
+                    in 5..11 -> "Good morning"
+                    in 12..16 -> "Good afternoon"
+                    in 17..21 -> "Good evening"
+                    else -> "Late night"
+                }
                 Column(
                     Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.statusBars)
                         .padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 8.dp),
                 ) {
-                    // Brand name sits right over the name, the buttons beside the pair.
+                    // Top header row: AURA WebGL logo and utility actions
                     Row(
                         Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        Column(Modifier.weight(1f)) {
+                        Box(Modifier.weight(1f)) {
                             com.aura.ui.components.RefractedBrandText(
-                                height = if (firstName != null) 36.dp else 44.dp
+                                height = 44.dp,
                             )
-                            if (firstName != null) {
-                                Text(
-                                    firstName,
-                                    style = MaterialTheme.typography.titleLarge,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    maxLines = 1,
-                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                                    modifier = Modifier.padding(top = 2.dp),
-                                )
-                            }
                         }
                         if (onRecognize != null) {
                             GlassIconButton(Icons.Rounded.GraphicEq, "Name a song playing nearby", onRecognize, size = 48.dp)
@@ -335,6 +335,35 @@ fun HomeScreen(
                                 else Icon(Icons.Rounded.Person, "Account and settings", Modifier.size(24.dp))
                             }
                         }
+                    }
+
+                    Spacer(Modifier.height(18.dp))
+
+                    // Greeting message placed directly above Top picks for you, with username below it
+                    if (firstName != null) {
+                        Text(
+                            text = com.aura.ui.theme.tr(greeting),
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                        Text(
+                            text = firstName,
+                            style = MaterialTheme.typography.displaySmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.padding(top = 2.dp),
+                        )
+                    } else {
+                        Text(
+                            text = com.aura.ui.theme.tr(greeting),
+                            style = MaterialTheme.typography.displaySmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                        )
                     }
                 }
             }
