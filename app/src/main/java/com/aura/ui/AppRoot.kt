@@ -240,6 +240,7 @@ fun AppRoot(vm: PlayerViewModel) {
         )
     }
 
+    val heroMorph = com.aura.ui.components.rememberHeroMorphState()
     val entry by nav.currentBackStackEntryAsState()
     val route = entry?.destination?.route
     val isCapsulePage = route == Tab.EXPLORE.route ||
@@ -632,15 +633,18 @@ fun AppRoot(vm: PlayerViewModel) {
                 // Glass inside the pages is part of the layer the chrome blurs, so it
                 // can't blur that layer itself: it's filled, unless a page records
                 // its own content for an overlay (GlassPage).
-                CompositionLocalProvider(LocalHazeState provides null) {
+                CompositionLocalProvider(
+                    LocalHazeState provides null,
+                    com.aura.ui.components.LocalHeroMorph provides heroMorph,
+                ) {
                 NavHost(
                     navController = nav,
                     startDestination = Tab.HOME.route,
                     modifier = Modifier.align(Alignment.TopCenter).then(pageArea).fillMaxSize(),
-                    enterTransition = { PageMotion.enter(chromeUi.pageTransition, chromeUi.reduceAnimation) },
-                    exitTransition = { PageMotion.exit(chromeUi.pageTransition, chromeUi.reduceAnimation) },
-                    popEnterTransition = { PageMotion.popEnter(chromeUi.pageTransition, chromeUi.reduceAnimation) },
-                    popExitTransition = { PageMotion.popExit(chromeUi.pageTransition, chromeUi.reduceAnimation) },
+                    enterTransition = { if (heroMorph.isMorphing) androidx.compose.animation.EnterTransition.None else PageMotion.enter(chromeUi.pageTransition, chromeUi.reduceAnimation) },
+                    exitTransition = { if (heroMorph.isMorphing) androidx.compose.animation.ExitTransition.None else PageMotion.exit(chromeUi.pageTransition, chromeUi.reduceAnimation) },
+                    popEnterTransition = { if (heroMorph.isMorphing) androidx.compose.animation.EnterTransition.None else PageMotion.popEnter(chromeUi.pageTransition, chromeUi.reduceAnimation) },
+                    popExitTransition = { if (heroMorph.isMorphing) androidx.compose.animation.ExitTransition.None else PageMotion.popExit(chromeUi.pageTransition, chromeUi.reduceAnimation) },
                 ) {
                     page(Tab.HOME.route) {
                         HomeScreen(
@@ -823,6 +827,7 @@ fun AppRoot(vm: PlayerViewModel) {
                         )
                     }
                 }
+                com.aura.ui.components.HeroMorphOverlay(heroMorph)
                 }
             }
 

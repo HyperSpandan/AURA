@@ -1,5 +1,8 @@
 package com.aura.ui.home
 
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.geometry.Rect
 import kotlinx.coroutines.launch
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
@@ -824,6 +827,8 @@ private fun TopPickCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val heroMorph = com.aura.ui.components.LocalHeroMorph.current
+    var cardBounds by remember { mutableStateOf(Rect.Zero) }
     val menu = item.cardMenu()
     val shape = RoundedCornerShape(26.dp)
     val innerShape = RoundedCornerShape(20.dp)
@@ -842,15 +847,33 @@ private fun TopPickCard(
         }
     }
 
+    val handleTap = {
+        val bId = item.browseId
+        if (heroMorph != null && bId != null && cardBounds != Rect.Zero && item.videoId == null) {
+            heroMorph.launch(
+                browseId = bId,
+                title = item.title,
+                subtitle = item.subtitle,
+                thumbnailUrl = item.thumbnailUrl,
+                bounds = cardBounds,
+                initialCornerRadius = 26.dp,
+                onNavigate = onClick,
+            )
+        } else {
+            onClick()
+        }
+    }
+
     Box(
         modifier = modifier
+            .onGloballyPositioned { coordinates -> cardBounds = coordinates.boundsInWindow() }
             .menuAnchor(anchor, view)
             .clip(shape)
             .background(MaterialTheme.colorScheme.surfaceContainerHigh)
             .border(1.dp, Color.White.copy(alpha = 0.15f), shape)
             .then(
-                if (menu == null) Modifier.clickable(onClick = onClick)
-                else Modifier.menuClickable(onClick = onClick, onLongClick = { haptics.press(); contextOpen = true }),
+                if (menu == null) Modifier.clickable(onClick = handleTap)
+                else Modifier.menuClickable(onClick = handleTap, onLongClick = { haptics.press(); contextOpen = true }),
             ),
     ) {
         Artwork(

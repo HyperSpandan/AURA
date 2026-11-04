@@ -57,6 +57,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
@@ -577,6 +580,8 @@ private fun ExploreSpotlightHero(
 
         // 5. Hero Content: Artist Signature, 3D Cover Flow Carousel, Release Metadata, and Action Controls
         val rawName = artist?.name ?: page?.name ?: "EXPLORE"
+        val heroMorph = com.aura.ui.components.LocalHeroMorph.current
+        var selectedCardBounds by remember { mutableStateOf(Rect.Zero) }
 
         Column(
             modifier = Modifier
@@ -617,6 +622,7 @@ private fun ExploreSpotlightHero(
                         modifier = Modifier
                             .size(cardSize)
                             .zIndex(1f - pageOffset.absoluteValue.coerceAtMost(1f))
+                            .then(if (isSelected) Modifier.onGloballyPositioned { selectedCardBounds = it.boundsInWindow() } else Modifier)
                             .graphicsLayer {
                                 scaleX = scale
                                 scaleY = scale
@@ -648,7 +654,20 @@ private fun ExploreSpotlightHero(
                             .background(Color(0xFF1E1E26))
                             .clickable {
                                 if (isSelected) {
-                                    onReleaseClick(release)
+                                    val bId = release.browseId
+                                    if (heroMorph != null && bId != null && selectedCardBounds != Rect.Zero) {
+                                        heroMorph.launch(
+                                            browseId = bId,
+                                            title = release.title,
+                                            subtitle = release.subtitle,
+                                            thumbnailUrl = release.thumbnailUrl,
+                                            bounds = selectedCardBounds,
+                                            initialCornerRadius = 20.dp,
+                                            onNavigate = { onReleaseClick(release) },
+                                        )
+                                    } else {
+                                        onReleaseClick(release)
+                                    }
                                 } else {
                                     scope.launch { pagerState.animateScrollToPage(pageIdx) }
                                 }
