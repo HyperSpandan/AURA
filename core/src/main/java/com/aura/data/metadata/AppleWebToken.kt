@@ -1,0 +1,66 @@
+package com.aura.data.metadata
+
+import com.aura.data.Http
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runInterruptible
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import okhttp3.Request
+
+/**
+ * The token Apple Music's web player uses for its catalogue reads, taken
+ * from the player's own script (as BitChord does). Apple answers 401 unless
+ * the request also says it comes from music.apple.com, so [request] sets
+ * both. Shared by the Apple lyrics lookup and the animated covers.
+ */
+internal object AppleWebToken {
+    const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
+    private val INDEX_SCRIPT = Regex("""/assets/index~[^"]+\.js""")
+    private val TOKEN = Regex("""eyJ[A-Za-z0-9_-]+\.eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+""")
+
+    private val lock = Mutex()
+    @Volatile private var token: String? = null
+
+    suspend fun get(): String? = token ?: lock.withLock {
+        token ?: run {
+            val page = text("https://music.apple.com/us/new") ?: return@run null
+            val script = INDEX_SCRIPT.find(page)?.value ?: return@run null
+            text("https://music.apple.com$script")?.let { extractCatalogToken(it) }
+        }?.also { token = it }
+    }
+
+    /**
+     * Apple's web player script bundles multiple JWT tokens:
+     * - An internal playback token (issuer: AMPWebPlay) which gives HTTP 401 on catalog reads.
+     * - The public developer catalog tokens which give HTTP 200 on amp-api.music.apple.com.
+     */
+    internal fun extractCatalogToken(script: String): String? {
+        val matches = TOKEN.findAll(script).map { it.value }.toList()
+        return matches.firstOrNull { jwt ->
+            val parts = jwt.split('.')
+            if (parts.size >= 2) {
+                val payload = runCatching {
+                    String(java.util.Base64.getUrlDecoder().decode(parts[1]))
+                }.getOrNull() ?: ""
+                !payload.contains("AMPWebPlay") && payload.contains("apple.com")
+            } else false
+        } ?: matches.lastOrNull()
+    }
+
+    /** After a refusal: Apple has turned the token over, so the next read takes a fresh one. */
+    fun forget() {
+        token = null
+    }
+
+    fun request(url: String, bearer: String): Request = Request.Builder().url(url)
+        .header("User-Agent", USER_AGENT)
+        .header("Authorization", "Bearer $bearer")
+        .header("Origin", "https://music.apple.com")
+        .header("Referer", "https://music.apple.com/")
+        .build()
+
+    private suspend fun text(url: String): String? = runInterruptible(Dispatchers.IO) {
+        Http.client.newCall(Request.Builder().url(url).header("User-Agent", USER_AGENT).build()).execute()
+            .use { if (it.isSuccessful) it.body?.string() else null }
+    }
+}

@@ -1,0 +1,19 @@
+{
+  "name": "aura-web",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.11.2",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @aura/app dev",
+    "dev:ext": "pnpm --filter @aura/extension dev",
+    "dev:ext:firefox": "pnpm --filter @aura/extension dev:firefox",
+    "build": "pnpm -r build",
+    "build:site": "pnpm --filter @aura/extension package && pnpm --filter @aura/app build",
+    "typecheck": "pnpm -r typecheck",
+    "test": "node scripts/prepare-fixtures.mjs && pnpm -r test",
+    "fixtures": "node scripts/capture-fixtures.mjs"
+  }
+}

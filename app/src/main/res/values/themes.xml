@@ -1,0 +1,4 @@
+<resources>
+    <!-- The framework has no DayNight Material theme; values-night swaps the parent. -->
+    <style name="Theme.Aura" parent="android:Theme.Material.Light.NoActionBar" />
+</resources>
