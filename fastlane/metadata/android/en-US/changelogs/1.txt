@@ -1,0 +1,7 @@
+Initial release of AURA Music Player:
+• Complete YouTube Music catalog with ad-free, account-free listening
+• Word-by-word synchronized lyrics and dynamic letterform illumination
+• 3D Cover Flow carousel and fluid morphing capsule dock
+• Listen Together rooms for in-step listening with friends via Nostr
+• Lossless audio upgrade support with BitChord FLAC resolvers
+• 50,000+ live radio stations and complete podcast player

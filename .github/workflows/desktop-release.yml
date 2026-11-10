@@ -4,8 +4,8 @@
 # by hand for a release that's already out: Actions > Desktop release > Run workflow, with its tag.
 #
 # Each file is named for the release and the system it's for, e.g.
-#   AURA-v1.0.4-windows-x64-setup.exe   AURA-v1.0.4-macos-arm64.dmg
-#   AURA-v1.0.4-linux-x86_64.AppImage   AURA-v1.0.4-linux-amd64.deb
+#   AURA-v1.0.0-windows-x64-setup.exe   AURA-v1.0.0-macos-arm64.dmg
+#   AURA-v1.0.0-linux-x86_64.AppImage   AURA-v1.0.0-linux-amd64.deb
 # Running again for the same tag replaces them.
 name: Desktop release
 
@@ -16,7 +16,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: Release to attach the desktop downloads to, e.g. v1.0.4
+        description: Release to attach the desktop downloads to, e.g. v1.0.0
         required: true
 
 permissions:
