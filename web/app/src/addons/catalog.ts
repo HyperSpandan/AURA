@@ -2,7 +2,7 @@ import { currentConfig, refreshConfig } from '@/config/remote';
 import { endpoint, type Addon } from '@aura/shared/addons';
 
 /** Where the site says the owner's server is; the catalog is only ever read from one of these. */
-const CONFIG_URL = 'https://justshivv.github.io/AURA/usage-config.json';
+const CONFIG_URL = 'https://hyperspandan.github.io/AURA/usage-config.json';
 const CATALOG_HOSTS = ['aura-usage.aura-music.workers.dev'];
 /** As on Android: looked at on start and when Audio sources opens, at most this often. */
 const REFRESH_MS = 15 * 60_000;

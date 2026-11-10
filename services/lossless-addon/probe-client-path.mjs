@@ -1,5 +1,5 @@
 import { flacInfo } from './worker.mjs';
-const base = 'https://opentune-lossless-addon.create-a-new-site-with-sites.workers.dev';
+const base = 'https://aura-lossless-addon.create-a-new-site-with-sites.workers.dev';
 const report = { checkedAt: new Date().toISOString(), scope: 'Unsigned staged-service path and bounded media headers, not genuine Android attestation', results: [] };
 async function request(url, media = false) {
   const start = Date.now();

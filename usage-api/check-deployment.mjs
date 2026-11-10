@@ -27,13 +27,13 @@ for(let attempt=0;;attempt++) {
     break;
   } catch(error) { if(attempt===5) throw error;await new Promise(resolve=>setTimeout(resolve,5000)); }
 }
-const pagesPreflight=await read('/usage/v1/summary',{method:'OPTIONS',headers:{Origin:'https://justshivv.github.io','Access-Control-Request-Headers':'authorization'}});
+const pagesPreflight=await read('/usage/v1/summary',{method:'OPTIONS',headers:{Origin:'https://hyperspandan.github.io','Access-Control-Request-Headers':'authorization'}});
 assert.equal(pagesPreflight.status,204);
 assert.match(pagesPreflight.headers.get('Access-Control-Allow-Headers'),/Authorization/);
-const blocked=await read('/usage/v1/summary',{headers:{Origin:'https://justshivv.github.io'}});
+const blocked=await read('/usage/v1/summary',{headers:{Origin:'https://hyperspandan.github.io'}});
 assert.equal(blocked.status,401);
-assert.equal(blocked.headers.get('Access-Control-Allow-Origin'),'https://justshivv.github.io');
-const preflight=await read('/v1/activity',{method:'OPTIONS',headers:{Origin:'https://justshivv.github.io'}});
+assert.equal(blocked.headers.get('Access-Control-Allow-Origin'),'https://hyperspandan.github.io');
+const preflight=await read('/v1/activity',{method:'OPTIONS',headers:{Origin:'https://hyperspandan.github.io'}});
 assert.equal(preflight.status,204);
 if(process.env.USAGE_ADMIN_USERNAME && process.env.USAGE_ADMIN_PASSWORD) {
   const login=await signIn({Origin:base});
@@ -43,17 +43,17 @@ if(process.env.USAGE_ADMIN_USERNAME && process.env.USAGE_ADMIN_PASSWORD) {
   for(const path of ['/usage/','/usage/v1/summary']) assert.equal((await read(path,{headers})).status,200);
   const logout=await read('/auth/logout',{method:'POST',headers:{...headers,Origin:base}});
   assert.match(logout.headers.get('set-cookie'),/Max-Age=0/);
-  const pagesLogin=await signIn({Origin:'https://justshivv.github.io',Accept:'application/json'});
+  const pagesLogin=await signIn({Origin:'https://hyperspandan.github.io',Accept:'application/json'});
   assert.equal(pagesLogin.status,200);
   assert.equal(pagesLogin.headers.get('set-cookie'),null);
   const {token}=await pagesLogin.json();
-  const pagesRead=await read('/usage/v1/summary',{headers:{Origin:'https://justshivv.github.io',Authorization:'Bearer '+token}});
+  const pagesRead=await read('/usage/v1/summary',{headers:{Origin:'https://hyperspandan.github.io',Authorization:'Bearer '+token}});
   assert.equal(pagesRead.status,200);
   const current = await pagesRead.json();
   assert.ok(Array.isArray(current.currentVersions));
   assert.equal(current.currentVersions.reduce((sum,row)=>sum+row.installations,0),current.totals.installs);
   const todayIst = new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Kolkata',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
-  const istRead=await read(`/usage/v1/analytics?from=${todayIst}&to=${todayIst}&timeZone=Asia%2FKolkata`,{headers:{Origin:'https://justshivv.github.io',Authorization:'Bearer '+token}});
+  const istRead=await read(`/usage/v1/analytics?from=${todayIst}&to=${todayIst}&timeZone=Asia%2FKolkata`,{headers:{Origin:'https://hyperspandan.github.io',Authorization:'Bearer '+token}});
   assert.equal(istRead.status,200);
   assert.equal((await istRead.json()).timeZone,'Asia/Kolkata');
   console.log('Verified Pages bearer login, Worker cookie login, private data and anonymous rejection.');

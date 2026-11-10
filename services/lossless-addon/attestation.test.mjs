@@ -23,7 +23,7 @@ function description({ security = 1, locked = true, boot = 0, packageName = 'com
 }
 test('description requires exact app/signer, fresh challenge, hardware key and locked verified boot', () => {
   validateDescription(description(), challenge, [signer]);
-  for (const change of [{ security: 0 }, { locked: false }, { boot: 1 }, { boot: 2 }, { packageName: 'com.fake.opentune' }, { digest: 'cd'.repeat(32) }, { origin: 2 }, { c: randomBytes(32).toString('base64url') }]) {
+  for (const change of [{ security: 0 }, { locked: false }, { boot: 1 }, { boot: 2 }, { packageName: 'com.fake.aura' }, { digest: 'cd'.repeat(32) }, { origin: 2 }, { c: randomBytes(32).toString('base64url') }]) {
     assert.throws(() => validateDescription(description(change), challenge, [signer]));
   }
   assert.throws(() => validateDescription(description(), challenge, []));
@@ -32,7 +32,7 @@ test('bounded DER rejects malformed/trailing/indefinite/truncated data', () => {
   for (const b of [[48, 128, 0, 0], [48, 3, 2, 1], [48, 0, 0], [191, 255, 255, 255, 255, 127, 0], [48, 255]]) assert.throws(() => der(Buffer.from(b)));
 });
 test('real certificate chain/proof checks reject wrong roots, revocation, expired certificates and altered signatures', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'opentune-attestation-test-'));
+  const dir = mkdtempSync(join(tmpdir(), 'aura-attestation-test-'));
   const run = args => execFileSync('openssl', args, { cwd: dir, stdio: 'pipe' });
   try {
     run(['req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-keyout', 'root.key', '-out', 'root.pem', '-days', '2', '-subj', '/CN=Test only root', '-addext', 'basicConstraints=critical,CA:TRUE']);

@@ -12,7 +12,7 @@ export type ConfigData = {
 export type AppConfig = { revision: number; expiresAt: number; data: ConfigData };
 export const defaults = (): AppConfig => ({ revision: 0, expiresAt: Infinity, data: {
   sections: sectionIds.map(id => ({ id, enabled: true, title: '' })), banners: [], playlists: [], sources: null,
-  links: { github: 'https://github.com/HyperSpandan/AURA', discord: 'https://discord.gg/6udrCVh5n', web: 'https://justshivv.github.io/AURA/player/', tv: 'https://justshivv.github.io/AURA/' },
+  links: { github: 'https://github.com/HyperSpandan/AURA', discord: 'https://discord.gg/6udrCVh5n', web: 'https://hyperspandan.github.io/AURA/player/', tv: 'https://hyperspandan.github.io/AURA/' },
   network: { timeoutMs: 8000, retries: 2 }, communityPrompts: true,
 } });
 function check(value: unknown): asserts value { if (!value) throw new Error('Invalid configuration'); }

@@ -1,6 +1,6 @@
 # Private usage analytics with username and password
 
-Open https://justshivv.github.io/AURA/usage/ to sign in. Login, analytics and sign-out all stay at this URL.
+Open https://hyperspandan.github.io/AURA/usage/ to sign in. Login, analytics and sign-out all stay at this URL.
 Google sign-in and Cloudflare Access are no longer used. Both the dashboard and read APIs
 require an owner session; anonymous app reporting continues to work.
 
@@ -37,7 +37,7 @@ requests cannot read analytics. Build with `python scripts/prepare-usage-assets.
 # Free usage backend
 
 This Worker + D1 database replaces Abacus increment counters. The website remains on GitHub Pages.
-Deployed on Cloudflare's Free plan at `https://opentune-usage.create-a-new-site-with-sites.workers.dev`.
+Deployed on Cloudflare's Free plan at `https://aura-usage.create-a-new-site-with-sites.workers.dev`.
 The public API URL and D1 binding are configured in this repository; credentials are kept outside it.
 
 ## Deploy the existing backend
@@ -103,7 +103,7 @@ Read endpoints require owner authentication. Omitting `timeZone` preserves UTC A
 New activity payloads also include `currentVersion` and `versionRevision` (a persisted increasing integer). Current version updates and daily aggregates commit atomically. `/v1/summary` adds `currentVersions`, with `version`, `installations` and `inferred` counts; identifiers are never returned. A version revision changes only when the installed version changes, so retries and an offline backlog cannot move a device back to an older version.
 
 Build assets first with `python scripts/prepare-usage-assets.py` from the repository root, then deploy
-with `npx wrangler@4 d1 execute opentune-usage --remote --file=schema.sql` followed by `npx wrangler@4 deploy` from this directory; do not
+with `npx wrangler@4 d1 execute aura-usage --remote --file=schema.sql` followed by `npx wrangler@4 deploy` from this directory; do not
 recreate the production D1 database. The Usage API workflow can do this with repository
 secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. The token needs permission
 to deploy this Worker and access its existing D1 binding. It must not be committed.

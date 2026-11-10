@@ -7,7 +7,7 @@ import { createPublicKey, verify } from 'node:crypto';
 import { ConfigStore, createControl, defaults, validateConfig } from './control.mjs';
 
 function fixture() {
-  const dir = mkdtempSync(join(tmpdir(), 'opentune-control-'));
+  const dir = mkdtempSync(join(tmpdir(), 'aura-control-'));
   const store = new ConfigStore(dir);
   return { dir, store, close() { store.close(); rmSync(dir, { recursive: true, force: true }); } };
 }

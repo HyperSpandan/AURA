@@ -3,7 +3,7 @@ const json = (value, status = 200) => new Response(JSON.stringify(value), { stat
   'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, OPTIONS', 'Cache-Control': 'no-store',
 }});
-const manifest = { id: 'org.example.opentune.catalog', name: 'My AURA catalog', version: '1.0.0',
+const manifest = { id: 'org.example.aura.catalog', name: 'My AURA catalog', version: '1.0.0',
   resources: ['search', 'stream'], allowDownloads: true, checkValidLossless: false,
   settings: [{ key: 'quality', default: 'lossless', options: [{ label: 'Best available lossless', value: 'lossless' }] }],
 };

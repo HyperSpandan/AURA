@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createUsageServer } from './usage-server.mjs';
 test('VPS usage persists exact totals and protects dashboard and assets', async()=>{
- const dir=mkdtempSync(join(tmpdir(),'opentune-usage-'));
+ const dir=mkdtempSync(join(tmpdir(),'aura-usage-'));
  try {
   const handle=createUsageServer(dir);
   const payload={installationId:'00000000-0000-4000-8000-000000000001',days:[{day:new Date().toISOString().slice(0,10),version:'1.0.3',plays:4}]};

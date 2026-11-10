@@ -51,7 +51,7 @@ for (const query of ['295 Sidhu Moose Wala','Blinding Lights The Weeknd']) {
   } catch(e) {result.error=/^HTTP \d+$/.test(e.message)?e.message:'Network or non-FLAC response';}
 }
 const adapter = createAddon();
-report.opentuneAdapter = [];
+report.auraAdapter = [];
 for (const query of ['295 Sidhu Moose Wala', 'Blinding Lights The Weeknd']) {
   const r = await adapter(new Request('https://test.invalid/netease/search?q=' + encodeURIComponent(query)));
   const data = await r.json();
@@ -63,7 +63,7 @@ for (const query of ['295 Sidhu Moose Wala', 'Blinding Lights The Weeknd']) {
     if (stream.ok) result.measured = { codec: audio.codec, bitDepth: audio.bitDepth, sampleRate: audio.sampleRate, channels: audio.channels, duration: audio.duration };
     else result.error = audio.error;
   } else result.error = data.error || 'No matching recording';
-  report.opentuneAdapter.push(result);
+  report.auraAdapter.push(result);
 }
 await writeFile('lossless-bridge-report.json',JSON.stringify(report,null,2)+'\n');
 console.log(JSON.stringify(report,null,2));

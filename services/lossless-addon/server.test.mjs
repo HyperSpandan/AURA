@@ -10,7 +10,7 @@ import { createHash, generateKeyPairSync, randomBytes, sign } from 'node:crypto'
 const sha = v => createHash('sha256').update(v).digest('hex');
 
 async function start(extra = {}) {
-  const dir = mkdtempSync(join(tmpdir(), 'opentune-addon-'));
+  const dir = mkdtempSync(join(tmpdir(), 'aura-addon-'));
   const port = 20000 + Math.floor(Math.random() * 20000);
   const child = spawn(process.execPath, ['--disable-warning=ExperimentalWarning', new URL('./server.mjs', import.meta.url).pathname], {
     env: { ...process.env, PORT: String(port), DATA_DIR: dir, PUBLIC_HOST: 'addon.example', APP_CERT_SHA256: 'a'.repeat(64), ...extra },
@@ -54,7 +54,7 @@ test('the VPS server can be paused from its settings', async () => {
   try {
     const r = await fetch(server.base + '/netease/search?q=x');
     assert.equal(r.status, 503);
-    assert.equal(r.headers.get('x-opentune-paused'), '1');
+    assert.equal(r.headers.get('x-aura-paused'), '1');
     assert.equal((await fetch(server.base + '/netease/manifest.json')).status, 200);
   } finally { server.stop(); }
 });

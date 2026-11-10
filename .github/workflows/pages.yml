@@ -88,13 +88,13 @@ jobs:
           if ! gh api "repos/${{ github.repository }}/releases/tags/ios" > ios-release.json 2>/dev/null; then
             echo "No iOS build published yet"; rm -f ios-release.json; exit 0
           fi
-          base="https://justshivv.github.io/AURA"
+          base="https://hyperspandan.github.io/AURA"
           jq --arg base "$base" '
             (.assets | map(select(.name == "AURA-iOS.ipa")) | first) as $ipa
             | if $ipa == null then empty else
             {
               name: "AURA",
-              identifier: "io.github.justshivv.aura",
+              identifier: "io.github.HyperSpandan.aura",
               subtitle: "A free music player",
               sourceURL: ($base + "/ios/source.json"),
               website: ($base + "/"),
@@ -103,7 +103,7 @@ jobs:
               apps: [{
                 name: "AURA",
                 bundleIdentifier: "com.aura.ios",
-                developerName: "justshivv",
+                developerName: "HyperSpandan",
                 subtitle: "Every song. No ads. No account.",
                 localizedDescription: "A free, open-source music player for the YouTube Music catalogue, with synced lyrics, radio once the queue runs out, background play, lock-screen controls and AirPlay. An early version of the Android app.",
                 iconURL: ($base + "/ios/icon.png"),

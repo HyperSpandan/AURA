@@ -1,16 +1,16 @@
 {
   "checkedAt": "2026-10-23T21:38:29.526Z",
-  "base": "https://opentune-lossless-addon.create-a-new-site-with-sites.workers.dev",
+  "base": "https://aura-lossless-addon.create-a-new-site-with-sites.workers.dev",
   "manifests": [
     {
       "source": "monochrome",
       "status": 200,
-      "url": "https://opentune-lossless-addon.create-a-new-site-with-sites.workers.dev/monochrome/manifest.json"
+      "url": "https://aura-lossless-addon.create-a-new-site-with-sites.workers.dev/monochrome/manifest.json"
     },
     {
       "source": "archive",
       "status": 200,
-      "url": "https://opentune-lossless-addon.create-a-new-site-with-sites.workers.dev/archive/manifest.json"
+      "url": "https://aura-lossless-addon.create-a-new-site-with-sites.workers.dev/archive/manifest.json"
     }
   ],
   "upstream": {

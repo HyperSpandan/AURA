@@ -29,8 +29,8 @@ def prepare(commit, output):
     (output / 'release.json').write_text(json.dumps({
         'name': 'AURA', 'packageName': 'com.aura', 'versionName': version,
         'versionCode': code, 'sourceCommit': commit,
-        'website': 'https://justshivv.github.io/AURA/',
-        'privacyPolicy': 'https://justshivv.github.io/AURA/privacy/',
+        'website': 'https://hyperspandan.github.io/AURA/',
+        'privacyPolicy': 'https://hyperspandan.github.io/AURA/privacy/',
         'sourceCode': 'https://github.com/HyperSpandan/AURA',
         'releasePage': 'https://github.com/HyperSpandan/AURA/releases/latest',
         'fdroidStatus': 'Submission draft; source build and scanner review required',

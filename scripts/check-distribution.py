@@ -9,7 +9,7 @@ from pathlib import Path
 from xml.etree import ElementTree
 
 ROOT = Path(__file__).resolve().parents[1]
-BASE = 'https://justshivv.github.io/AURA/'
+BASE = 'https://hyperspandan.github.io/AURA/'
 
 class Page(HTMLParser):
     def __init__(self, text):

@@ -217,7 +217,7 @@ export default {
     const url = new URL(request.url);
     const path = url.pathname.replace(/^\/usage\/v1\/(summary|analytics|addons)$/, '/v1/$1');
     const origin = request.headers.get('Origin');
-    const allowed = (env.ALLOWED_ORIGINS || 'https://justshivv.github.io').split(',');
+    const allowed = (env.ALLOWED_ORIGINS || 'https://hyperspandan.github.io').split(',');
     const headers = { ...privateHeaders, 'Content-Type':'application/json' };
     if (origin && origin !== url.origin && !allowed.includes(origin)) return new Response('{}', {status:403,headers});
     if (origin) headers['Access-Control-Allow-Origin']=origin;

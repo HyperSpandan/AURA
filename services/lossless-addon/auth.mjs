@@ -121,7 +121,7 @@ export function withAppVerification(handler, { trust = googleTrust, attest = ver
       }
       if (path === '/auth/web/start' && request.method === 'POST') {
         const origin = request.headers.get('Origin');
-        if (![...(env.WEB_ORIGINS || 'https://justshivv.github.io').split(','), DESKTOP_ORIGIN].includes(origin)) return denied();
+        if (![...(env.WEB_ORIGINS || 'https://hyperspandan.github.io').split(','), DESKTOP_ORIGIN].includes(origin)) return denied();
         const input = JSON.parse(body), jwk = input.key;
         if (!jwk || jwk.kty !== 'EC' || jwk.crv !== 'P-256' || !TOKEN.test(jwk.x || '') || !TOKEN.test(jwk.y || '') || 'd' in jwk) return denied();
         const key = publicKey({ key: jwk, format: 'jwk' }).export({ type: 'spki', format: 'pem' }).toString();

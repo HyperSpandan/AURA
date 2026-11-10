@@ -36,7 +36,7 @@ function setup(options) {
 }
 test('strict default rejects fake User-Agent, Origin and copied bearer before upstream', async () => {
   const { app, env, count } = setup();
-  for (const headers of [{}, { 'User-Agent': 'AURA', Origin: 'https://justshivv.github.io' }, { Authorization: 'Bearer ' + token() }]) {
+  for (const headers of [{}, { 'User-Agent': 'AURA', Origin: 'https://hyperspandan.github.io' }, { Authorization: 'Bearer ' + token() }]) {
     assert.equal((await app(new Request(origin + '/monochrome/search?q=x', { headers }), env)).status, 401);
   }
   assert.equal(count(), 0);
@@ -63,7 +63,7 @@ test('proof binds method, path, query, body and time; bearer alone cannot authen
 test('browser is key-bound and requires explicit verified-native approval; web cannot approve', async () => {
   const { app, env } = setup(), native = await session(env), web = await session(env, 'web');
   const keys = generateKeyPairSync('ec', { namedCurve: 'prime256v1' });
-  const start = new Request(origin + '/auth/web/start', { method: 'POST', headers: { Origin: 'https://justshivv.github.io' }, body: JSON.stringify({ key: keys.publicKey.export({ format: 'jwk' }) }) });
+  const start = new Request(origin + '/auth/web/start', { method: 'POST', headers: { Origin: 'https://hyperspandan.github.io' }, body: JSON.stringify({ key: keys.publicKey.export({ format: 'jwk' }) }) });
   const pair = await (await app(start, env)).json(); assert.match(pair.id, /^[\w-]{43}$/);
   const poll = value => app(new Request(origin + '/auth/web/status', { method: 'POST', body: JSON.stringify({ id: pair.id, poll: value }) }), env);
   assert.equal((await poll(token())).status, 401);
@@ -86,12 +86,12 @@ test('the desktop app pairs like a browser, with its own origin', async () => {
 });
 test('browser enrollment rejects unapproved origins and private/RSA keys', async () => {
   const { app, env } = setup();
-  for (const headers of [{}, { Origin: 'https://evil.test' }, { Origin: 'https://justshivv.github.io' }]) {
+  for (const headers of [{}, { Origin: 'https://evil.test' }, { Origin: 'https://hyperspandan.github.io' }]) {
     const r = await app(new Request(origin + '/auth/web/start', { method: 'POST', headers, body: JSON.stringify({ key: { kty: 'RSA' } }) }), env);
     assert.ok([401, 403].includes(r.status));
   }
   const keys = generateKeyPairSync('ec', { namedCurve: 'prime256v1' });
-  const r = await app(new Request(origin + '/auth/web/start', { method: 'POST', headers: { Origin: 'https://justshivv.github.io' }, body: JSON.stringify({ key: keys.privateKey.export({ format: 'jwk' }) }) }), env);
+  const r = await app(new Request(origin + '/auth/web/start', { method: 'POST', headers: { Origin: 'https://hyperspandan.github.io' }, body: JSON.stringify({ key: keys.privateKey.export({ format: 'jwk' }) }) }), env);
   assert.equal(r.status, 401);
 });
 test('challenge one-use, verifier failure denied; missing binding fails closed', async () => {

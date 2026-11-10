@@ -1,5 +1,5 @@
 const pages=document.documentElement.dataset.host==='pages';
-const key='opentune.owner.session';
+const key='aura.owner.session';
 const configured=pages ? document.querySelector('meta[name="usage-api"]').content : location.origin;
 export const apiBase=configured+'/usage';
 let token='';

@@ -930,8 +930,12 @@ private fun CodeCard(r: Together.Room, onInvite: () -> Unit, onCopy: () -> Unit)
                 Button(onClick = onInvite, Modifier.weight(1f).height(48.dp)) {
                     Icon(Icons.Rounded.PersonAdd, null, Modifier.size(18.dp)); Spacer(Modifier.width(8.dp)); Text("Invite")
                 }
-                FilledTonalButton(onClick = onCopy, Modifier.weight(1f).height(48.dp)) {
-                    Icon(Icons.Rounded.ContentCopy, null, Modifier.size(18.dp)); Spacer(Modifier.width(8.dp)); Text("Copy code")
+                FilledTonalButton(
+                    onClick = onCopy,
+                    Modifier.weight(1f).height(48.dp),
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
+                ) {
+                    Icon(Icons.Rounded.ContentCopy, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text("Copy code", maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
             }
         }

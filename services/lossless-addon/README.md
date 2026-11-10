@@ -12,13 +12,13 @@ The root `/manifest.json` aliases Monochrome. This service is an independent ada
 
 Deployed on 23 October 2026:
 
-- [Monochrome manifest](https://opentune-lossless-addon.create-a-new-site-with-sites.workers.dev/monochrome/manifest.json)
-- [Internet Archive manifest](https://opentune-lossless-addon.create-a-new-site-with-sites.workers.dev/archive/manifest.json)
-- [Musopen Classical manifest](https://opentune-lossless-addon.create-a-new-site-with-sites.workers.dev/musopen/manifest.json)
+- [Monochrome manifest](https://aura-lossless-addon.create-a-new-site-with-sites.workers.dev/monochrome/manifest.json)
+- [Internet Archive manifest](https://aura-lossless-addon.create-a-new-site-with-sites.workers.dev/archive/manifest.json)
+- [Musopen Classical manifest](https://aura-lossless-addon.create-a-new-site-with-sites.workers.dev/musopen/manifest.json)
 
 Paste the Monochrome URL in AURA → Settings → Audio → Audio add-ons, or publish it using the existing admin dashboard. These URLs have not been automatically added to users' source lists.
 
-[Latest deployment verification](https://github.com/justshivv/Opentune/actions/runs/40030304919) confirmed all three manifests returned HTTP 200 with browser CORS. The deployed Monochrome adapter resolved Wo Noor to FLAC 16-bit/44.1 kHz stereo, and Musopen resolved Goldberg Variations — Aria Da Capo to FLAC 16-bit/44.1 kHz. The report is in `reports/expanded-deployment-2026-10-23.json`; header verification does not establish audible playback or full-file integrity.
+[Latest deployment verification](https://github.com/HyperSpandan/Opentune/actions/runs/40030304919) confirmed all three manifests returned HTTP 200 with browser CORS. The deployed Monochrome adapter resolved Wo Noor to FLAC 16-bit/44.1 kHz stereo, and Musopen resolved Goldberg Variations — Aria Da Capo to FLAC 16-bit/44.1 kHz. The report is in `reports/expanded-deployment-2026-10-23.json`; header verification does not establish audible playback or full-file integrity.
 
 ## Run and deploy
 
@@ -72,7 +72,7 @@ Verification is bound to the exact HTTPS origin of AURA's Worker, not to source 
 
 ## NetEase source from the Lossless Bridge investigation
 
-Deployed on 24 October 2026: [AURA NetEase manifest](https://opentune-lossless-addon.create-a-new-site-with-sites.workers.dev/netease/manifest.json). This independently queries NetEase's catalogue and the public Meting resolver used by Lossless Bridge, then validates the returned native FLAC. Measured source samples: 295 at 24-bit/44.1 kHz and Blinding Lights at 16-bit/44.1 kHz. It shares the existing strict first-party verification; it does not wrap Lossless Bridge or affect public add-ons. See [investigation and limitations](../../docs/lossless-bridge-research.md).
+Deployed on 24 October 2026: [AURA NetEase manifest](https://aura-lossless-addon.create-a-new-site-with-sites.workers.dev/netease/manifest.json). This independently queries NetEase's catalogue and the public Meting resolver used by Lossless Bridge, then validates the returned native FLAC. Measured source samples: 295 at 24-bit/44.1 kHz and Blinding Lights at 16-bit/44.1 kHz. It shares the existing strict first-party verification; it does not wrap Lossless Bridge or affect public add-ons. See [investigation and limitations](../../docs/lossless-bridge-research.md).
 
 ## App content and configuration
 

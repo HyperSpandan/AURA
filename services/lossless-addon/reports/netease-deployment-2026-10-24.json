@@ -1,26 +1,26 @@
 {
   "checkedAt": "2026-10-24T01:12:25.061Z",
-  "base": "https://opentune-lossless-addon.create-a-new-site-with-sites.workers.dev",
+  "base": "https://aura-lossless-addon.create-a-new-site-with-sites.workers.dev",
   "manifests": [
     {
       "source": "monochrome",
       "status": 200,
-      "url": "https://opentune-lossless-addon.create-a-new-site-with-sites.workers.dev/monochrome/manifest.json"
+      "url": "https://aura-lossless-addon.create-a-new-site-with-sites.workers.dev/monochrome/manifest.json"
     },
     {
       "source": "archive",
       "status": 200,
-      "url": "https://opentune-lossless-addon.create-a-new-site-with-sites.workers.dev/archive/manifest.json"
+      "url": "https://aura-lossless-addon.create-a-new-site-with-sites.workers.dev/archive/manifest.json"
     },
     {
       "source": "musopen",
       "status": 200,
-      "url": "https://opentune-lossless-addon.create-a-new-site-with-sites.workers.dev/musopen/manifest.json"
+      "url": "https://aura-lossless-addon.create-a-new-site-with-sites.workers.dev/musopen/manifest.json"
     },
     {
       "source": "netease",
       "status": 200,
-      "url": "https://opentune-lossless-addon.create-a-new-site-with-sites.workers.dev/netease/manifest.json"
+      "url": "https://aura-lossless-addon.create-a-new-site-with-sites.workers.dev/netease/manifest.json"
     }
   ],
   "upstream": {
@@ -140,7 +140,7 @@
     "error": "Verify this device with the current official AURA app. Unsupported devices cannot use this source."
   },
   "evidence": {
-    "workflow": "https://github.com/justshivv/Opentune/actions/runs/40048690232",
+    "workflow": "https://github.com/HyperSpandan/Opentune/actions/runs/40048690232",
     "commit": "a2d1dcaffc3e445badfc5f74ddfc8f6dadeb2309",
     "workerVersion": "75c34db0-80bb-493d-bd7b-1d6e5380e3dc",
     "nodeTestsPassed": 33,

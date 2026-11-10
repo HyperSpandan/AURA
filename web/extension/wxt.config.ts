@@ -32,7 +32,7 @@ export default defineConfig({
   manifest: ({ browser }) => ({
     name: 'AURA',
     description: 'Connects the AURA web player to YouTube Music, Spotify and Discord.',
-    homepage_url: 'https://justshivv.github.io/AURA/player/',
+    homepage_url: 'https://hyperspandan.github.io/AURA/player/',
     // `cookies` reads the YouTube session for signed-in requests (phase 5);
     // the cookies themselves never leave the extension (lib/ytAuth.ts).
     // `scripting` reads the Discord token from a discord.com tab, and only on

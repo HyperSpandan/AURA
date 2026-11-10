@@ -7,7 +7,7 @@ test('bounded pool handles parallel requests, empty responses and closure', asyn
  const pool=createPool(2);
  try {
   const results=await Promise.all(Array.from({length:12},()=>pool.fetch(new Request('https://addon.example/monochrome/manifest.json'))));
-  for(const result of results) {assert.equal(result.status,200);assert.equal((await result.json()).id,'org.opentune.monochrome');}
+  for(const result of results) {assert.equal(result.status,200);assert.equal((await result.json()).id,'org.aura.monochrome');}
   assert.equal((await pool.fetch(new Request('https://addon.example/',{method:'OPTIONS'}))).status,204);
  } finally {await pool.close();}
  assert.equal((await pool.fetch(new Request('https://addon.example/health'))).status,503);

@@ -7,7 +7,7 @@ export const SECTION_IDS = ['speed-dial', 'quick-picks', 'mixes', 'spotify-mixes
 export const defaults = () => ({
   sections: SECTION_IDS.map(id => ({ id, enabled: true, title: '' })),
   banners: [], playlists: [], sources: null,
-  links: { github: 'https://github.com/HyperSpandan/AURA', discord: 'https://discord.gg/6udrCVh5n', web: 'https://justshivv.github.io/AURA/player/', tv: 'https://justshivv.github.io/AURA/' },
+  links: { github: 'https://github.com/HyperSpandan/AURA', discord: 'https://discord.gg/6udrCVh5n', web: 'https://hyperspandan.github.io/AURA/player/', tv: 'https://hyperspandan.github.io/AURA/' },
   network: { timeoutMs: 8000, retries: 2 }, communityPrompts: true,
 });
 function requireValue(ok, message) { if (!ok) throw new Error(message); }
@@ -127,7 +127,7 @@ export function createControl(store, env = process.env) {
     if (!isControlPath(path)) return null;
     if (['/v1/app-config', '/v1/app-config/key'].includes(path) && request.method === 'GET') {
       const origin = request.headers.get('Origin');
-      const cors = (env.WEB_ORIGINS || 'https://justshivv.github.io').split(',').includes(origin) ? { 'Access-Control-Allow-Origin': origin } : {};
+      const cors = (env.WEB_ORIGINS || 'https://hyperspandan.github.io').split(',').includes(origin) ? { 'Access-Control-Allow-Origin': origin } : {};
       const data = path.endsWith('/key') ? store.publicKey() : store.envelope();
       return json(data || { error: 'No configuration published' }, data ? 200 : 404, { ...cors, Vary: 'Origin', 'Cache-Control': data ? 'public, max-age=300' : 'no-store' });
     }

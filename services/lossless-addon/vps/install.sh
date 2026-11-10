@@ -5,11 +5,11 @@
 # Running it again updates the code and keeps the settings and sign-ins.
 set -euo pipefail
 
-DOMAIN="${DOMAIN:-addon-opentune.rethinknow.in}"
-APP_DIR=/opt/opentune-addon
-DATA_DIR=/var/lib/opentune-addon
+DOMAIN="${DOMAIN:-addon-aura.rethinknow.in}"
+APP_DIR=/opt/aura-addon
+DATA_DIR=/var/lib/aura-addon
 ENV_FILE=/etc/aura-addon.env
-SERVICE=opentune-addon
+SERVICE=aura-addon
 PORT=8787
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -45,7 +45,7 @@ if ! command -v caddy >/dev/null 2>&1; then
 fi
 
 echo "==> App"
-id -u opentune >/dev/null 2>&1 || useradd --system --home-dir "$APP_DIR" --shell /usr/sbin/nologin opentune
+id -u aura >/dev/null 2>&1 || useradd --system --home-dir "$APP_DIR" --shell /usr/sbin/nologin aura
 mkdir -p "$APP_DIR" "$DATA_DIR"
 install -m 0644 "$HERE"/server.mjs "$HERE"/worker.mjs "$HERE"/cache.mjs "$HERE"/pool.mjs "$HERE"/usage-server.mjs "$HERE"/auth.mjs "$HERE"/security.mjs "$HERE"/attestation.mjs "$HERE"/control.mjs "$HERE"/control.html "$HERE"/control.js "$HERE"/control.css "$APP_DIR"/
 if [ -d "$HERE/usage-api" ]; then
@@ -53,10 +53,10 @@ if [ -d "$HERE/usage-api" ]; then
   cp -R "$HERE/usage-api/." "$APP_DIR/usage-api/"
 fi
 printf '{ "type": "module", "private": true }\n' > "$APP_DIR/package.json"
-chown -R opentune:opentune "$DATA_DIR"
+chown -R aura:aura "$DATA_DIR"
 
 if [ ! -f "$ENV_FILE" ]; then
-  install -m 0640 -g opentune "$HERE/aura-addon.env" "$ENV_FILE"
+  install -m 0640 -g aura "$HERE/aura-addon.env" "$ENV_FILE"
   sed -i "s/^PUBLIC_HOST=.*/PUBLIC_HOST=$DOMAIN/" "$ENV_FILE"
   echo "Settings written to $ENV_FILE"
 else
@@ -74,8 +74,8 @@ After=network-online.target
 Wants=network-online.target
 
 [Service]
-User=opentune
-Group=opentune
+User=aura
+Group=aura
 WorkingDirectory=$APP_DIR
 EnvironmentFile=$ENV_FILE
 Environment=HOST=127.0.0.1
@@ -100,12 +100,12 @@ systemctl restart $SERVICE
 
 echo "==> HTTPS for $DOMAIN"
 mkdir -p /etc/caddy/sites
-cat > /etc/caddy/sites/opentune-addon.caddy <<SITE
+cat > /etc/caddy/sites/aura-addon.caddy <<SITE
 $DOMAIN {
 	encode gzip
 	reverse_proxy 127.0.0.1:$PORT
 	log {
-		output file /var/log/caddy/opentune-addon.log {
+		output file /var/log/caddy/aura-addon.log {
 			roll_size 10MiB
 			roll_keep 3
 		}

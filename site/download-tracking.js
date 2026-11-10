@@ -13,7 +13,7 @@
     if(!api || navigator.globalPrivacyControl || navigator.doNotTrack==='1') return;
     const link=event.target.closest('a[href]'); if(!link) return;
     const url=new URL(link.href);
-    const match=url.pathname.match(/^\/justshivv\/(?:AURA|Opentune)\/releases\/download\/v(\d+\.\d+\.\d+(?:-[a-zA-Z0-9.-]{1,32})?)\/[^/]+\.apk$/);
+    const match=url.pathname.match(/^\/HyperSpandan\/AURA\/releases\/download\/v(\d+\.\d+\.\d+(?:-[a-zA-Z0-9.-]{1,32})?)\/[^/]+\.apk$/);
     if(url.origin!=='https://github.com' || !match) return;
     let browserId;
     try {

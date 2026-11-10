@@ -165,7 +165,7 @@ test('range validation rejects impossible, future, reversed, missing and oversiz
 
 test('anonymous dashboard redirects to login while APIs and assets stay inaccessible',async()=>{
   for(const path of ['/v1/summary','/usage/v1/summary','/v1/analytics','/usage/dashboard.js']) {
-    for(const headers of [{},{'Cf-Access-Authenticated-User-Email':'owner@example.com'},{Authorization:'Basic '+btoa('owner:password')},{Cookie:'__Host-opentune_session=forged'}]) {
+    for(const headers of [{},{'Cf-Access-Authenticated-User-Email':'owner@example.com'},{Authorization:'Basic '+btoa('owner:password')},{Cookie:'__Host-aura_session=forged'}]) {
       assert.equal((await worker.fetch(new Request('https://example.test'+path,{headers}),loginEnv)).status,401);
     }
     assert.equal((await worker.fetch(new Request('https://example.test'+path,{headers:auth}),{})).status,401);
@@ -207,7 +207,7 @@ test('tampering, expired sessions and credential rotation cannot authorize reads
   const payload=Buffer.from(JSON.stringify({user:'owner',exp:1})).toString('base64url');
   const key=await crypto.subtle.importKey('raw',new TextEncoder().encode(JSON.stringify([loginEnv.USAGE_SESSION_SECRET,loginEnv.USAGE_ADMIN_USERNAME,loginEnv.USAGE_ADMIN_PASSWORD])),{name:'HMAC',hash:'SHA-256'},false,['sign']);
   const sig=Buffer.from(await crypto.subtle.sign('HMAC',key,new TextEncoder().encode(payload))).toString('base64url');
-  assert.equal((await worker.fetch(req('__Host-opentune_session='+payload+'.'+sig),loginEnv)).status,401);
+  assert.equal((await worker.fetch(req('__Host-aura_session='+payload+'.'+sig),loginEnv)).status,401);
 });
 test('logout clears the browser session and login uses no third-party identity scripts',async()=>{
   const result=await worker.fetch(new Request('https://example.test/auth/logout',{method:'POST',headers:{...auth,Origin:'https://example.test'}}),loginEnv);
@@ -223,7 +223,7 @@ test('anonymous reporting remains write-only and compatible',async()=>{
 });
 
 test('GitHub Pages login returns a bearer session without third-party cookies',async()=>{
-  const origin='https://justshivv.github.io';
+  const origin='https://hyperspandan.github.io';
   const request=new Request('https://example.test/auth/login',{method:'POST',headers:{Origin:origin,Accept:'application/json','Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({username:'owner',password:loginEnv.USAGE_ADMIN_PASSWORD})});
   const login=await worker.fetch(request,loginEnv);
   assert.equal(login.status,200);assert.equal(login.headers.get('set-cookie'),null);assert.equal(login.headers.get('Access-Control-Allow-Origin'),origin);

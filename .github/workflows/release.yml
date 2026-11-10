@@ -4,10 +4,10 @@
 # main, and the release follows.
 #
 # Publishing requires the official signing secrets:
-#   OPENTUNE_KEYSTORE_BASE64   the keystore file, base64-encoded
-#   OPENTUNE_KEYSTORE_PASSWORD
-#   OPENTUNE_KEY_ALIAS
-#   OPENTUNE_KEY_PASSWORD
+#   AURA_KEYSTORE_BASE64   the keystore file, base64-encoded
+#   AURA_KEYSTORE_PASSWORD
+#   AURA_KEY_ALIAS
+#   AURA_KEY_PASSWORD
 # Missing signing material stops the release; debug-signed APKs are never published.
 name: Release
 
@@ -65,12 +65,12 @@ jobs:
       - name: Keystore
         if: steps.version.outputs.skip != 'true'
         env:
-          KEYSTORE_BASE64: ${{ secrets.OPENTUNE_KEYSTORE_BASE64 }}
+          KEYSTORE_BASE64: ${{ secrets.AURA_KEYSTORE_BASE64 }}
         run: |
           set -euo pipefail
           test -n "$KEYSTORE_BASE64" || { echo '::error::Official release signing key is required.'; exit 1; }
           printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/release.keystore"
-          echo "OPENTUNE_KEYSTORE=$RUNNER_TEMP/release.keystore" >> "$GITHUB_ENV"
+          echo "AURA_KEYSTORE=$RUNNER_TEMP/release.keystore" >> "$GITHUB_ENV"
 
       - name: Build
         if: steps.version.outputs.skip != 'true'
@@ -78,9 +78,9 @@ jobs:
           LASTFM_API_KEY: ${{ secrets.LASTFM_API_KEY }}
           LASTFM_API_SECRET: ${{ secrets.LASTFM_API_SECRET }}
           DISCORD_APP_ID: ${{ vars.DISCORD_APP_ID || secrets.DISCORD_APP_ID }}
-          OPENTUNE_KEYSTORE_PASSWORD: ${{ secrets.OPENTUNE_KEYSTORE_PASSWORD }}
-          OPENTUNE_KEY_ALIAS: ${{ secrets.OPENTUNE_KEY_ALIAS }}
-          OPENTUNE_KEY_PASSWORD: ${{ secrets.OPENTUNE_KEY_PASSWORD }}
+          AURA_KEYSTORE_PASSWORD: ${{ secrets.AURA_KEYSTORE_PASSWORD }}
+          AURA_KEY_ALIAS: ${{ secrets.AURA_KEY_ALIAS }}
+          AURA_KEY_PASSWORD: ${{ secrets.AURA_KEY_PASSWORD }}
         run: ./gradlew --no-daemon testDebugUnitTest assembleRelease
 
       - name: Verify official APK signing identity and version
@@ -91,7 +91,7 @@ jobs:
           set -euo pipefail
           for apk in app/build/outputs/apk/release/*.apk; do
             certificate="$("$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --print-certs "$apk")"
-            printf '%s\n' "$certificate" | grep -F 'Signer #1 certificate SHA-256 digest: 23e77142d7f0ae4d65e5e5a3dccb8e735c0042e93ffd29ab5fafe2521ab5d5a2'
+            printf '%s\n' "$certificate" | grep -F 'Signer #1 certificate SHA-256 digest: 996ab539ff16ffe9047559ffec03f505c247dfb50c88c8422483d73769137f67'
             "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$apk" | sed -n '1p' > "$RUNNER_TEMP/apk-version.txt"
             grep -F "versionName='${TAG#v}'" "$RUNNER_TEMP/apk-version.txt"
           done

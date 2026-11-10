@@ -16,7 +16,7 @@ import { ConfigStore, createControl, isControlPath } from './control.mjs';
 
 const env = {
   VERIFICATION_MODE: process.env.VERIFICATION_MODE || 'strict',
-  WEB_ORIGINS: process.env.WEB_ORIGINS || 'https://justshivv.github.io',
+  WEB_ORIGINS: process.env.WEB_ORIGINS || 'https://hyperspandan.github.io',
   APP_CERT_SHA256: process.env.APP_CERT_SHA256 || '',
   PAUSED: process.env.PAUSED || 'false',
 };

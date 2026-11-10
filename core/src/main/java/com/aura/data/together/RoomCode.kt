@@ -57,7 +57,7 @@ class RoomCode private constructor(val raw: String) {
             val uri = runCatching { java.net.URI(value) }.getOrNull()
             val candidate = when {
                 uri?.scheme.equals("aura", ignoreCase = true) && uri?.host == "together" -> uri.path.trim('/')
-                uri?.scheme == "https" && (uri.host == "hyperspandan.github.io" || uri.host == "justshivv.github.io") && uri.path.trimEnd('/') == "/AURA/together" ->
+                uri?.scheme == "https" && uri.host == "hyperspandan.github.io" && uri.path.trimEnd('/') == "/AURA/together" ->
                     uri.fragment?.takeIf { it.startsWith("code=") }?.removePrefix("code=") ?: return null
                 uri?.scheme != null -> return null
                 else -> value

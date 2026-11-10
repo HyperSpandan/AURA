@@ -1,8 +1,8 @@
 {
   "checkedAt": "2026-10-24T01:08:15.826Z",
-  "workflow": "https://github.com/justshivv/Opentune/actions/runs/40048382526",
+  "workflow": "https://github.com/HyperSpandan/Opentune/actions/runs/40048382526",
   "commit": "637d57e609978c249b5b1b6c9bfef766d350ce7e",
-  "opentuneAdapter": [
+  "auraAdapter": [
     {
       "query": "295 Sidhu Moose Wala",
       "searchStatus": 200,

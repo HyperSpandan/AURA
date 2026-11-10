@@ -26,7 +26,7 @@ export function createUsageServer(directory) {
     USAGE_ADMIN_USERNAME: process.env.USAGE_ADMIN_USERNAME || process.env.CONTROL_ADMIN_USERNAME,
     USAGE_ADMIN_PASSWORD: process.env.USAGE_ADMIN_PASSWORD || process.env.CONTROL_ADMIN_PASSWORD,
     USAGE_SESSION_SECRET: readFileSync(secretFile, 'utf8').trim(),
-    ALLOWED_ORIGINS: process.env.WEB_ORIGINS || 'https://justshivv.github.io',
+    ALLOWED_ORIGINS: process.env.WEB_ORIGINS || 'https://hyperspandan.github.io',
     LOGIN_LIMITER: { async limit({key}) {
       const now=Date.now();
       for (const [k,v] of attempts) if(now-v.at>60_000) attempts.delete(k);
