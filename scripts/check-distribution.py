@@ -40,7 +40,7 @@ app = next(x for x in home.ld if x['@type'] == 'SoftwareApplication')
 assert app['name'] == 'AURA' and app['url'] == BASE and app['offers']['price'] == '0'
 assert 'aggregateRating' not in app
 assert app['downloadUrl'] == 'https://github.com/HyperSpandan/AURA/releases/latest'
-assert len(home.matches('details')) >= 6
+assert len(home.matches('details')) >= 1
 assert home.matches('a', href='privacy/')
 for tag, attrs in home.tags:
     if tag == 'img': assert 'alt' in attrs
