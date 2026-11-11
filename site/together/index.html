@@ -13,11 +13,135 @@
 <link rel="manifest" href="/AURA/site.webmanifest">
 <meta name="apple-mobile-web-app-title" content="AURA">
 <meta property="og:title" content="Listen together on AURA">
-<meta property="og:description" content="Open your invite and listen with friends.">
+<meta property="og:description" content="Open your invite and listen with friends in real-time Nostr sync.">
+<meta name="theme-color" content="#0A0A0A">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Antonio:wght@600;700&family=Archivo:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700;800&display=swap">
 <style>
-:root{color-scheme:dark;font-family:system-ui,sans-serif;background:#101210;color:#f3f6ee}*{box-sizing:border-box}body{margin:0;min-height:100svh;display:grid;place-items:center;padding:24px}main{max-width:440px;width:100%;padding:32px;border:1px solid #364033;border-radius:28px;background:#1a1e19}h1{font-size:32px;margin:0 0 16px}p{line-height:1.6;color:#bdc6b8}a{color:#c8ee9b}#web{display:block;border:1.5px solid #c8ee9b;color:#c8ee9b;border-radius:30px;padding:14px;text-align:center;font-weight:700;text-decoration:none;margin:-12px 0 24px}#open{display:block;background:#c8ee9b;color:#17200e;border-radius:30px;padding:16px;text-align:center;font-weight:700;text-decoration:none;margin:24px 0}#code{font-variant-numeric:tabular-nums;letter-spacing:2px;overflow-wrap:anywhere}a:focus-visible{outline:3px solid white;outline-offset:4px}[hidden]{display:none!important}
+:root {
+  color-scheme: dark;
+  --ink: #0A0A0A;
+  --char: #131313;
+  --rule: #262626;
+  --rule-hi: #3A3A3A;
+  --orange: #FF5F26;
+  --orange-soft: #FF8759;
+  --white: #FAFAFA;
+  --muted: #B8B8B8;
+  --display: "Antonio", "Arial Narrow", sans-serif;
+  --sans: "Archivo", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+* { box-sizing: border-box; }
+::selection { background: var(--orange); color: var(--ink); }
+html {
+  background: var(--ink);
+  scrollbar-color: var(--rule-hi) var(--ink);
+}
+body {
+  margin: 0;
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: var(--ink);
+  color: var(--white);
+  font: 400 16px/1.6 var(--sans);
+  caret-color: var(--orange);
+  font-variant-numeric: tabular-nums;
+}
+main {
+  max-width: 460px;
+  width: 100%;
+  border: 1px solid var(--rule-hi);
+  background: var(--char);
+}
+.bench-head {
+  background: var(--orange);
+  color: var(--ink);
+  padding: 22px 28px;
+  border-bottom: 1px solid var(--ink);
+}
+.bench-head h1 {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 40px;
+  line-height: 0.95;
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
+}
+.bench-body {
+  padding: 28px;
+}
+p { margin: 0 0 16px; color: var(--muted); }
+a { color: var(--orange-soft); text-underline-offset: 0.22em; }
+#code {
+  font-family: var(--mono);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--white);
+  letter-spacing: 0.12em;
+  overflow-wrap: anywhere;
+  background: var(--ink);
+  border: 1px solid var(--rule);
+  padding: 12px 14px;
+  margin-bottom: 18px;
+}
+#code:empty { display: none; }
+#open {
+  display: block;
+  background: var(--orange);
+  color: var(--ink);
+  padding: 15px 18px;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  text-decoration: none;
+  margin: 20px 0 12px;
+}
+#open:hover { background: var(--orange-hover, #FF713E); }
+#web {
+  display: block;
+  border: 1px solid var(--orange);
+  color: var(--orange-soft);
+  padding: 14px 18px;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  text-decoration: none;
+  margin: 0 0 20px;
+}
+#web:hover { background: rgba(255, 95, 38, 0.12); }
+a:focus-visible { outline: 2px solid var(--orange); outline-offset: 3px; }
+[hidden] { display: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+}
 </style>
+<script>try{const t=JSON.parse(sessionStorage.getItem("aura_theme")||"null");if(t){const s=document.documentElement.style;if(t.color)s.setProperty("--orange",t.color);if(t.soft)s.setProperty("--orange-soft",t.soft);if(t.hover)s.setProperty("--orange-hover",t.hover);if(t.ground)s.setProperty("--theme-ground",t.ground);if(t.surface)s.setProperty("--theme-surface",t.surface);if(t.border)s.setProperty("--theme-border",t.border);}}catch{}</script>
 <script src="invite.js" defer></script>
 </head>
-<body><main><h1>Listen together</h1><p id="message">Open this invite in AURA to join your friend's room.</p><p id="code"></p><a id="open" hidden>Open in AURA</a><a id="web" hidden>Join in the web player</a><p id="help" hidden>The app opens your invitation. Check your name and tap Join. If the host has approval enabled, they’ll let you in.</p><p>Need the app? <a href="../">Get AURA</a></p></main></body>
+<body>
+<main>
+  <div class="bench-head">
+    <h1>Listen together</h1>
+  </div>
+  <div class="bench-body">
+    <p id="message">Open this invite in AURA to join your friend's Nostr listening room.</p>
+    <p id="code"></p>
+    <a id="open" hidden>Open in AURA</a>
+    <a id="web" hidden>Join in Web Player</a>
+    <p id="help" hidden>The app opens your invitation. Check your display name and tap Join. If the host has approval enabled, they will let you in.</p>
+    <p style="margin-bottom:0;font-family:var(--mono);font-size:12.5px">Need AURA on your device? <a href="../">Get AURA →</a></p>
+  </div>
+</main>
+</body>
 </html>

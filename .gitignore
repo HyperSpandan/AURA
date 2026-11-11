@@ -39,5 +39,9 @@ website-reports/
 /web/extension/public/icon/
 /web/fixtures/
 
-# Design-check hook cache
-.impeccable/
+# Impeccable ephemeral runtime cache
+.impeccable/*.local.json
+.impeccable/questions/
+.impeccable/mocks/
+.impeccable/review/
+.impeccable/critique/

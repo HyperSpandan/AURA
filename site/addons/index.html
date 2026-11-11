@@ -6,177 +6,181 @@
 <title>Build audio add-ons · AURA</title>
 <meta name="description" content="Build an AURA audio add-on: a small HTTPS API for catalog search, lossless playback and downloads. Protocol, examples and a working starter.">
 <link rel="canonical" href="https://hyperspandan.github.io/AURA/addons/">
-<link rel="icon" href="../favicon.svg" type="image/svg+xml">
-<meta name="theme-color" content="#1a1716">
+<link rel="icon" href="/AURA/favicon.ico?v=1.0.0" sizes="16x16 32x32 48x48">
+<link rel="icon" href="/AURA/favicon.svg?v=1.0.0" type="image/svg+xml">
+<meta name="theme-color" content="#0A0A0A">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Antonio:wght@600;700&family=Archivo:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700;800&display=swap">
 <style>
-/* The main site's palette and type (site/index.html): warm night, the red tint, Archivo. */
 :root {
   color-scheme: dark;
-  --tint: #E5483A;
-  --tint-soft: color-mix(in oklab, var(--tint) 55%, #ffe0d5);
-  --night: oklch(0.16 0.006 25);
-  --night-2: oklch(0.205 0.007 25);
-  --night-3: oklch(0.26 0.008 25);
-  --line: oklch(0.3 0.008 25);
-  --snow: oklch(0.972 0.002 25);
-  --muted: oklch(0.77 0.008 25);
-  --font: "Archivo", "Helvetica Neue", Arial, system-ui, sans-serif;
-  --mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
-  --gutter: clamp(16px, 4.5vw, 56px);
+  --ink: #0A0A0A;
+  --char: #131313;
+  --panel: #1A1A1A;
+  --rule: #262626;
+  --rule-hi: #3A3A3A;
+  --orange: #FF5F26;
+  --orange-soft: #FF8759;
+  --white: #FAFAFA;
+  --muted: #B8B8B8;
+  --display: "Antonio", "Arial Narrow", sans-serif;
+  --sans: "Archivo", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
   --ease: cubic-bezier(.16, 1, .3, 1);
-  --nav-h: 64px;
+  --nav-h: 72px;
 }
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; background: var(--night); overflow-x: clip; }
-body { margin: 0; background: var(--night); color: var(--snow); font: 400 17px/1.65 var(--font); -webkit-font-smoothing: antialiased; overflow-x: clip; }
-a { color: inherit; text-underline-offset: .2em; text-decoration-thickness: 1px; }
-p, li, td { overflow-wrap: anywhere; }
+::selection { background: var(--orange); color: var(--ink); }
+html { scroll-behavior: smooth; background: var(--ink); overflow-x: clip; scrollbar-color: var(--rule-hi) var(--ink); }
+body { margin: 0; background: var(--ink); color: var(--white); font: 400 16.5px/1.65 var(--sans); -webkit-font-smoothing: antialiased; overflow-x: clip; caret-color: var(--orange); font-variant-numeric: tabular-nums; }
+a { color: inherit; text-underline-offset: .22em; text-decoration-thickness: 1px; }
+p, li, td { overflow-wrap: anywhere; text-wrap: pretty; }
 [id] { scroll-margin-top: calc(var(--nav-h) + 20px); }
-:focus-visible { outline: 2px solid var(--tint-soft); outline-offset: 3px; border-radius: 8px; }
-.wrap { max-width: 1200px; margin-inline: auto; padding-inline: var(--gutter); }
-h1, h2, h3 { margin: 0; font-stretch: 72%; font-weight: 800; letter-spacing: -0.012em; text-wrap: balance; }
-h1 { font-size: clamp(52px, 10vw, 104px); line-height: .9; }
-h2 { font-size: clamp(34px, 4.6vw, 54px); line-height: .98; margin-bottom: 18px; }
-h3 { font-size: 22px; font-stretch: 85%; font-weight: 750; margin: 34px 0 12px; }
-p { margin: 0 0 16px; }
-code { font-family: var(--mono); font-size: .88em; }
-p code, li code, td code { background: var(--night-3); padding: .12em .4em; border-radius: 6px; color: var(--tint-soft); }
+:focus-visible { outline: 2px solid var(--orange); outline-offset: 3px; }
+.wrap { max-width: 1280px; margin-inline: auto; padding-inline: clamp(16px, 4vw, 48px); }
+h1, h2, h3 { margin: 0; font-family: var(--display); font-weight: 700; text-transform: uppercase; letter-spacing: -0.02em; text-wrap: balance; }
+h1 { font-size: clamp(50px, 7.5vw, 88px); line-height: 1.04; }
+h2 { font-size: clamp(34px, 4.2vw, 52px); line-height: .96; margin-bottom: 18px; }
+h3 { font-size: 24px; letter-spacing: 0; margin: 34px 0 12px; }
+p { margin: 0 0 16px; color: var(--muted); max-width: 68ch; }
+code { font-family: var(--mono); font-size: .86em; }
+p code, li code, td code { background: var(--char); border: 1px solid var(--rule); padding: .12em .42em; color: var(--orange-soft); }
 
-/* Top bar: stays put and blurs what scrolls under it. */
-.nav { position: sticky; top: 0; z-index: 20; height: var(--nav-h); background: color-mix(in oklab, var(--night) 78%, transparent); backdrop-filter: blur(16px) saturate(1.4); -webkit-backdrop-filter: blur(16px) saturate(1.4); border-bottom: 1px solid transparent; transition: border-color .3s; }
-.nav[data-scrolled] { border-color: var(--line); }
-.nav .wrap { height: 100%; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
-.brand { display: flex; align-items: center; gap: 10px; text-decoration: none; font-weight: 800; font-stretch: 80%; font-size: 21px; }
-.brand img { width: 30px; height: 30px; }
-.brand small { color: var(--muted); font-weight: 500; font-stretch: 100%; font-size: 14px; }
-.nav-links { display: flex; gap: 6px; }
-.nav-links a { text-decoration: none; color: var(--muted); padding: 8px 14px; border-radius: 99px; font-size: 15px; transition: background-color .2s, color .2s; }
-.nav-links a:hover { background: var(--night-3); color: var(--snow); }
+/* Sticky header */
+.nav { position: sticky; top: 0; z-index: 20; padding: 14px 24px; background: rgba(10, 10, 10, 0.94); backdrop-filter: blur(10px); border-bottom: 1px solid var(--orange); }
+.nav .wrap { padding-inline: 0; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.brand { display: flex; align-items: center; gap: 12px; text-decoration: none; font-family: var(--mono); font-weight: 800; font-size: 17px; letter-spacing: .06em; }
+.brand img { width: 34px; height: 34px; border-radius: 8px; }
+.brand small { color: var(--orange-soft); font-weight: 500; font-size: 12px; }
+.nav-links { display: flex; gap: 16px; }
+.nav-links a { text-decoration: none; color: var(--muted); font-family: var(--mono); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; padding: 6px 0; border-bottom: 1px solid transparent; }
+.nav-links a:hover { color: var(--white); border-bottom-color: var(--orange); }
 
-.btn { display: inline-flex; align-items: center; gap: 10px; height: 52px; padding: 0 24px; border-radius: 999px; font: 650 16px/1 var(--font); text-decoration: none; white-space: nowrap; transition: transform .45s var(--ease), background-color .3s; }
-.btn:hover { transform: translateY(-2px); }
-.btn:active { transform: scale(.97); transition-duration: .1s; }
-.btn-primary { background: var(--tint); color: #1b0b08; }
-.btn-ghost { border: 1.5px solid var(--line); }
-.btn-ghost:hover { background: var(--night-2); }
+.btn { display: inline-flex; align-items: center; gap: 10px; height: 48px; padding: 0 22px; font-family: var(--mono); font-size: 12.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; text-decoration: none; white-space: nowrap; transition: background-color 180ms var(--ease), border-color 180ms var(--ease); }
+.btn-primary { background: var(--orange); color: var(--ink); border: 1px solid var(--orange); }
+.btn-primary:hover { background: var(--orange-hover, #FF713E); }
+.btn-ghost { border: 1px solid var(--rule-hi); color: var(--white); }
+.btn-ghost:hover { border-color: var(--orange); color: var(--orange-soft); }
 
-/* Hero, with the three calls drawn as a route from AURA to the service. */
-.hero { padding: clamp(48px, 9vw, 112px) 0 clamp(40px, 6vw, 72px); display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 48px; align-items: center; }
-.eyebrow { display: inline-flex; gap: 8px; align-items: center; color: var(--tint-soft); font-weight: 650; font-size: 14px; margin-bottom: 22px; }
-.eyebrow::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--tint); box-shadow: 0 0 0 4px color-mix(in oklab, var(--tint) 25%, transparent); }
-.hero h1 mark { background: none; color: var(--tint); }
-.lede { font-size: clamp(18px, 1.6vw, 21px); color: var(--muted); max-width: 40ch; margin: 24px 0 30px; }
+/* Hero */
+.hero {
+  padding: 44px 0 40px;
+  border-bottom: 1px solid var(--rule);
+  margin: 0 0 40px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: 48px;
+  align-items: center;
+}
+.hero h1 mark { background: none; color: var(--orange); }
+.lede { font-size: 17px; color: var(--white); max-width: 48ch; margin: 22px 0 28px; }
 .ctas { display: flex; flex-wrap: wrap; gap: 12px; }
-.route { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; position: relative; }
-.route::before { content: ''; position: absolute; left: 27px; top: 28px; bottom: 28px; width: 2px; background: linear-gradient(var(--tint), color-mix(in oklab, var(--tint) 10%, transparent)); }
-.route li { position: relative; display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 14px; align-items: center; padding: 14px 18px 14px 0; }
-.route .dot { width: 56px; height: 56px; border-radius: 18px; display: grid; place-items: center; background: var(--night-2); border: 1px solid var(--line); z-index: 1; }
-.route svg { width: 24px; height: 24px; fill: none; stroke: var(--tint-soft); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.route strong { display: block; font-stretch: 85%; font-size: 19px; }
-.route code { color: var(--muted); font-size: 13px; }
+.route {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0;
+  border: 1px solid var(--theme-border, #481D0F);
+  background: var(--theme-surface, #1B0C06);
+  transition: background-color 750ms var(--ease), border-color 750ms var(--ease);
+}
+.route li { display: grid; grid-template-columns: 54px minmax(0, 1fr); gap: 16px; align-items: center; padding: 14px 16px; border-bottom: 1px solid var(--rule); }
+.route li:last-child { border-bottom: 0; }
+.route .dot { width: 42px; height: 42px; display: grid; place-items: center; border-right: 1px solid var(--rule-hi); padding-right: 12px; }
+.route svg { width: 22px; height: 22px; fill: none; stroke: var(--orange-soft); stroke-width: 1.8; stroke-linecap: square; }
+.route strong { display: block; font-family: var(--display); font-size: 22px; text-transform: uppercase; line-height: 1; margin-bottom: 4px; }
+.route code { color: var(--muted); font-size: 12.5px; }
 
-/* Body: contents on the left, the guide on the right. */
-.layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: clamp(32px, 5vw, 72px); padding-bottom: 80px; }
-.toc { position: sticky; top: calc(var(--nav-h) + 24px); align-self: start; display: grid; gap: 2px; }
-.toc p { font-size: 13px; color: var(--muted); margin: 0 0 8px 14px; }
-.toc a { position: relative; text-decoration: none; color: var(--muted); padding: 8px 14px; border-radius: 12px; font-size: 15px; transition: color .2s, background-color .2s; }
-.toc a:hover { color: var(--snow); background: var(--night-2); }
-.toc a[aria-current] { color: var(--snow); background: var(--night-2); }
-.toc a[aria-current]::before { content: ''; position: absolute; left: 0; top: 10px; bottom: 10px; width: 3px; border-radius: 3px; background: var(--tint); }
-article > section { padding: 40px 0 8px; border-top: 1px solid var(--line); }
+/* Body layout */
+.layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: clamp(28px, 5vw, 64px); padding-bottom: 84px; }
+.toc { position: sticky; top: calc(var(--nav-h) + 24px); align-self: start; display: grid; gap: 2px; border-left: 1px solid var(--rule); padding-left: 12px; }
+.toc p { font-family: var(--mono); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 0 0 10px 8px; }
+.toc a { text-decoration: none; color: var(--muted); padding: 8px 10px; font-family: var(--mono); font-size: 12.5px; border-left: 1px solid transparent; transition: color 180ms, background-color 180ms; }
+.toc a:hover { color: var(--white); background: var(--char); }
+.toc a[aria-current] { color: var(--ink); background: var(--orange); font-weight: 700; }
+article > section { padding: 40px 0 12px; border-top: 1px solid var(--rule); }
 article > section:first-child { border-top: 0; padding-top: 0; }
 
-/* Endpoint cards: the method and path on top, the response under it, a copy button. */
-.endpoint { margin: 16px 0 18px; border: 1px solid var(--line); border-radius: 20px; background: var(--night-2); overflow: hidden; }
-.endpoint header { display: flex; align-items: center; gap: 10px; padding: 12px 12px 12px 18px; border-bottom: 1px solid var(--line); font-family: var(--mono); font-size: 14px; min-width: 0; }
+/* Endpoints and Code blocks */
+.endpoint { margin: 16px 0 20px; border: 1px solid var(--rule-hi); background: var(--char); }
+.endpoint header { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--rule); font-family: var(--mono); font-size: 13px; background: #0E0E0E; min-width: 0; }
 .endpoint header span:nth-child(2) { flex: 1; min-width: 0; overflow-wrap: anywhere; }
-.method { font-weight: 700; font-size: 12px; color: #1b0b08; background: var(--tint-soft); border-radius: 6px; padding: 3px 7px; }
-pre { margin: 0; padding: 20px; overflow: auto; font: 13.5px/1.65 var(--mono); color: #ead9d3; tab-size: 2; }
-.code { position: relative; margin: 16px 0 18px; border: 1px solid var(--line); border-radius: 20px; background: var(--night-2); }
-.code pre { padding-right: 84px; }
-.copy { font: 600 13px/1 var(--font); color: var(--muted); background: var(--night-3); border: 0; border-radius: 99px; padding: 8px 12px; cursor: pointer; transition: color .2s, background-color .2s; }
-.copy:hover { color: var(--snow); }
-.copy[data-done] { color: #1b0b08; background: var(--tint-soft); }
+.method { font-weight: 700; font-size: 12px; color: var(--ink); background: var(--orange); padding: 3px 8px; }
+article { min-width: 0; }
+.endpoint, .code { max-width: 100%; }
+pre { margin: 0; padding: 18px 20px; overflow-x: auto; max-width: 100%; font: 13px/1.65 var(--mono); color: #EAEAEA; tab-size: 2; }
+pre code { white-space: pre-wrap; word-break: break-word; }
+.code { position: relative; margin: 16px 0 20px; border: 1px solid var(--rule-hi); background: var(--char); }
+.code pre { padding-right: 88px; }
+.copy { font: 700 11.5px/1 var(--mono); text-transform: uppercase; color: var(--muted); background: var(--panel); border: 1px solid var(--rule-hi); padding: 7px 12px; cursor: pointer; }
+.copy:hover { color: var(--white); border-color: var(--orange); }
+.copy[data-done] { color: var(--ink); background: var(--orange); border-color: var(--orange); }
 .code .copy { position: absolute; top: 12px; right: 12px; }
-.k { color: var(--tint-soft); } .s { color: #c9e3b5; } .n { color: #f2c38d; }
+.k { color: var(--orange-soft); } .s { color: #D4E8C1; } .n { color: #F5C37A; }
 
 .fields { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 16px; padding: 0; list-style: none; }
-.fields li { font-size: 14px; background: var(--night-2); border: 1px solid var(--line); border-radius: 99px; padding: 6px 12px; color: var(--muted); }
-.fields b { color: var(--snow); font-weight: 650; }
-.note { display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: 14px; padding: 18px 20px; border-radius: 18px; background: color-mix(in oklab, var(--tint) 12%, var(--night-2)); border: 1px solid color-mix(in oklab, var(--tint) 30%, transparent); color: var(--snow); margin: 20px 0; }
-.note svg { width: 22px; height: 22px; fill: none; stroke: var(--tint-soft); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; margin-top: 2px; }
-.note p { margin: 0; }
-.rules { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 20px 0; }
-.rule { background: var(--night-2); border: 1px solid var(--line); border-radius: 18px; padding: 18px 20px; transition: border-color .3s, transform .45s var(--ease); }
-.rule:hover { border-color: color-mix(in oklab, var(--tint) 45%, var(--line)); transform: translateY(-2px); }
-.rule strong { display: block; font-stretch: 85%; font-size: 18px; margin-bottom: 6px; }
-.rule p { margin: 0; color: var(--muted); font-size: 15px; line-height: 1.55; }
+.fields li { font-family: var(--mono); font-size: 12.5px; background: var(--char); border: 1px solid var(--rule-hi); padding: 6px 12px; color: var(--muted); }
+.fields b { color: var(--white); font-weight: 700; }
+.note { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 14px; padding: 16px 18px; background: rgba(255, 95, 38, 0.08); border: 1px solid var(--orange); color: var(--white); margin: 20px 0; }
+.note svg { width: 20px; height: 20px; fill: none; stroke: var(--orange-soft); stroke-width: 1.8; margin-top: 3px; }
+.note p { margin: 0; color: var(--white); }
 
-/* The test list: tick items off as you go; remembered in this browser only. */
-.checklist { list-style: none; margin: 16px 0 24px; padding: 0; display: grid; gap: 8px; counter-reset: step; }
-.checklist label { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 14px; align-items: start; padding: 14px 18px; border-radius: 16px; background: var(--night-2); border: 1px solid var(--line); cursor: pointer; transition: border-color .2s, opacity .3s; }
-.checklist input { appearance: none; margin: 1px 0 0; width: 24px; height: 24px; border-radius: 8px; border: 2px solid var(--line); display: grid; place-items: center; transition: background-color .2s, border-color .2s; cursor: pointer; }
-.checklist input:checked { background: var(--tint); border-color: var(--tint); }
-.checklist input:checked::after { content: ''; width: 6px; height: 11px; border: solid #1b0b08; border-width: 0 2.5px 2.5px 0; rotate: 45deg; translate: 0 -1px; }
-.checklist label:has(input:checked) { opacity: .6; }
+.rules { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0; border-top: 1px solid var(--rule-hi); border-left: 1px solid var(--rule-hi); background: var(--char); margin: 20px 0; }
+.rule { padding: 20px 22px; border-right: 1px solid var(--rule-hi); border-bottom: 1px solid var(--rule-hi); }
+.rule:hover { background: var(--panel); }
+.rule strong { display: block; font-family: var(--display); font-size: 22px; text-transform: uppercase; margin-bottom: 6px; color: var(--white); }
+.rule p { margin: 0; color: var(--muted); font-size: 14.5px; line-height: 1.55; }
+
+.checklist { list-style: none; margin: 16px 0 24px; padding: 0; display: grid; gap: 8px; }
+.checklist label { display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: 14px; align-items: start; padding: 14px 18px; background: var(--char); border: 1px solid var(--rule-hi); cursor: pointer; }
+.checklist input { appearance: none; margin: 2px 0 0; width: 20px; height: 20px; border: 1px solid var(--rule-hi); background: var(--ink); display: grid; place-items: center; cursor: pointer; }
+.checklist input:checked { background: var(--orange); border-color: var(--orange); }
+.checklist input:checked::after { content: ''; width: 5px; height: 10px; border: solid var(--ink); border-width: 0 2px 2px 0; rotate: 45deg; translate: 0 -1px; }
+.checklist label:has(input:checked) { opacity: .62; }
 .checklist label:has(input:checked) span { text-decoration: line-through; text-decoration-color: var(--muted); }
-.progress { font-size: 14px; color: var(--muted); }
+.progress { font-family: var(--mono); font-size: 12.5px; color: var(--orange-soft); }
 
-.cta-band { margin: 32px 0 0; padding: clamp(28px, 5vw, 48px); border-radius: 28px; background: var(--tint); color: #1b0b08; display: flex; flex-wrap: wrap; gap: 20px; align-items: center; justify-content: space-between; }
-.cta-band h3 { margin: 0 0 6px; font-size: clamp(26px, 3vw, 36px); font-stretch: 72%; font-weight: 800; }
-.cta-band p { margin: 0; max-width: 52ch; }
-.cta-band .btn { background: #1b0b08; color: var(--snow); }
-footer { border-top: 1px solid var(--line); padding: 32px 0 calc(32px + env(safe-area-inset-bottom, 0px)); color: var(--muted); font-size: 15px; }
-footer .wrap { display: flex; flex-wrap: wrap; gap: 8px 20px; }
-
-/* Things rise in as they scroll into view. */
-.reveal { opacity: 0; translate: 0 18px; transition: opacity .7s var(--ease), translate .7s var(--ease); }
-.reveal[data-in] { opacity: 1; translate: 0 0; }
+.cta-band { margin: 32px 0 0; padding: 32px; background: var(--orange); color: var(--ink); display: flex; flex-wrap: wrap; gap: 20px; align-items: center; justify-content: space-between; border: 1px solid var(--ink); }
+.cta-band h3 { margin: 0 0 6px; font-size: 32px; color: var(--ink); }
+.cta-band p { margin: 0; max-width: 52ch; color: #111111; }
+.cta-band .btn { background: var(--ink); color: var(--white); border: 1px solid var(--ink); }
+.cta-band .btn:hover { background: #1E1E1E; }
+footer { border-top: 1px solid var(--rule); padding: 28px 0 calc(28px + env(safe-area-inset-bottom, 0px)); color: var(--muted); font-family: var(--mono); font-size: 12px; }
+footer .wrap { display: flex; flex-wrap: wrap; gap: 10px 24px; }
 
 @media (max-width: 900px) {
-  .hero { grid-template-columns: minmax(0, 1fr); }
-  .layout { grid-template-columns: minmax(0, 1fr); }
-  /* Contents become a row of chips under the bar. */
-  .toc { top: var(--nav-h); z-index: 10; display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; margin-inline: calc(var(--gutter) * -1); padding: 10px var(--gutter); background: color-mix(in oklab, var(--night) 88%, transparent); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
-  .toc::-webkit-scrollbar { display: none; }
+  .hero, .layout { grid-template-columns: minmax(0, 1fr); }
+  .toc { top: var(--nav-h); z-index: 10; display: flex; flex-direction: row; flex-wrap: wrap; gap: 6px; border-left: 0; padding: 10px 0; background: var(--ink); border-bottom: 1px solid var(--rule); }
   .toc p { display: none; }
-  .toc a { white-space: nowrap; border: 1px solid var(--line); border-radius: 99px; padding: 6px 14px; font-size: 14px; }
-  .toc a[aria-current]::before { display: none; }
-  .toc a[aria-current] { background: var(--tint); color: #1b0b08; border-color: var(--tint); }
-  [id] { scroll-margin-top: calc(var(--nav-h) + 72px); }
+  .toc a { white-space: nowrap; border: 1px solid var(--rule); padding: 6px 12px; }
+  [id] { scroll-margin-top: calc(var(--nav-h) + 64px); }
 }
 @media (max-width: 600px) {
   .rules { grid-template-columns: minmax(0, 1fr); }
   .brand small, .nav-links a:first-child { display: none; }
-  pre { padding: 16px; font-size: 12.5px; }
-  .code pre { padding-right: 16px; padding-top: 52px; }
+  pre { padding: 14px; font-size: 12px; }
+  .code pre { padding-right: 14px; padding-top: 48px; }
 }
-@media (prefers-reduced-motion: reduce) {
-  html { scroll-behavior: auto; }
-  .reveal { opacity: 1; translate: none; transition: none; }
-  .btn, .rule { transition: none; }
-}
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *::before, *::after { transition-duration: 0.01ms !important; } }
 </style>
 </head>
 <body>
 <div class="nav" id="nav"><div class="wrap">
-  <a class="brand" href="../"><img src="../img/aura-logo.svg" alt="">AURA <small>Add-ons</small></a>
+  <a class="brand" href="../"><img src="../img/aura-logo.png" alt="AURA icon" width="34" height="34"><span>AURA <small>ADD-ONS</small></span></a>
   <nav class="nav-links" aria-label="Community"><a href="https://github.com/HyperSpandan/AURA/tree/main/examples/audio-addon">Starter</a><a href="https://github.com/HyperSpandan/AURA">GitHub</a></nav>
 </div></div>
 
 <main class="wrap">
 <section class="hero">
   <div>
-    <span class="eyebrow">For the community · Audio add-ons</span>
     <h1>Your catalog.<br><mark>More ways to listen.</mark></h1>
-    <p class="lede">Connect your audio service to AURA with three HTTPS endpoints. Search recordings, return the best available audio, and let listeners choose their source order.</p>
-    <div class="ctas"><a class="btn btn-primary" href="https://github.com/HyperSpandan/AURA/tree/main/examples/audio-addon">Get the starter ↗</a><a class="btn btn-ghost" href="#contract">Read the protocol</a></div>
+    <p class="lede">Connect your audio service to AURA with three HTTPS endpoints. Search recordings, return lossless FLAC streams, and let listeners set their own source priority.</p>
+    <div class="ctas"><a class="btn btn-primary" href="https://github.com/HyperSpandan/AURA/tree/main/examples/audio-addon"><span>Get the starter ↗</span></a><a class="btn btn-ghost" href="#contract">Read the protocol</a></div>
   </div>
-  <ol class="route reveal" aria-label="How a song is found">
-    <li><span class="dot"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="3"/><path d="M8 8h8M8 12h8M8 16h4"/></svg></span><div><strong>Describe</strong><code>GET /manifest.json</code></div></li>
+  <ol class="route" aria-label="How a song is found">
+    <li><span class="dot"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="18"/><path d="M8 8h8M8 12h8M8 16h4"/></svg></span><div><strong>Describe</strong><code>GET /manifest.json</code></div></li>
     <li><span class="dot"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg></span><div><strong>Match</strong><code>GET /search?q=…</code></div></li>
     <li><span class="dot"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10v4M7 6v12M11 3v18M15 7v10M19 5v14"/></svg></span><div><strong>Play</strong><code>GET /stream/{id}</code></div></li>
   </ol>
@@ -186,17 +190,17 @@ footer .wrap { display: flex; flex-wrap: wrap; gap: 8px 20px; }
 <nav class="toc" aria-label="Guide contents"><p>On this page</p><a href="#start">Start building</a><a href="#contract">API contract</a><a href="#quality">Audio quality</a><a href="#delivery">Delivery &amp; errors</a><a href="#test">Test</a><a href="#share">Share &amp; get listed</a></nav>
 <article>
 
-<section id="start" class="reveal">
+<section id="start">
   <h2>A small API. No extension runtime.</h2>
-  <p>AURA uses the <a href="https://bitchord.kushagrasingh.in/docs">BitChord HTTP add-on contract</a>. Listeners add your service root or <code>manifest.json</code> URL: in the Android app under Settings → Add-ons → Audio add-ons, and in the web player under Settings → Audio sources. No executable package is installed.</p>
-  <p>The starter is a Cloudflare Worker with a small configurable catalog, CORS support and tests. It starts with an empty catalog; add your own audio URLs and their measured metadata before deploying.</p>
+  <p>AURA uses the <a href="https://bitchord.kushagrasingh.in/docs">BitChord HTTP add-on contract</a>. Listeners add your service root or <code>manifest.json</code> URL inside Android Settings → Add-ons → Audio add-ons, or in the Web Player under Settings → Audio sources.</p>
+  <p>The starter is a Cloudflare Worker with a configurable catalog, CORS headers, and unit tests. Add your own media URLs and measured metadata before deploying.</p>
   <div class="code"><button class="copy" type="button">Copy</button><pre><code>cd examples/audio-addon
 node --test worker.test.mjs
 npx wrangler deploy</code></pre></div>
-  <p>Configure <code>CATALOG</code> in <code>wrangler.toml</code>. Keep signed audio URLs short-lived and generate them at stream resolution if your service needs that. The example catalog suits a small collection; use a database for a larger service.</p>
+  <p>Configure <code>CATALOG</code> in <code>wrangler.toml</code>. Keep signed audio URLs short-lived and resolve them freshly during stream requests.</p>
 </section>
 
-<section id="contract" class="reveal">
+<section id="contract">
   <h2>The three endpoints</h2>
 
   <h3>Describe your service</h3>
@@ -212,7 +216,7 @@ npx wrangler deploy</code></pre></div>
     <span class="k">"options"</span>: [{<span class="k">"label"</span>: <span class="s">"Best available FLAC"</span>, <span class="k">"value"</span>: <span class="s">"lossless"</span>}]
   }]
 }</code></pre></div>
-  <p>Use a stable, unique ID. <code>allowDownloads: false</code> excludes your source from file downloads. <code>checkValidLossless: true</code> requires a supported wired, USB or HDMI output before AURA queries your service. Bluetooth and unknown outputs do not qualify.</p>
+  <p>Use a stable unique ID. Set <code>allowDownloads: false</code> if offline caching is prohibited, or <code>checkValidLossless: true</code> to restrict queries to supported wired, USB DAC, or HDMI outputs.</p>
 
   <h3>Find the recording</h3>
   <div class="endpoint"><header><span class="method">GET</span><span>/search?q=title%20artist&amp;quality=lossless</span><button class="copy" type="button">Copy</button></header><pre><code>{<span class="k">"tracks"</span>: [{
@@ -222,7 +226,7 @@ npx wrangler deploy</code></pre></div>
   <span class="k">"artwork"</span>: <span class="s">"https://cdn.example.org/cover.jpg"</span>
 }]}</code></pre></div>
   <ul class="fields" aria-label="Units"><li><b>duration</b> in seconds</li><li>no match → <b>{"tracks":[]}</b></li></ul>
-  <p>Return the real title and credited performers, including version labels such as live or remix. AURA checks recording identity and duration; the first search result is not automatically accepted.</p>
+  <p>Return accurate titles, artists, and version qualifiers (live/remix). AURA verifies recording identity and duration before accepting matches.</p>
 
   <h3>Hand over the audio</h3>
   <div class="endpoint"><header><span class="method">GET</span><span>/stream/recording-42?quality=lossless</span><button class="copy" type="button">Copy</button></header><pre><code>{
@@ -231,66 +235,56 @@ npx wrangler deploy</code></pre></div>
   <span class="k">"sampleRate"</span>: <span class="n">96000</span>, <span class="k">"bitDepth"</span>: <span class="n">24</span>,
   <span class="k">"encrypted"</span>: <span class="n">false</span>
 }</code></pre></div>
-  <ul class="fields" aria-label="Units"><li><b>sampleRate</b> in Hz</li><li><b>bitrate</b> in bits per second</li><li><b>manifest</b>: none, hls or dash</li></ul>
-  <p>IDs are opaque and URL-encoded as one path segment. For unencrypted segmented playback use <code>manifest: "hls"</code> or <code>"dash"</code>. File downloads currently require a direct audio file.</p>
+  <ul class="fields" aria-label="Units"><li><b>sampleRate</b> in Hz</li><li><b>bitrate</b> in bps</li><li><b>manifest</b>: none, hls or dash</li></ul>
 </section>
 
-<section id="quality" class="reveal">
-  <h2>Describe the audio you actually serve.</h2>
-  <p>Lossless describes the encoding, not a promise about the original master. Do not relabel AAC or MP3 as FLAC, upsample to claim higher resolution, or advertise 24-bit/192 kHz for every track.</p>
+<section id="quality">
+  <h2>Describe the audio you serve.</h2>
+  <p>Do not relabel lossy AAC or MP3 audio as FLAC or inflate advertised sample rates. Verify every file with <code>ffprobe</code>:</p>
   <div class="code"><button class="copy" type="button">Copy</button><pre><code>ffprobe -v error -select_streams a:0 \
   -show_entries stream=codec_name,sample_rate,bits_per_raw_sample \
   -of json recording.flac</code></pre></div>
-  <p>AURA reads direct FLAC headers and uses the playback decoder's format for the quality display. HLS/DASH renditions must contain supported lossless audio; encrypted audio is unsupported. Browser codec support differs from Android.</p>
-  <div class="note"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg><p>Source priority is intentional: AURA checks eligible matching lossless results for the best available quality, and equal quality keeps the listener’s source order. Playback starts right away while the higher-quality lookup runs, then switches over without a gap.</p></div>
+  <div class="note"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg><p>Playback starts immediately while AURA checks eligible lossless add-ons in parallel, switching seamlessly without interrupting the listener.</p></div>
 </section>
 
-<section id="delivery" class="reveal">
+<section id="delivery">
   <h2>Make delivery reliable.</h2>
   <div class="rules">
-    <div class="rule"><strong>Transport</strong><p>Public HTTPS endpoints, including redirects and media URLs. Local and private destinations are rejected by the Android add-on transport.</p></div>
-    <div class="rule"><strong>Browser access</strong><p>Enable CORS on API responses, audio, manifests and every segment, and answer OPTIONS. Public services without sign-in can send <code>Access-Control-Allow-Origin: *</code>.</p></div>
-    <div class="rule"><strong>Seeking</strong><p>Support Range requests and HTTP 206 with correct Content-Range and Content-Length for direct files.</p></div>
-    <div class="rule"><strong>Rate limits</strong><p>Return HTTP 429 with Retry-After. AURA waits that out for the current song and tries another enabled source meanwhile; the next song asks again.</p></div>
-    <div class="rule"><strong>Failures</strong><p>Use a suitable HTTP status and <code>{"error":"A safe explanation"}</code>. Never return an HTML error page as audio.</p></div>
-    <div class="rule"><strong>Response size</strong><p>Keep JSON small. The Android client limits metadata responses to 2 MiB and downloads to 512 MiB.</p></div>
-    <div class="rule"><strong>Expiration</strong><p>Stream responses may be cached for five minutes. Keep URLs valid for playback and seeking past that, or return a stable URL; AURA asks for a fresh link when one is refused.</p></div>
-    <div class="rule"><strong>Secrets</strong><p>Configured URL paths and query parameters are stored on the listener's device, so they can't hold credentials meant to stay secret. AURA sends no Google session or app cookies to add-ons.</p></div>
+    <div class="rule"><strong>Transport</strong><p>Public HTTPS endpoints for manifests, redirects, and audio URLs. Private/local destinations are rejected on Android.</p></div>
+    <div class="rule"><strong>Browser Access</strong><p>Include CORS headers on API, media, and HLS/DASH segment responses and answer preflight OPTIONS requests cleanly.</p></div>
+    <div class="rule"><strong>Seeking</strong><p>Support HTTP <code>Range</code> requests and return <code>206 Partial Content</code> with valid Content-Range headers.</p></div>
+    <div class="rule"><strong>Rate Limits</strong><p>Respond with HTTP 429 and <code>Retry-After</code>. AURA seamlessly fails over to the next enabled source.</p></div>
+    <div class="rule"><strong>Failures</strong><p>Return appropriate HTTP errors with <code>{"error":"Reason"}</code>. Never serve HTML error pages as audio bytes.</p></div>
+    <div class="rule"><strong>Size &amp; Expiration</strong><p>Keep JSON responses under 2 MiB (downloads max 512 MiB) and keep signed media URLs valid past 5-minute stream caches.</p></div>
   </div>
 </section>
 
-<section id="test" class="reveal">
-  <h2>Test it before you share it.</h2>
+<section id="test">
+  <h2>Test before sharing.</h2>
   <p class="progress" id="progress" aria-live="polite"></p>
   <ol class="checklist" id="checklist">
-    <li><label><input type="checkbox"><span>Run the starter tests and check all three endpoints.</span></label></li>
-    <li><label><input type="checkbox"><span>Add your manifest in AURA and use Check to inspect its availability.</span></label></li>
-    <li><label><input type="checkbox"><span>Select Lossless quality, play a known recording, and inspect Signal path. Check a non-match, a timeout and an expired URL too.</span></label></li>
-    <li><label><input type="checkbox"><span>Test downloads, seeking and playback on the devices you target. Inspect the file with ffprobe instead of trusting its extension.</span></label></li>
-    <li><label><input type="checkbox"><span>Document region limits, costs, authentication and availability.</span></label></li>
+    <li><label><input type="checkbox"><span>Run starter unit tests against all three protocol endpoints.</span></label></li>
+    <li><label><input type="checkbox"><span>Register manifest URL in AURA Settings → Add-ons and run availability Check.</span></label></li>
+    <li><label><input type="checkbox"><span>Inspect Signal Path under Lossless playback plus non-match, timeout, and expired-URL handling.</span></label></li>
+    <li><label><input type="checkbox"><span>Verify direct file seeking and downloaded bitstream headers using ffprobe.</span></label></li>
+    <li><label><input type="checkbox"><span>Document availability, authentication, and regional constraints cleanly.</span></label></li>
   </ol>
-  <p><a href="https://github.com/HyperSpandan/AURA/blob/main/docs/audio-addons.md">Read the client behavior and platform limits ↗</a></p>
+  <p><a href="https://github.com/HyperSpandan/AURA/blob/main/docs/audio-addons.md">Read full client behavior and limits ↗</a></p>
 </section>
 
-<section id="share" class="reveal">
-  <h2>Share the URL, get listed.</h2>
-  <p>Anyone can use your add-on as soon as they paste its manifest URL. To reach every listener, share the URL and source code on GitHub. The AURA owner keeps a published catalog that every app and the web player load on their own; sources from it appear as “Added by admin”, and listeners can turn them off or reorder them.</p>
-  <div class="cta-band"><div><h3>Build with the community</h3><p>Ask questions, share your manifest, and hear about protocol changes first.</p></div><a class="btn" href="https://github.com/HyperSpandan/AURA">Open GitHub ↗</a></div>
+<section id="share">
+  <h2>Share the manifest.</h2>
+  <p>Listeners can paste your manifest URL immediately, or submit your open implementation on GitHub for community discovery.</p>
+  <div class="cta-band"><div><h3>Build with the community</h3><p>Share manifests, open add-on PRs, and track HTTP protocol updates on GitHub.</p></div><a class="btn" href="https://github.com/HyperSpandan/AURA">Open GitHub ↗</a></div>
 </section>
 
 </article>
 </div>
 </main>
-<footer><div class="wrap"><span>AURA · Free and open source</span><a href="../privacy/">Privacy</a><a href="https://github.com/HyperSpandan/AURA">Source code</a></div></footer>
+<footer><div class="wrap"><span>AURA · GPL-3.0</span><a href="../privacy/">Privacy</a><a href="../">Home</a><a href="https://github.com/HyperSpandan/AURA">Source code</a></div></footer>
 
 <script>
 (() => {
-  const nav = document.getElementById('nav');
-  const onScroll = () => nav.toggleAttribute('data-scrolled', scrollY > 8);
-  addEventListener('scroll', onScroll, { passive: true });
-  onScroll();
-
-  // Copy buttons: the code next to them, without the button's own label.
   for (const button of document.querySelectorAll('.copy')) {
     button.addEventListener('click', async () => {
       const code = button.closest('.endpoint, .code').querySelector('pre').innerText;
@@ -301,26 +295,16 @@ npx wrangler deploy</code></pre></div>
     });
   }
 
-  // The contents follow the section being read.
   const links = new Map([...document.querySelectorAll('.toc a')].map((a) => [a.hash.slice(1), a]));
   const spy = new IntersectionObserver((entries) => {
     for (const entry of entries) {
       if (!entry.isIntersecting) continue;
       links.forEach((a) => a.removeAttribute('aria-current'));
-      const link = links.get(entry.target.id);
-      link?.setAttribute('aria-current', 'true');
-      if (matchMedia('(max-width: 900px)').matches) link?.scrollIntoView({ block: 'nearest', inline: 'center' });
+      links.get(entry.target.id)?.setAttribute('aria-current', 'true');
     }
   }, { rootMargin: '-30% 0px -60% 0px' });
   links.forEach((_, id) => { const s = document.getElementById(id); if (s) spy.observe(s); });
 
-  // Rise in on first sight.
-  const reveal = new IntersectionObserver((entries) => {
-    for (const entry of entries) if (entry.isIntersecting) { entry.target.setAttribute('data-in', ''); reveal.unobserve(entry.target); }
-  }, { rootMargin: '0px 0px -8% 0px' });
-  document.querySelectorAll('.reveal').forEach((el) => reveal.observe(el));
-
-  // The test list remembers its ticks in this browser; it works the same without storage.
   const KEY = 'aura-addon-checklist';
   const boxes = [...document.querySelectorAll('#checklist input')];
   const progress = document.getElementById('progress');
@@ -338,5 +322,6 @@ npx wrangler deploy</code></pre></div>
   count();
 })();
 </script>
+<script>try{const t=JSON.parse(sessionStorage.getItem("aura_theme")||"null");if(t){const s=document.documentElement.style;if(t.color)s.setProperty("--orange",t.color);if(t.soft)s.setProperty("--orange-soft",t.soft);if(t.hover)s.setProperty("--orange-hover",t.hover);if(t.ground)s.setProperty("--theme-ground",t.ground);if(t.surface)s.setProperty("--theme-surface",t.surface);if(t.border)s.setProperty("--theme-border",t.border);}}catch{}</script>
 </body>
 </html>

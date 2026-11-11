@@ -1,0 +1,508 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-11T16:36:09Z",
+  "title": "Design System: AURA",
+  "extensions": {
+    "colorMeta": {
+      "grain-orange": {
+        "role": "primary",
+        "displayName": "Grain Orange",
+        "canonical": "#FF5F26",
+        "tonalRamp": ["#1B0300", "#440F00", "#762100", "#AC3400", "#E24D11", "#FF815A", "#FFBBA6", "#FFE9E2"]
+      },
+      "grain-orange-hover": {
+        "role": "primary",
+        "displayName": "Grain Orange Hover",
+        "canonical": "#FF713E",
+        "tonalRamp": ["#1B0300", "#431100", "#742300", "#AA3700", "#DA5624", "#F88760", "#FFBBA5", "#FFE9E2"]
+      },
+      "soft-coral-orange": {
+        "role": "primary",
+        "displayName": "Soft Coral Orange",
+        "canonical": "#FF8759",
+        "tonalRamp": ["#1A0400", "#421200", "#732600", "#A73B00", "#CF6136", "#EE8E6A", "#FFBCA3", "#FFE9E1"]
+      },
+      "orange-dim-wash": {
+        "role": "primary",
+        "displayName": "Orange Dim Wash",
+        "canonical": "rgba(255, 95, 38, 0.14)",
+        "tonalRamp": ["#1B0300", "#440F00", "#762100", "#AC3400", "#E24D11", "#FF815A", "#FFBBA6", "#FFE9E2"]
+      },
+      "ink-black": {
+        "role": "neutral",
+        "displayName": "Ink Black",
+        "canonical": "#0A0A0A",
+        "tonalRamp": ["#0A0A0A", "#131313", "#181818", "#262626", "#3A3A3A", "#9E9E9E", "#B8B8B8", "#FAFAFA"]
+      },
+      "studio-void": {
+        "role": "neutral",
+        "displayName": "Studio Void",
+        "canonical": "#080808",
+        "tonalRamp": ["#080808", "#111111", "#181818", "#262626", "#3A3A3A", "#7A7A7A", "#B8B8B8", "#FAFAFA"]
+      },
+      "charred-ink": {
+        "role": "neutral",
+        "displayName": "Charred Ink",
+        "canonical": "#131313",
+        "tonalRamp": ["#0A0A0A", "#131313", "#181818", "#262626", "#3A3A3A", "#9E9E9E", "#B8B8B8", "#FAFAFA"]
+      },
+      "panel-charcoal": {
+        "role": "neutral",
+        "displayName": "Panel Charcoal",
+        "canonical": "#181818",
+        "tonalRamp": ["#0A0A0A", "#131313", "#181818", "#262626", "#3A3A3A", "#9E9E9E", "#B8B8B8", "#FAFAFA"]
+      },
+      "row-hover": {
+        "role": "neutral",
+        "displayName": "Row Hover",
+        "canonical": "#1F1F1F",
+        "tonalRamp": ["#0A0A0A", "#131313", "#181818", "#262626", "#3A3A3A", "#9E9E9E", "#B8B8B8", "#FAFAFA"]
+      },
+      "sheet-charcoal": {
+        "role": "neutral",
+        "displayName": "Sheet Charcoal",
+        "canonical": "#1B1B1E",
+        "tonalRamp": ["#0C0C0E", "#1B1B1E", "#2C2C30", "#424247", "#5E5E64", "#82828A", "#B2B2B8", "#E6E6EA"]
+      },
+      "hairline-rule": {
+        "role": "neutral",
+        "displayName": "Hairline Rule",
+        "canonical": "#262626",
+        "tonalRamp": ["#0A0A0A", "#131313", "#181818", "#262626", "#3A3A3A", "#9E9E9E", "#B8B8B8", "#FAFAFA"]
+      },
+      "rule-highlight": {
+        "role": "neutral",
+        "displayName": "Rule Highlight",
+        "canonical": "#3A3A3A",
+        "tonalRamp": ["#0A0A0A", "#131313", "#181818", "#262626", "#3A3A3A", "#9E9E9E", "#B8B8B8", "#FAFAFA"]
+      },
+      "theme-ground": {
+        "role": "neutral",
+        "displayName": "Theme Ground",
+        "canonical": "#261007",
+        "tonalRamp": ["#120703", "#1B0C06", "#261007", "#3A190C", "#542716", "#7D4834", "#AA7B69", "#DBC1B8"]
+      },
+      "theme-surface": {
+        "role": "neutral",
+        "displayName": "Theme Surface",
+        "canonical": "#1B0C06",
+        "tonalRamp": ["#0F0603", "#1B0C06", "#261007", "#38180C", "#4E2414", "#764331", "#A37666", "#D6BEB5"]
+      },
+      "theme-border": {
+        "role": "neutral",
+        "displayName": "Theme Border",
+        "canonical": "#481D0F",
+        "tonalRamp": ["#1B0C06", "#30140A", "#481D0F", "#662C18", "#88432B", "#AC6B54", "#CF9C8B", "#EED6CE"]
+      },
+      "punched-white": {
+        "role": "neutral",
+        "displayName": "Punched White",
+        "canonical": "#FAFAFA",
+        "tonalRamp": ["#0A0A0A", "#131313", "#181818", "#262626", "#3A3A3A", "#9E9E9E", "#B8B8B8", "#FAFAFA"]
+      },
+      "code-silver": {
+        "role": "neutral",
+        "displayName": "Code Silver",
+        "canonical": "#EAEAEA",
+        "tonalRamp": ["#0A0A0A", "#131313", "#181818", "#262626", "#3A3A3A", "#9E9E9E", "#B8B8B8", "#FAFAFA"]
+      },
+      "silver-ash": {
+        "role": "neutral",
+        "displayName": "Silver Ash",
+        "canonical": "#B8B8B8",
+        "tonalRamp": ["#0A0A0A", "#131313", "#181818", "#262626", "#3A3A3A", "#9E9E9E", "#B8B8B8", "#FAFAFA"]
+      },
+      "lyric-dim": {
+        "role": "neutral",
+        "displayName": "Lyric Dim",
+        "canonical": "#9E9E9E",
+        "tonalRamp": ["#0A0A0A", "#131313", "#181818", "#262626", "#3A3A3A", "#9E9E9E", "#B8B8B8", "#FAFAFA"]
+      },
+      "on-punched-slate": {
+        "role": "neutral",
+        "displayName": "On-Punched Slate",
+        "canonical": "#404040",
+        "tonalRamp": ["#0A0A0A", "#131313", "#181818", "#262626", "#3A3A3A", "#9E9E9E", "#B8B8B8", "#FAFAFA"]
+      },
+      "on-orange-ink": {
+        "role": "neutral",
+        "displayName": "On-Orange Ink",
+        "canonical": "#111111",
+        "tonalRamp": ["#0A0A0A", "#131313", "#181818", "#262626", "#3A3A3A", "#9E9E9E", "#B8B8B8", "#FAFAFA"]
+      },
+      "coverflow-shadow": {
+        "role": "neutral",
+        "displayName": "Cover Flow Shadow",
+        "canonical": "rgba(0, 0, 0, 0.72)",
+        "tonalRamp": ["#0A0A0A", "#131313", "#181818", "#262626", "#3A3A3A", "#9E9E9E", "#B8B8B8", "#FAFAFA"]
+      },
+      "syntax-sage": {
+        "role": "neutral",
+        "displayName": "Syntax Sage",
+        "canonical": "#D4E8C1",
+        "tonalRamp": ["#070E02", "#1D2810", "#394829", "#596A48", "#7C8D6B", "#A2B193", "#C7D2BC", "#EBF1E6"]
+      },
+      "syntax-amber": {
+        "role": "neutral",
+        "displayName": "Syntax Amber",
+        "canonical": "#F5C37A",
+        "tonalRamp": ["#130900", "#332000", "#5A3B00", "#855900", "#A97D38", "#CAA46C", "#E5C9A1", "#FAECD9"]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Landing hero H1 statement (EVERY SONG. ZERO ADS. at clamp(56px, 6.8vw, 92px))."
+      },
+      "display-docs": {
+        "displayName": "Display Docs",
+        "purpose": "Add-ons documentation hero H1 (clamp(50px, 7.5vw, 88px)) and mobile 50px landing hero."
+      },
+      "display-privacy": {
+        "displayName": "Display Privacy",
+        "purpose": "Privacy page H1 statement (clamp(42px, 6vw, 64px))."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Landing section H2 titles and Listen Together card H1 (40px)."
+      },
+      "headline-docs": {
+        "displayName": "Headline Docs",
+        "purpose": "Add-ons guide section H2 headings (clamp(34px, 4.2vw, 52px))."
+      },
+      "title-lg": {
+        "displayName": "Title Large",
+        "purpose": "Stage inspection H3, Add-ons CTA H3, and synced lyric maximum fluid step (32px)."
+      },
+      "title-install": {
+        "displayName": "Title Install",
+        "purpose": "Cross-platform install bench column headings (30px)."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Workbench module H3 titles (AutoEq, Karaoke, Radio) and Privacy H2 sections (28px)."
+      },
+      "title-deck": {
+        "displayName": "Title Deck",
+        "purpose": "Hero 3D Cover Flow deck track title readout (26px)."
+      },
+      "title-card": {
+        "displayName": "Title Card",
+        "purpose": "Add-ons subsection H3, footer brand heading, and lyric minimum clamp step (24px)."
+      },
+      "title-route": {
+        "displayName": "Title Route",
+        "purpose": "Add-ons endpoint route summary labels and delivery rule titles (22px)."
+      },
+      "title-code": {
+        "displayName": "Title Code",
+        "purpose": "Listen Together room invite code display in JetBrains Mono (20px)."
+      },
+      "title-cell": {
+        "displayName": "Title Cell",
+        "purpose": "Device contact-sheet cell label titles (18px)."
+      },
+      "body-hero": {
+        "displayName": "Body Hero",
+        "purpose": "Opening hero lede paragraph in Archivo (17.5px)."
+      },
+      "body-lede": {
+        "displayName": "Body Lede",
+        "purpose": "Add-ons documentation hero lede paragraph (17px)."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Default document prose and section descriptions across pages (16px-16.5px)."
+      },
+      "body-compact": {
+        "displayName": "Body Compact",
+        "purpose": "Screen stage descriptions and compact Add-ons wordmark text (15px-15.5px)."
+      },
+      "body-card": {
+        "displayName": "Body Card",
+        "purpose": "Install column descriptions and Add-ons delivery grid prose (14.5px)."
+      },
+      "body-sm": {
+        "displayName": "Body Small",
+        "purpose": "Footer license summary prose (14px)."
+      },
+      "body-steps": {
+        "displayName": "Body Steps",
+        "purpose": "Ordered SideStore setup instructions inside install card (13.5px)."
+      },
+      "label-md": {
+        "displayName": "Label Medium",
+        "purpose": "Primary hero/install CTAs, signal chain steps, Add-ons <pre> listings, and Together buttons (13px)."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Sticky navigation links, .tape-btn, .bench-btn, filter chips, specs, and telemetry (12px-12.5px)."
+      }
+    },
+    "shadows": [
+      {
+        "name": "coverflow-center",
+        "value": "0 24px 48px rgba(0, 0, 0, 0.72)",
+        "purpose": "Separates the active centered 3D Cover Flow album tile above recessed flankers."
+      },
+      {
+        "name": "phone-frame",
+        "value": "0 32px 72px rgba(0, 0, 0, 0.9)",
+        "purpose": "Elevates the concentric 44px-radius .phone-frame inside <dialog id=\"player-dialog\"> over the blurred rgba(6, 6, 6, 0.84) backdrop."
+      },
+      {
+        "name": "phone-cover",
+        "value": "0 20px 44px rgba(0, 0, 0, 0.48)",
+        "purpose": "Lifts the borderless 16px-rounded .pm-cover-wrap album sleeve inside .phone-screen."
+      },
+      {
+        "name": "phone-mini-cover",
+        "value": "0 8px 18px rgba(0, 0, 0, 0.35)",
+        "purpose": "Separates the clickable 52px × 52px .pm-mini-cover-btn header thumb inside Lyrics and Queue views."
+      },
+      {
+        "name": "phone-thumb",
+        "value": "0 2px 6px rgba(0, 0, 0, 0.45)",
+        "purpose": "Grounds the 12px circular .pm-range scrubber thumb inside #player-dialog."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-snap",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Primary fast-deceleration curve (--ease-snap) across buttons, proof tiles, WAAPI reveals, .phone-screen transitions, and Cover Flow transitions."
+      },
+      {
+        "name": "duration-tap",
+        "value": "140ms",
+        "purpose": "Active scale feedback on .pm-glass-circle, .pm-bloom-btn, .pm-play-btn, .pm-dock-circle, and .pm-range thumb hover."
+      },
+      {
+        "name": "duration-mini",
+        "value": "160ms",
+        "purpose": "Hover scale(1.04) transition on .pm-mini-cover-btn inside Lyrics and Queue headers."
+      },
+      {
+        "name": "duration-fast",
+        "value": "180ms",
+        "purpose": "Hover, border, background, -1px lift transitions on buttons/links, and fadeInSheet overlay reveal on .pm-sheet."
+      },
+      {
+        "name": "duration-medium",
+        "value": "220ms",
+        "purpose": "Contact-sheet screen selection, Cover Flow border highlight, and .pm-lyric-line shifts."
+      },
+      {
+        "name": "duration-modal",
+        "value": "240ms",
+        "purpose": "phonePop entrance on #player-dialog (cubic-bezier(0.22, 1, 0.36, 1), translateY(18px) scale(0.96) -> 0, 1)."
+      },
+      {
+        "name": "duration-eq",
+        "value": "280ms",
+        "purpose": "Height interpolation across the 15-band AutoEq meters, #readline fade, and .chain-step.is-bump pulse."
+      },
+      {
+        "name": "duration-player-scale",
+        "value": "340ms",
+        "purpose": "Play/pause scale transition (0.94 -> 1 when .is-playing) on .pm-cover-wrap (cubic-bezier(0.22, 1, 0.36, 1))."
+      },
+      {
+        "name": "duration-coverflow",
+        "value": "360ms",
+        "purpose": "3D Cover Flow tile transform/shadow transitions and stage crossfades."
+      },
+      {
+        "name": "duration-phone-bg",
+        "value": "420ms",
+        "purpose": "Dynamic 168deg 3-stop album gradient (--pm-top -> --pm-mid -> --pm-bot) crossfade on .phone-screen (--ease-snap)."
+      },
+      {
+        "name": "duration-reveal",
+        "value": "580ms",
+        "purpose": "WAAPI scroll entrance from resting opacity: 1 (0.28 -> 1, translate3d(0, 22px, 0) -> 0, 55ms stagger)."
+      },
+      {
+        "name": "duration-glow",
+        "value": "650ms",
+        "purpose": "EQ meter fill (.eq-fill) accent color transitions."
+      },
+      {
+        "name": "duration-theme",
+        "value": "750ms",
+        "purpose": "Houdini @property (--orange, --orange-soft, --orange-hover, --theme-ground, --theme-surface, --theme-border) and .hero-showcase 180deg studio backlight gradient crossfades."
+      },
+      {
+        "name": "duration-zoom",
+        "value": "900ms",
+        "purpose": "Active centered Cover Flow artwork scale(1.03) hover zoom."
+      },
+      {
+        "name": "duration-hero",
+        "value": "950ms",
+        "purpose": "Once-only hero entrance choreography (line-up, stage-in; 850ms fade-up staggers)."
+      },
+      {
+        "name": "duration-hold",
+        "value": "6800ms",
+        "purpose": "Hero Cover Flow .hero-wave auto-advance dwell before switching to the next album (9000ms manual / 5000ms scrub pause)."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "0.01ms",
+        "purpose": "Collapses animations/transitions to 0.01ms, fixes hero elements static, limits root color shifts to 240ms, and steps player progress via 250ms intervals under prefers-reduced-motion: reduce."
+      }
+    ],
+    "breakpoints": [
+      { "name": "bp-stack", "value": "1120px" },
+      { "name": "bp-docs", "value": "900px" },
+      { "name": "bp-tablet", "value": "820px" },
+      { "name": "bp-docs-sm", "value": "600px" },
+      { "name": "bp-mobile", "value": "540px" },
+      { "name": "bp-short", "value": "max-height: 740px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Signal Primary Button",
+      "kind": "button",
+      "refersTo": "button-signal",
+      "description": "Hero primary signal-accent action button for immediate APK downloads.",
+      "html": "<a class=\"ds-btn-signal\" href=\"#install\"><span>Download APK</span><span aria-hidden=\"true\">→</span></a>",
+      "css": ".ds-btn-signal { display: inline-flex; align-items: center; gap: 10px; background: var(--orange, #FF5F26); color: var(--ink, #0A0A0A); padding: 16px 24px; font-family: var(--mono, 'JetBrains Mono', ui-monospace, Menlo, monospace); font-size: 13px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; text-decoration: none; border: 1px solid var(--orange, #FF5F26); border-radius: 0; cursor: pointer; transition: background-color 180ms var(--ease-snap, cubic-bezier(0.16, 1, 0.3, 1)), transform 180ms var(--ease-snap, cubic-bezier(0.16, 1, 0.3, 1)); } .ds-btn-signal:hover { background: var(--orange-hover, #FF713E); transform: translateY(-1px); } .ds-btn-signal:active { transform: translateY(0); } .ds-btn-signal:focus-visible { outline: 2px solid var(--orange, #FF5F26); outline-offset: 3px; }"
+    },
+    {
+      "name": "Outline Secondary Button",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "Hero secondary transparent button with 1px Rule Highlight border for opening the Web Player.",
+      "html": "<a class=\"ds-btn-outline\" href=\"player/\">Open Web Player</a>",
+      "css": ".ds-btn-outline { display: inline-flex; align-items: center; gap: 8px; background: transparent; color: var(--white, #FAFAFA); padding: 16px 22px; font-family: var(--mono, 'JetBrains Mono', ui-monospace, Menlo, monospace); font-size: 13px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; text-decoration: none; border: 1px solid var(--rule-hi, #3A3A3A); border-radius: 0; cursor: pointer; transition: border-color 180ms var(--ease-snap, cubic-bezier(0.16, 1, 0.3, 1)), color 180ms var(--ease-snap, cubic-bezier(0.16, 1, 0.3, 1)); } .ds-btn-outline:hover { border-color: var(--orange, #FF5F26); color: var(--orange-soft, #FF8759); } .ds-btn-outline:focus-visible { outline: 2px solid var(--orange, #FF5F26); outline-offset: 3px; }"
+    },
+    {
+      "name": "Ink Install Button",
+      "kind": "button",
+      "refersTo": "button-ink",
+      "description": "Dark Ink Black install card CTA framed by a 1px Rule Highlight border.",
+      "html": "<a class=\"ds-btn-ink\" href=\"#install\">Download APK →</a>",
+      "css": ".ds-btn-ink { display: inline-flex; align-items: center; gap: 10px; background: var(--ink, #0A0A0A); color: var(--white, #FAFAFA); padding: 15px 22px; font-family: var(--mono, 'JetBrains Mono', ui-monospace, Menlo, monospace); font-size: 13px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; text-decoration: none; border: 1px solid var(--rule-hi, #3A3A3A); border-radius: 0; cursor: pointer; transition: background-color 180ms var(--ease-snap, cubic-bezier(0.16, 1, 0.3, 1)), border-color 180ms var(--ease-snap, cubic-bezier(0.16, 1, 0.3, 1)), transform 180ms var(--ease-snap, cubic-bezier(0.16, 1, 0.3, 1)); } .ds-btn-ink:hover { background: #1E1E1E; border-color: var(--orange, #FF5F26); transform: translateY(-1px); } .ds-btn-ink:focus-visible { outline: 2px solid var(--orange, #FF5F26); outline-offset: 3px; }"
+    },
+    {
+      "name": "Sticky Site Navigation",
+      "kind": "nav",
+      "refersTo": "nav-site",
+      "description": "Clean sticky header with inline AURA icon, uppercase nav links, GitHub star pill, signal CTA, and 2px #readline progress bar.",
+      "html": "<header class=\"ds-site-nav\"><div class=\"ds-site-nav-inner\"><a class=\"ds-brand\" href=\"#top\"><svg viewBox=\"0 0 108 108\" width=\"28\" height=\"28\" aria-hidden=\"true\"><rect width=\"108\" height=\"108\" rx=\"28\" fill=\"#000000\"/><path d=\"M 21.6,69.5 C 28,57 38,39 46,36.5 C 55,34 62,57 74,65.8 C 80,68.5 85,68 86.8,67.5 C 83,71 71,73 61.9,69.5 C 56,66 53,55 46,56 C 38,57 30,69 24.2,71.8 C 22,71.9 21.3,70.4 21.6,69.5 Z\" fill=\"#FFFFFF\"/></svg><span>AURA</span></a><nav class=\"ds-nav-links\" aria-label=\"Primary\"><a href=\"#screens\">Screens</a><a href=\"#audio\">Audio Engine</a><a href=\"#install\">Downloads</a><a href=\"addons/\">Add-ons</a></nav><div class=\"ds-nav-actions\"><a class=\"ds-star-pill\" href=\"#github\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" aria-hidden=\"true\"><polygon points=\"12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2\"/></svg><span>GitHub</span></a><a class=\"ds-tape-btn\" href=\"#install\">Get v1.0.0 APK</a></div></div><div class=\"ds-readline\" aria-hidden=\"true\"></div></header>",
+      "css": ".ds-site-nav { position: relative; background: rgba(10, 10, 10, 0.94); backdrop-filter: blur(10px); border-bottom: 1px solid var(--rule, #262626); } .ds-readline { position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--orange, #FF5F26); transform-origin: left center; transform: scaleX(0.42); } .ds-site-nav-inner { height: 76px; padding: 0 24px; display: flex; align-items: center; justify-content: space-between; gap: 20px; } .ds-brand { display: inline-flex; align-items: center; gap: 12px; color: var(--white, #FAFAFA); text-decoration: none; font-family: var(--mono, 'JetBrains Mono', ui-monospace, Menlo, monospace); font-weight: 700; font-size: 16px; letter-spacing: 0.08em; } .ds-brand svg { border-radius: 6px; display: block; } .ds-nav-links { display: flex; align-items: center; gap: 22px; } .ds-nav-links a { font-family: var(--mono, 'JetBrains Mono', ui-monospace, Menlo, monospace); font-size: 12px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; text-decoration: none; color: var(--white-muted, #B8B8B8); padding: 6px 0; border-bottom: 1px solid transparent; transition: color 180ms var(--ease-snap, cubic-bezier(0.16, 1, 0.3, 1)), border-color 180ms var(--ease-snap, cubic-bezier(0.16, 1, 0.3, 1)); } .ds-nav-links a:hover, .ds-nav-links a:focus-visible { color: var(--white, #FAFAFA); border-bottom-color: var(--orange, #FF5F26); outline: none; } .ds-nav-actions { display: flex; align-items: center; gap: 12px; } .ds-star-pill { display: inline-flex; align-items: center; gap: 7px; padding: 9px 12px; border: 1px solid var(--rule-hi, #3A3A3A); font-family: var(--mono, 'JetBrains Mono', ui-monospace, Menlo, monospace); font-size: 12px; color: var(--white-muted, #B8B8B8); text-decoration: none; transition: border-color 180ms var(--ease-snap, cubic-bezier(0.16, 1, 0.3, 1)), color 180ms var(--ease-snap, cubic-bezier(0.16, 1, 0.3, 1)); } .ds-star-pill:hover { border-color: var(--orange, #FF5F26); color: var(--white, #FAFAFA); } .ds-star-pill svg { width: 14px; height: 14px; } .ds-tape-btn { display: inline-flex; align-items: center; gap: 10px; background: var(--orange, #FF5F26); color: var(--ink, #0A0A0A); padding: 10px 16px; font-family: var(--mono, 'JetBrains Mono', ui-monospace, Menlo, monospace); font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; text-decoration: none; border: 1px solid var(--orange, #FF5F26); transition: background-color 180ms var(--ease-snap, cubic-bezier(0.16, 1, 0.3, 1)), transform 180ms var(--ease-snap, cubic-bezier(0.16, 1, 0.3, 1)); } .ds-tape-btn:hover { background: var(--orange-hover, #FF713E); transform: translateY(-1px); }"
+    },
+    {
+      "name": "3D Cover Flow Focal Stage",
+      "kind": "custom",
+      "refersTo": "coverflow-item",
+      "description": "Interactive 3D perspective album showcase with .coverflow-orbit, cover-derived palette swatch, and .hero-wave progress deck.",
+      "html": "<div class=\"ds-hero-visual\"><div class=\"ds-coverflow-stage\"><div class=\"ds-coverflow-orbit\"><button class=\"ds-coverflow-item\" type=\"button\" data-pos=\"-1\" aria-label=\"Future Nostalgia\"><svg viewBox=\"0 0 120 120\" width=\"100%\" height=\"100%\" aria-hidden=\"true\"><rect width=\"120\" height=\"120\" fill=\"#181818\"/><circle cx=\"60\" cy=\"60\" r=\"34\" fill=\"none\" stroke=\"#B8B8B8\" stroke-width=\"1.5\"/></svg></button><button class=\"ds-coverflow-item\" type=\"button\" data-pos=\"0\" aria-label=\"After Hours\"><svg viewBox=\"0 0 120 120\" width=\"100%\" height=\"100%\" aria-hidden=\"true\"><rect width=\"120\" height=\"120\" fill=\"#131313\"/><circle cx=\"60\" cy=\"60\" r=\"38\" fill=\"none\" stroke=\"#FF5F26\" stroke-width=\"2\"/><circle cx=\"60\" cy=\"60\" r=\"10\" fill=\"#FAFAFA\"/></svg></button><button class=\"ds-coverflow-item\" type=\"button\" data-pos=\"1\" aria-label=\"AM\"><svg viewBox=\"0 0 120 120\" width=\"100%\" height=\"100%\" aria-hidden=\"true\"><rect width=\"120\" height=\"120\" fill=\"#181818\"/><path d=\"M20 60 Q40 32 60 60 T100 60\" fill=\"none\" stroke=\"#FAFAFA\" stroke-width=\"2\"/></svg></button></div></div><div class=\"ds-hero-deck\"><div><h2>After Hours</h2><p><span class=\"ds-deck-swatch\" aria-hidden=\"true\"></span><span class=\"ds-deck-hex\">#FF5F26</span><span> · The Weeknd · 24-bit / 96 kHz FLAC</span></p><div class=\"ds-hero-wave\" role=\"slider\" aria-label=\"Track position\"><i class=\"is-past\" style=\"height:45%\"></i><i class=\"is-past\" style=\"height:80%\"></i><i class=\"is-cur\" style=\"height:92%\"></i><i style=\"height:58%\"></i><i style=\"height:72%\"></i><i style=\"height:40%\"></i></div></div></div></div>",
+      "css": ".ds-hero-visual { display: flex; flex-direction: column; gap: 16px; width: 420px; max-width: 100%; } .ds-coverflow-stage { position: relative; height: 220px; perspective: 1100px; overflow: hidden; background: transparent; } .ds-coverflow-orbit { position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; transform-style: preserve-3d; } .ds-coverflow-item { position: absolute; appearance: none; background: var(--char, #131313); padding: 0; border: 1px solid var(--rule-hi, #3A3A3A); border-radius: 0; width: 168px; aspect-ratio: 1 / 1; cursor: pointer; transition: transform 360ms var(--ease-snap, cubic-bezier(0.16, 1, 0.3, 1)), opacity 320ms var(--ease-snap, cubic-bezier(0.16, 1, 0.3, 1)), border-color 220ms var(--ease-snap, cubic-bezier(0.16, 1, 0.3, 1)); } .ds-coverflow-item[data-pos=\"0\"] { z-index: 4; transform: translate3d(0, 0, 0) scale(1); opacity: 1; border-color: var(--orange, #FF5F26); box-shadow: 0 24px 48px rgba(0, 0, 0, 0.72); } .ds-coverflow-item[data-pos=\"-1\"] { z-index: 3; transform: translate3d(-56%, 0, -90px) rotateY(22deg) scale(0.8); opacity: 0.62; } .ds-coverflow-item[data-pos=\"1\"] { z-index: 3; transform: translate3d(56%, 0, -90px) rotateY(-22deg) scale(0.8); opacity: 0.62; } .ds-coverflow-item:not([data-pos=\"0\"]):hover { opacity: 0.9; border-color: var(--white-muted, #B8B8B8); } .ds-coverflow-item:focus-visible { outline: 2px solid var(--orange, #FF5F26); outline-offset: 3px; } .ds-hero-deck { padding-top: 14px; border-top: 1px solid var(--rule, #262626); } .ds-hero-deck h2 { margin: 0; font-family: var(--display, 'Antonio', 'Arial Narrow', sans-serif); font-size: 26px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.01em; line-height: 1.05; color: var(--white, #FAFAFA); } .ds-hero-deck p { margin: 4px 0 0; font-family: var(--mono, 'JetBrains Mono', ui-monospace, Menlo, monospace); font-size: 12.5px; color: var(--white-muted, #B8B8B8); } .ds-deck-swatch { display: inline-block; width: 9px; height: 9px; margin-right: 6px; vertical-align: middle; background: var(--orange, #FF5F26); } .ds-deck-hex { color: var(--orange-soft, #FF8759); font-weight: 700; } .ds-hero-wave { display: flex; align-items: flex-end; gap: 3px; height: 18px; margin-top: 10px; } .ds-hero-wave i { display: block; width: 4px; background: var(--rule-hi, #3A3A3A); } .ds-hero-wave i.is-past { background: var(--orange, #FF5F26); opacity: 0.55; } .ds-hero-wave i.is-cur { background: var(--orange, #FF5F26); opacity: 1; }"
+    },
+    {
+      "name": "Bench Action Button",
+      "kind": "button",
+      "refersTo": "button-bench",
+      "description": "Tactile 38px dark control button for hero deck navigation and launching the #player-dialog mobile preview modal.",
+      "html": "<button class=\"ds-bench-btn\" type=\"button\" aria-haspopup=\"dialog\" aria-expanded=\"false\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><rect x=\"7\" y=\"2\" width=\"10\" height=\"20\" rx=\"2\"/><line x1=\"12\" y1=\"18\" x2=\"12.01\" y2=\"18\"/></svg><span>Preview</span></button>",
+      "css": ".ds-bench-btn { appearance: none; background: var(--panel, #181818); color: var(--white, #FAFAFA); border: 1px solid var(--rule-hi, #3A3A3A); border-radius: 0; height: 38px; padding: 0 12px; font-family: var(--mono, 'JetBrains Mono', ui-monospace, Menlo, monospace); font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; cursor: pointer; display: inline-flex; align-items: center; gap: 7px; transition: border-color 180ms var(--ease-snap, cubic-bezier(0.16, 1, 0.3, 1)), background-color 180ms var(--ease-snap, cubic-bezier(0.16, 1, 0.3, 1)), color 180ms var(--ease-snap, cubic-bezier(0.16, 1, 0.3, 1)); } .ds-bench-btn:hover { border-color: var(--orange, #FF5F26); color: var(--orange-soft, #FF8759); } .ds-bench-btn[aria-pressed=\"true\"] { background: var(--orange, #FF5F26); color: var(--ink, #0A0A0A); border-color: var(--orange, #FF5F26); } .ds-bench-btn:focus-visible { outline: 2px solid var(--orange, #FF5F26); outline-offset: 3px; } .ds-bench-btn svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; }"
+    },
+    {
+      "name": "Mobile Player Preview Frame",
+      "kind": "custom",
+      "refersTo": "phone-frame",
+      "description": "AURA-exact concentric hardware player inside <dialog id=\"player-dialog\"> featuring 168deg 3-stop album washes, borderless 16px artwork, ControlStyle.BLOOM bare transport glyphs, glass dock controls, and frosted Song Menu sheet.",
+      "html": "<div class=\"ds-phone-frame\"><div class=\"ds-phone-screen\"><div class=\"ds-phone-island\" aria-hidden=\"true\"></div><span class=\"ds-pm-grab\" aria-hidden=\"true\"></span><div class=\"ds-pm-topbar\"><span></span><div class=\"ds-pm-from\"><span>Playing from</span><strong>After Hours</strong></div><span></span></div><div class=\"ds-pm-cover\"><svg viewBox=\"0 0 120 120\" width=\"100%\" height=\"100%\" aria-hidden=\"true\"><rect width=\"120\" height=\"120\" fill=\"#131313\"/><circle cx=\"60\" cy=\"60\" r=\"38\" fill=\"none\" stroke=\"#FF5F26\" stroke-width=\"2\"/><circle cx=\"60\" cy=\"60\" r=\"10\" fill=\"#FAFAFA\"/></svg></div><div class=\"ds-pm-track-row\"><div class=\"ds-pm-meta\"><h3>Blinding Lights</h3><p>The Weeknd</p></div><div class=\"ds-pm-actions\"><button class=\"ds-pm-glass\" type=\"button\" aria-label=\"Favorite\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z\"/></svg></button><button class=\"ds-pm-glass\" type=\"button\" aria-label=\"More track options\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><circle cx=\"6\" cy=\"12\" r=\"1.6\" fill=\"currentColor\" stroke=\"none\"/><circle cx=\"12\" cy=\"12\" r=\"1.6\" fill=\"currentColor\" stroke=\"none\"/><circle cx=\"18\" cy=\"12\" r=\"1.6\" fill=\"currentColor\" stroke=\"none\"/></svg></button></div></div><div class=\"ds-pm-progress\"><div class=\"ds-pm-range\"><span class=\"ds-pm-fill\"></span><span class=\"ds-pm-thumb\"></span></div><div class=\"ds-pm-times\"><span>1:04</span><span class=\"ds-pm-codec\">FLAC · 96kHz</span><span>-2:16</span></div></div><div class=\"ds-pm-transport\"><button class=\"ds-pm-bloom\" type=\"button\" aria-label=\"Previous\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M11.6 17.6L4.3 12.8a1 1 0 0 1 0-1.6l7.3-4.8A1 1 0 0 1 13.2 7.2v9.6a1 1 0 0 1-1.6.8zm9 0l-7.3-4.8a1 1 0 0 1 0-1.6l7.3-4.8a1 1 0 0 1 1.6.8v9.6a1 1 0 0 1-1.6.8z\" fill=\"currentColor\"/></svg></button><button class=\"ds-pm-play\" type=\"button\" aria-label=\"Pause\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><rect x=\"5.5\" y=\"4.5\" width=\"4.5\" height=\"15\" rx=\"1.6\" fill=\"currentColor\"/><rect x=\"14\" y=\"4.5\" width=\"4.5\" height=\"15\" rx=\"1.6\" fill=\"currentColor\"/></svg></button><button class=\"ds-pm-bloom\" type=\"button\" aria-label=\"Next\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M12.4 6.4l7.3 4.8a1 1 0 0 1 0 1.6l-7.3 4.8a1 1 0 0 1-1.6-.8V7.2a1 1 0 0 1 1.6-.8zm-9 0l7.3 4.8a1 1 0 0 1 0 1.6l-7.3 4.8a1 1 0 0 1-1.6-.8V7.2a1 1 0 0 1 1.6-.8z\" fill=\"currentColor\"/></svg></button></div><div class=\"ds-pm-dock\"><button class=\"ds-pm-dock-btn\" type=\"button\" aria-label=\"Lyrics\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M5 4h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-4 3v-3H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z\"/><line x1=\"7.5\" y1=\"9\" x2=\"16.5\" y2=\"9\"/><line x1=\"7.5\" y1=\"13\" x2=\"13.5\" y2=\"13\"/></svg></button><div class=\"ds-pm-pill\"><button class=\"ds-pm-half\" type=\"button\" aria-label=\"Shuffle\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><polyline points=\"16 3 21 3 21 8\"/><line x1=\"4\" y1=\"20\" x2=\"21\" y2=\"3\"/></svg></button><span class=\"ds-pm-div\" aria-hidden=\"true\"></span><button class=\"ds-pm-half\" type=\"button\" aria-label=\"Repeat\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><polyline points=\"17 1 21 5 17 9\"/><path d=\"M3 11V9a4 4 0 0 1 4-4h14\"/></svg></button></div><button class=\"ds-pm-dock-btn\" type=\"button\" aria-label=\"Queue\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><line x1=\"8\" y1=\"7\" x2=\"20\" y2=\"7\"/><line x1=\"8\" y1=\"12\" x2=\"20\" y2=\"12\"/><line x1=\"8\" y1=\"17\" x2=\"20\" y2=\"17\"/></svg></button></div><div class=\"ds-phone-homebar\" aria-hidden=\"true\"></div></div></div>",
+      "css": ".ds-phone-frame { width: 320px; max-width: 100%; border-radius: 44px; padding: 9px; background: #0A0A0A; border: 1px solid rgba(255, 255, 255, 0.14); box-shadow: 0 32px 72px rgba(0, 0, 0, 0.9); color: #FAFAFA; } .ds-phone-screen { border-radius: 35px; padding: 12px 20px; display: flex; flex-direction: column; gap: 10px; background: linear-gradient(168deg, var(--pm-top, #5E251B) 0%, var(--pm-mid, #3A211B) 48%, var(--pm-bot, #1B1312) 100%); transition: background 420ms var(--ease-snap, cubic-bezier(0.16, 1, 0.3, 1)); } .ds-phone-island { position: relative; width: 88px; height: 22px; margin: 0 auto; border-radius: 999px; background: #080808; } .ds-phone-island::after { content: ''; position: absolute; right: 8px; top: 50%; width: 7px; height: 7px; border-radius: 50%; transform: translateY(-50%); background: rgba(255, 255, 255, 0.16); } .ds-pm-grab { display: block; width: 40px; height: 4px; margin: -2px auto 0; border-radius: 999px; background: rgba(255, 255, 255, 0.34); } .ds-pm-topbar { display: grid; grid-template-columns: 32px minmax(0, 1fr) 32px; align-items: center; text-align: center; } .ds-pm-from span { display: block; font-family: var(--sans, 'Archivo', system-ui, -apple-system, sans-serif); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255, 255, 255, 0.76); } .ds-pm-from strong { display: block; font-size: 13px; color: #FAFAFA; } .ds-pm-cover { width: 100%; aspect-ratio: 1 / 1; border-radius: 16px; overflow: hidden; background: #131313; box-shadow: 0 20px 44px rgba(0, 0, 0, 0.48); } .ds-pm-track-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-top: 4px; } .ds-pm-meta h3 { margin: 0; font-family: var(--sans, 'Archivo', system-ui, -apple-system, sans-serif); font-size: 20px; font-weight: 700; line-height: 1.2; color: #FFFFFF; } .ds-pm-meta p { margin: 2px 0 0; font-family: var(--sans, 'Archivo', system-ui, -apple-system, sans-serif); font-size: 14px; color: rgba(255, 255, 255, 0.78); } .ds-pm-actions { display: flex; align-items: center; gap: 9px; } .ds-pm-glass { width: 40px; height: 40px; border-radius: 50%; border: 0; background: rgba(255, 255, 255, 0.14); color: #FAFAFA; display: grid; place-items: center; cursor: pointer; } .ds-pm-glass svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 2; } .ds-pm-progress { display: flex; flex-direction: column; gap: 6px; } .ds-pm-range { position: relative; height: 4px; border-radius: 999px; background: rgba(255, 255, 255, 0.24); } .ds-pm-fill { display: block; width: 32%; height: 100%; border-radius: 999px; background: #FFFFFF; } .ds-pm-thumb { position: absolute; left: 32%; top: 50%; width: 12px; height: 12px; border-radius: 50%; transform: translate(-50%, -50%); background: #FFFFFF; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45); } .ds-pm-times { display: flex; align-items: center; justify-content: space-between; font-family: var(--sans, 'Archivo', system-ui, -apple-system, sans-serif); font-size: 12px; color: rgba(255, 255, 255, 0.8); } .ds-pm-codec { padding: 2px 9px; border-radius: 999px; background: rgba(255, 255, 255, 0.14); color: #FAFAFA; font-family: var(--mono, 'JetBrains Mono', ui-monospace, Menlo, monospace); font-size: 12px; } .ds-pm-transport { display: flex; align-items: center; justify-content: space-evenly; } .ds-pm-bloom, .ds-pm-play { border: 0; border-radius: 50%; background: transparent; color: #FFFFFF; display: grid; place-items: center; cursor: pointer; } .ds-pm-bloom { width: 52px; height: 52px; } .ds-pm-bloom svg { width: 30px; height: 30px; } .ds-pm-play { width: 62px; height: 62px; } .ds-pm-play svg { width: 40px; height: 40px; } .ds-pm-dock { display: flex; align-items: center; justify-content: space-between; gap: 10px; } .ds-pm-dock-btn { width: 44px; height: 44px; border-radius: 50%; border: 0; background: rgba(255, 255, 255, 0.14); color: rgba(255, 255, 255, 0.9); display: grid; place-items: center; cursor: pointer; } .ds-pm-dock-btn svg, .ds-pm-half svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; } .ds-pm-pill { flex: 1; max-width: 176px; height: 44px; border-radius: 999px; background: rgba(255, 255, 255, 0.14); display: grid; grid-template-columns: 1fr 1px 1fr; align-items: center; overflow: hidden; } .ds-pm-div { width: 1px; height: 22px; background: rgba(255, 255, 255, 0.18); } .ds-pm-half { height: 100%; border: 0; background: transparent; color: rgba(255, 255, 255, 0.86); display: grid; place-items: center; cursor: pointer; } .ds-phone-homebar { width: 108px; height: 4px; margin: 2px auto 0; border-radius: 999px; background: rgba(255, 255, 255, 0.36); }"
+    },
+    {
+      "name": "Filter Chip Tab",
+      "kind": "chip",
+      "refersTo": "chip-filter",
+      "description": "Compact rectilinear filter chip used for lyrics providers, radio codecs, and utility actions.",
+      "html": "<div style=\"display:inline-flex;gap:6px\"><button class=\"ds-chip-btn\" type=\"button\" aria-selected=\"true\">LRCLIB</button><button class=\"ds-chip-btn\" type=\"button\" aria-selected=\"false\">KuGou</button></div>",
+      "css": ".ds-chip-btn { appearance: none; background: var(--ink, #0A0A0A); color: var(--white-muted, #B8B8B8); border: 1px solid var(--rule-hi, #3A3A3A); border-radius: 0; padding: 6px 12px; font-family: var(--mono, 'JetBrains Mono', ui-monospace, Menlo, monospace); font-size: 12px; cursor: pointer; transition: border-color 180ms var(--ease-snap, cubic-bezier(0.16, 1, 0.3, 1)), color 180ms var(--ease-snap, cubic-bezier(0.16, 1, 0.3, 1)), background-color 180ms var(--ease-snap, cubic-bezier(0.16, 1, 0.3, 1)); } .ds-chip-btn:hover { border-color: var(--orange, #FF5F26); color: var(--white, #FAFAFA); } .ds-chip-btn[aria-selected=\"true\"] { background: var(--orange, #FF5F26); color: var(--ink, #0A0A0A); border-color: var(--orange, #FF5F26); font-weight: 700; } .ds-chip-btn:focus-visible { outline: 2px solid var(--orange, #FF5F26); outline-offset: 3px; }"
+    },
+    {
+      "name": "Headphone AutoEq Select",
+      "kind": "input",
+      "refersTo": "input-select",
+      "description": "Rectilinear monospace select control for loading 8,000+ AutoEq headphone target curves.",
+      "html": "<select class=\"ds-headphone-select\" aria-label=\"Select headphone AutoEq profile\"><option>Sennheiser HD 600 (Harman Over-Ear)</option><option>Sony WH-1000XM5 (Bass De-Bloat)</option><option>Studio Bypass (0.0 dB Flat)</option></select>",
+      "css": ".ds-headphone-select { background: var(--ink, #0A0A0A); color: var(--white, #FAFAFA); border: 1px solid var(--rule-hi, #3A3A3A); border-radius: 0; padding: 9px 12px; font-family: var(--mono, 'JetBrains Mono', ui-monospace, Menlo, monospace); font-size: 12px; max-width: 100%; cursor: pointer; } .ds-headphone-select:hover { border-color: var(--orange, #FF5F26); } .ds-headphone-select:focus-visible { outline: 2px solid var(--orange, #FF5F26); outline-offset: 3px; }"
+    },
+    {
+      "name": "Workbench Chassis Card",
+      "kind": "card",
+      "refersTo": "card-bench",
+      "description": "Flat Charred Ink container with 1px Rule Highlight perimeter and Ink Black inset telemetry strip.",
+      "html": "<div class=\"ds-bench-card\"><h3>Android APK</h3><p>Requires Android 8.0+. Reproducible universal and arm64-v8a signed builds.</p><div class=\"ds-ver-strip\">Latest: v1.0.0 · 10.4 MB APK</div></div>",
+      "css": ".ds-bench-card { background: var(--char, #131313); color: var(--white, #FAFAFA); border: 1px solid var(--rule-hi, #3A3A3A); border-radius: 0; padding: 24px; max-width: 360px; } .ds-bench-card h3 { margin: 0 0 10px; font-family: var(--display, 'Antonio', 'Arial Narrow', sans-serif); font-size: 30px; font-weight: 700; text-transform: uppercase; line-height: 1.05; } .ds-bench-card p { margin: 0; color: var(--white-muted, #B8B8B8); font-family: var(--sans, 'Archivo', system-ui, -apple-system, sans-serif); font-size: 14.5px; line-height: 1.55; } .ds-ver-strip { font-family: var(--mono, 'JetBrains Mono', ui-monospace, Menlo, monospace); font-size: 12px; color: var(--orange-soft, #FF8759); padding: 10px 12px; background: var(--ink, #0A0A0A); border: 1px solid var(--rule, #262626); margin-top: 14px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Editorial Audio Bench",
+    "overview": "AURA's web presence pairs an uncluttered matte Ink Black (`#0A0A0A`) editorial layout with interactive studio instrumentation: hairline `1px` structural divisions (`#262626` / `#3A3A3A`), a split hero lit by a vertical `180deg` `color-mix` studio backlight bloom (`#080808` edges peaking at `22%` `--orange` behind the center band), a crisp transparent 5-cover 3D Cover Flow stage with dynamic cover-derived `--orange` accent and `--theme-ground` / `--theme-surface` / `--theme-border` theming (`750ms` Houdini `@property` crossfades, persisted via `sessionStorage` `\"aura_theme\"` across companion pages), a `#tone-toggle`-launched mobile player preview modal (`<dialog id=\"player-dialog\">` replicating AURA's mobile `ControlStyle.BLOOM` player with 3-stop album-tinted gradients, masked word-synced lyrics, Queue drawer, and in-phone Song Menu sheet), real device contact-sheet proofs, a 15-band AutoEq workbench, BitChord FLAC signal routing, pixel-wipe karaoke lyrics, Nostr Listen Together invites, and a kinetic `#outro` `\"A U R A\"` closing band. Rather than wrapping music features in glossy glass cards or decorative telemetry chrome, the interface clears away superfluous navigation marks so condensed display headlines, primary signal actions, and real audio tools speak directly.\n\nTypography and surfaces maintain stark dark-mode contrast (`color-scheme: dark`, `tabular-nums`, accent `::selection`, `caret-color`, custom scrollbars, and `2px` accent `:focus-visible` outlines with `3px` offset). Transitions and kinetic scroll entrances (`opacity: 1` at rest via WAAPI reveals) decelerate crisply along `cubic-bezier(0.16, 1, 0.3, 1)`, while `@media (prefers-reduced-motion: reduce)` softens color shifts to `240ms` and collapses motion and smooth scrolling to static precision.\n\nThe visual system explicitly excludes decorative SaaS ornament: no eyebrow labels above headings, no decorative `01 / 02` section indices, no rounded pill cards, no >1px accent border stripes, and no emojis as UI icons—relying exclusively on crisp uniform-stroke inline SVGs.",
+    "keyCharacteristics": [
+      "Split hero (`.hero-showcase`, `1.05fr / 0.95fr`) bathed in a vertical `180deg` `color-mix` studio backlight bloom (`#080808` → `14%` / `22%` / `10%` `--orange` → `#080808`), pairing staggered `EVERY SONG. ZERO ADS.` typography with a transparent interactive 5-item 3D `.coverflow-orbit` stage, 42-bar `.hero-wave` scrubber, live `.hero-deck` controls, and the `#tone-toggle`-launched `<dialog id=\"player-dialog\">` AURA mobile player replica",
+      "Minimal sticky navigation (`.site-nav`) with `#readline` horizontal scroll progress bar, clean logo + wordmark, centered uppercase mono links, GitHub star pill, and a single solid primary CTA",
+      "Strictly rectilinear (`0px` radius) chassis, cards, buttons, inputs, and Cover Flow tiles—limiting rounded geometry solely to `6px` on `.brand img` and the concentric mobile hardware replica inside `<dialog id=\"player-dialog\">` (`44px` `.phone-frame`, `35px` `.phone-screen`, `24px` `.pm-sheet-card` top corners, `16px` `.pm-cover-wrap`, `12px` `.pm-sheet-tile`, `10px` list/sheet rows, `8px` inner thumbs, `999px` pills/morph bar, and `50%` circular controls)",
+      "Dynamic single-signal accent and deep cover-tinted surface system defaulting to Grain Orange (`#FF5F26`) and Ember Brown (`#261007` / `#1B0C06` / `#481D0F`) via `@property` tokens (`--orange*`, `--theme-ground`, `--theme-surface`, `--theme-border`) that crossfade per centered album and persist via `sessionStorage` `\"aura_theme\"`, paired with 3-stop `--pm-top` / `--pm-mid` / `--pm-bot` player washes (`168deg`) inside `<dialog id=\"player-dialog\">` and reserving Punched White (`#FAFAFA`) exclusively for selected device proof frames and staged mats",
+      "Uniform-stroke inline SVG iconography, custom dark browser chrome, always-visible WAAPI scroll reveals (`opacity: 1` at rest), and immediate reduced-motion static fallbacks"
+    ],
+    "rules": [
+      {
+        "name": "The Binary Signal Rule",
+        "body": "The interface uses one active chromatic signal family at a time—defaulting to Grain Orange (`#FF5F26` / `#FF8759` / `#FF713E`) paired with low-luminance cover-tinted surfaces (`--theme-ground`, `--theme-surface`, `--theme-border`)—and dynamically crossfading via Houdini `@property` tokens to match centered Cover Flow album art (`Future Nostalgia`, `After Hours`, `AM`, `Harry's House`, `American IV`) with `sessionStorage` `\"aura_theme\"` persistence across companion pages; album artwork never introduces competing multi-accent chrome.",
+        "section": "colors"
+      },
+      {
+        "name": "The Punched Paper Proof Rule",
+        "body": "Punched White (`#FAFAFA`) surfaces appear strictly as active contact-sheet frames around real device screenshots (`.screen-cell[aria-pressed=\"true\"]`, `.stage-punched`), never as generic background cards.",
+        "section": "colors"
+      },
+      {
+        "name": "The Orange-Ink Inversion Rule",
+        "body": "Text and borders layered directly over Grain Orange (or active cover-derived `--orange`) fills always switch to Ink Black (`#0A0A0A` or `#111111`, `≥6.22:1` contrast) and never use white text on the signal fill.",
+        "section": "colors"
+      },
+      {
+        "name": "The Condensed Uppercase Display Rule",
+        "body": "All `Antonio` display headings and panel titles set uppercase with compressed leading (`0.9–1.08`) and tight negative tracking (`-0.02em` on display/headline tiers) so statements anchor crisply above `1px` rules.",
+        "section": "typography"
+      },
+      {
+        "name": "The Tabular Telemetry Rule",
+        "body": "`body` enforces `font-variant-numeric: tabular-nums` globally so bitrate specs, sample rates, star badges, EQ frequencies, modal timestamps (`.pm-times`), and APK file sizes never shift horizontally during updates.",
+        "section": "typography"
+      },
+      {
+        "name": "The Hairline Matrix Rule",
+        "body": "Resting panels, cards, grids, and tables never cast drop shadows; separation comes strictly from `1px` hairline borders (`#262626` / `#3A3A3A` / `var(--theme-border)`) and a single tonal step between Ink Black (`#0A0A0A`) and Charred Ink (`#131313`) or cover-tinted `--theme-surface` (`#1B0C06` default).",
+        "section": "elevation"
+      },
+      {
+        "name": "The Earned Lift Rule",
+        "body": "Box shadow elevation appears solely on the active centered Cover Flow hero tile (`.coverflow-item[data-pos=\"0\"]`) and the concentric mobile hardware replica inside `<dialog id=\"player-dialog\">` (`.phone-frame`, `.pm-cover-wrap`, `.pm-mini-cover-btn`, and `.pm-range` slider thumbs); all resting workbench cards, tables, and page controls rely strictly on border color or `1px–2px` transform shifts.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** use Ink Black (`#0A0A0A`), Charred Ink (`#131313`), cover-derived `--theme-ground` / `--theme-surface` / `--theme-border` (`#261007` / `#1B0C06` / `#481D0F` default), Grain Orange (`#FF5F26` default / active `--orange`), Soft Coral Orange (`#FF8759` / `--orange-soft`), and Punched White (`#FAFAFA`) consistently across portal surfaces.",
+      "**Do** invert foreground text and borders to Ink Black (`#0A0A0A` or `#111111`, `≥6.22:1` contrast) whenever placing elements over Grain Orange / active `--orange` fills.",
+      "**Do** enforce rectilinear `0px` corners across all editorial containers, workbench cards, buttons, inputs, tables, and Cover Flow tiles—limiting rounded geometry strictly to `6px` on `.brand img` and the concentric mobile hardware preview replica inside `<dialog id=\"player-dialog\">` (`44px` / `35px` / `24px` / `16px` / `12px` / `10px` / `8px` / `999px` / `50%`).",
+      "**Do** partition modules with `1px` hairline rules (`#262626` / `#3A3A3A` / `var(--theme-border)`) and `#0A0A0A` ↔ `#131313` / `--theme-surface` stepping instead of resting card shadows.",
+      "**Do** render uniform-stroke inline `<svg>` icons (`stroke-width: 1.8–2`), global `tabular-nums`, `2px` accent `:focus-visible` rings, always-visible WAAPI scroll reveals (`opacity: 1` at rest), and `prefers-reduced-motion` resets (`0.01ms` motion collapse, `240ms` theme shift)."
+    ],
+    "donts": [
+      "**Don't** place white text on Grain Orange / active `--orange` fills, and don't paint generic content cards Punched White (`#FAFAFA`)—white surfaces belong strictly to active device proof frames and staged screenshot mats.",
+      "**Don't** introduce multi-hue SaaS rainbow/mesh gradients (limit gradients strictly to `.hero-showcase`'s cover-derived `180deg` `color-mix` vertical backlight bloom, `.phone-screen`'s `168deg` 3-stop album wash inside `#player-dialog`, and `.lyrics-bench`'s subtle `12%` radial glow, keeping `.coverflow-stage` transparent), glassmorphism blur cards (only sticky top nav bars and `.phone-dialog::backdrop` blur underlying content), hard block drop shadows on resting containers, circular `50%` buttons outside `.phone-frame`, or >1px decorative left/right border stripes.",
+      "**Don't** add eyebrow category tags above display headings, decorative `01 / 02` section numbers, or emoji characters as UI icons.",
+      "**Don't** reintroduce legacy green (`#c8ee9b` / `#d1edac`), old red (`#E5483A`), or excluded fonts (`Fraunces`, `Playfair Display`, `Cormorant`, `Lora`, `Crimson`, `Newsreader`, `Syne`, `Space Grotesk`, `Space Mono`, `IBM Plex`, `Inter`, `DM Sans`, `DM Serif`, `Outfit`, `Plus Jakarta Sans`, `Instrument Sans`)."
+    ]
+  }
+}

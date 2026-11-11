@@ -13,26 +13,129 @@
 <meta name="description" content="How AURA handles local music data, optional usage counting, website download counts and connected services.">
 <meta name="robots" content="index,follow">
 <link rel="canonical" href="https://hyperspandan.github.io/AURA/privacy/">
-<meta name="theme-color" content="#101210">
+<meta name="theme-color" content="#0A0A0A">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Antonio:wght@600;700&family=Archivo:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
 <style>
-:root{color-scheme:dark;font-family:system-ui,sans-serif;background:#101210;color:#f3f6ee}*{box-sizing:border-box}body{margin:0;padding:32px 20px 64px;line-height:1.75}main{max-width:760px;margin:auto}a{color:#c8ee9b}h1{font-size:clamp(32px,6vw,48px);line-height:1.15}h2{font-size:22px;margin-top:36px}p,li{color:#c9d0c4}a:focus-visible{outline:2px solid currentColor;outline-offset:4px}code{overflow-wrap:anywhere}nav{margin-bottom:36px}
+:root {
+  color-scheme: dark;
+  --ink: #0A0A0A;
+  --char: #131313;
+  --rule: #262626;
+  --rule-hi: #3A3A3A;
+  --orange: #FF5F26;
+  --orange-soft: #FF8759;
+  --white: #FAFAFA;
+  --muted: #B8B8B8;
+  --display: "Antonio", "Arial Narrow", sans-serif;
+  --sans: "Archivo", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+* { box-sizing: border-box; }
+::selection { background: var(--orange); color: var(--ink); }
+html {
+  background: var(--ink);
+  scrollbar-color: var(--rule-hi) var(--ink);
+}
+body {
+  margin: 0;
+  padding: 0 0 64px;
+  background: var(--ink);
+  color: var(--white);
+  font: 400 16px/1.72 var(--sans);
+  caret-color: var(--orange);
+  font-variant-numeric: tabular-nums;
+}
+.rail-top {
+  border-bottom: 1px solid var(--orange);
+  padding: 18px 24px;
+  background: var(--char);
+}
+.rail-top-inner {
+  max-width: 780px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--mono);
+  font-size: 12px;
+}
+.rail-top a { color: var(--orange-soft); text-decoration: none; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
+.rail-top a:hover { text-decoration: underline; }
+main {
+  max-width: 780px;
+  margin: 44px auto 0;
+  padding: 0 24px;
+}
+h1 {
+  margin: 0 0 20px;
+  font-family: var(--display);
+  font-size: clamp(42px, 6vw, 64px);
+  line-height: 1.08;
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
+}
+h2 {
+  margin: 40px 0 12px;
+  padding-top: 24px;
+  border-top: 1px solid var(--rule);
+  font-family: var(--display);
+  font-size: 28px;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+}
+p, li { color: var(--muted); max-width: 58ch; text-wrap: pretty; }
+a { color: var(--orange-soft); text-underline-offset: 0.22em; }
+a:focus-visible { outline: 2px solid var(--orange); outline-offset: 3px; }
+code {
+  font-family: var(--mono);
+  font-size: 0.88em;
+  background: var(--char);
+  border: 1px solid var(--rule);
+  padding: 2px 6px;
+  color: var(--orange-soft);
+  overflow-wrap: anywhere;
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+}
 </style>
+<script>try{const t=JSON.parse(sessionStorage.getItem("aura_theme")||"null");if(t){const s=document.documentElement.style;if(t.color)s.setProperty("--orange",t.color);if(t.soft)s.setProperty("--orange-soft",t.soft);if(t.hover)s.setProperty("--orange-hover",t.hover);if(t.ground)s.setProperty("--theme-ground",t.ground);if(t.surface)s.setProperty("--theme-surface",t.surface);if(t.border)s.setProperty("--theme-border",t.border);}}catch{}</script>
 </head>
-<body><main>
-<nav><a href="../">← AURA</a></nav>
-<h1>Privacy, in plain language.</h1>
-<p>This policy describes AURA for Android and the project website. AURA is open-source and does not display in-app advertising.</p>
-<h2>Your music and settings</h2>
-<p>Listening history, local playlists, preferences and downloaded files are stored on your device. Optional account connections may also read or change data on the service you connect. Clearing app data or uninstalling removes the app’s local data; Android backups and exports you create are separate copies.</p>
-<h2>Optional app usage counting</h2>
-<p>Usage counting is enabled by default. It sends a random installation identifier, current app version, activity dates and daily play totals to the project’s analytics service hosted on Cloudflare. The identifier distinguishes installations and version updates; it is not a hardware or advertising identifier. These usage requests do not include song titles, artist names, your Google email or your name.</p>
-<p>Turn off <strong>Settings → About → Count this phone in usage numbers</strong> to stop future usage reports. Disabling reporting does not delete previously submitted totals. The owner’s analytics dashboard requires authentication.</p>
-<h2>Website downloads</h2>
-<p>When you click an APK download link, the website uses a random browser identifier in local storage to count unique download browsers and the selected release. Clearing site storage removes that browser identifier. GitHub serves the APK itself, and the main website loads typefaces from Google Fonts. GitHub Pages, Cloudflare and other network providers necessarily receive connection information such as IP addresses when handling requests.</p>
-<h2>Services you use</h2>
-<p>Music, artwork, lyrics, radio, podcasts, recommendations and song recognition require requests to their providers. Optional sign-in, music-server connections, scrobbling, listening rooms and voice features send the information needed to perform the action you choose. Those providers have their own privacy practices. Room participants receive information shared within the room, and public relays carry room messages.</p>
-<h2>Permissions and controls</h2>
-<p>Microphone access is used when you choose recognition or room voice features. Media access is used for device music. Notifications support playback and downloads. The app’s update installer asks Android for permission before installing an APK. You can change granted permissions in Android settings and disconnect optional services in AURA.</p>
-<h2>Questions and source code</h2>
-<p>You can review the implementation or contact the maintainer through <a href="https://github.com/HyperSpandan/AURA">the GitHub repository</a>. Do not post passwords, account tokens or private identifiers in public issues. Provider retention practices are governed by their own policies.</p>
-<section><h2>Spotify connection and custom audio servers</h2><p>Optional Spotify sign-in reads your playlists and saved tracks to import into AURA. Tokens are encrypted on your phone and sent only to Spotify. AURA does not write to your Spotify account. You can disconnect in the app or revoke access in Spotify. If you configure a ClashFLAC server, track titles and artists are sent to that server to find matching audio. These services receive your IP address when contacted.</p></section></main></body></html>
+<body>
+<header class="rail-top">
+  <div class="rail-top-inner">
+    <a href="../">← AURA</a>
+    <span style="color:var(--muted)">GPL-3.0 PRIVACY POLICY</span>
+  </div>
+</header>
+<main>
+  <h1>Privacy, in plain language.</h1>
+  <p>This policy describes AURA for Android, Desktop, Web, and the project website. AURA is open-source and does not display in-app advertising.</p>
+
+  <h2>Your music and settings</h2>
+  <p>Listening history, local playlists, preferences and downloaded files are stored on your device. Optional account connections may also read or change data on the service you connect. Clearing app data or uninstalling removes the app’s local data; Android backups and exports you create are separate copies.</p>
+
+  <h2>Optional app usage counting</h2>
+  <p>Usage counting is enabled by default. It sends a random installation identifier, current app version, activity dates and daily play totals to the project’s analytics service hosted on Cloudflare. The identifier distinguishes installations and version updates; it is not a hardware or advertising identifier. These usage requests do not include song titles, artist names, your Google email or your name.</p>
+  <p>Turn off <strong>Settings → About → Count this phone in usage numbers</strong> to stop future usage reports. Disabling reporting does not delete previously submitted totals. The owner’s analytics dashboard requires authentication.</p>
+
+  <h2>Website downloads</h2>
+  <p>When you click an APK download link, the website uses a random browser identifier in local storage to count unique download browsers and the selected release. Clearing site storage removes that browser identifier. GitHub serves the APK itself, and the website loads typefaces from Google Fonts. GitHub Pages, Cloudflare and other network providers necessarily receive connection information such as IP addresses when handling requests.</p>
+
+  <h2>Services you use</h2>
+  <p>Music, artwork, lyrics, radio, podcasts, recommendations and song recognition require requests to their providers. Optional sign-in, music-server connections, scrobbling, listening rooms and voice features send the information needed to perform the action you choose. Those providers have their own privacy practices. Room participants receive information shared within the room, and public relays carry room messages.</p>
+
+  <h2>Spotify connection and audio add-on servers</h2>
+  <p>Optional Spotify sign-in reads your playlists and saved tracks to import into AURA. Tokens are encrypted on your phone and sent only to Spotify. AURA does not write to your Spotify account. You can disconnect in the app or revoke access in Spotify. If you configure a custom audio add-on server, track titles and artists are sent to that server to find matching audio. These services receive your IP address when contacted.</p>
+
+  <h2>Permissions and controls</h2>
+  <p>Microphone access is used when you choose recognition or room voice features. Media access is used for device music. Notifications support playback and downloads. The app’s update installer asks Android for permission before installing an APK. You can change granted permissions in Android settings and disconnect optional services in AURA.</p>
+
+  <h2>Questions and source code</h2>
+  <p>You can review the implementation or contact the maintainer through <a href="https://github.com/HyperSpandan/AURA">the GitHub repository</a>. Do not post passwords, account tokens or private identifiers in public issues. Provider retention practices are governed by their own policies.</p>
+</main>
+</body>
+</html>
