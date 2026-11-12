@@ -2274,7 +2274,7 @@ p, li { text-wrap: pretty; }
         <span id="star-count">GitHub</span>
       </a>
       <a class="tape-btn" data-latest-apk href="https://github.com/HyperSpandan/AURA/releases/latest">
-        <span>Get <span id="ver-badge">v1.0.0</span> APK</span>
+        <span>Get <span id="ver-badge">v1.0.1</span> APK</span>
       </a>
     </div>
   </div>
@@ -2633,7 +2633,7 @@ p, li { text-wrap: pretty; }
           </div>
           <h3>All Releases &amp; Checksums</h3>
           <p>Every build is signed, reproducible, and released openly. Browse previous versions, release notes, changelogs, and SHA-256 integrity checksums.</p>
-          <div class="install-card-note" id="ver-note">Latest: v1.0.0 · Signed binaries &amp; checksums</div>
+          <div class="install-card-note" id="ver-note">Latest: v1.0.1 · Signed binaries &amp; checksums</div>
         </div>
         <div class="install-card-actions">
           <div class="install-chips-row">
@@ -2650,10 +2650,13 @@ p, li { text-wrap: pretty; }
     <details class="changelog-details" id="changelog-box">
       <summary>
         <span>Release Notes &amp; Build Highlights</span>
-        <span id="changelog-tag">v1.0.0</span>
+        <span id="changelog-tag">v1.0.1</span>
       </summary>
       <div class="changelog-body" id="changelog-body">
-        Initial AURA release featuring 3D Cover Flow, Morphing Capsule Dock, lossless audio add-on engine, 8,000+ AutoEq curves, 9-provider karaoke lyrics, Nostr Listen Together rooms, and 50,000+ live radio stations.
+        • Listen Together capsule dock, dynamic animated island elevation, and background chat notifications.<br>
+        • High-gain voice notes &amp; room audio with soft-saturation clarity.<br>
+        • Restored single-radial cover glow lighting and fixed splash screen transparency.<br>
+        • Major performance optimizations: lower memory footprint, fluid scrolling, and 75% GPU shader fill-rate savings.
       </div>
     </details>
   </section>
@@ -4028,7 +4031,7 @@ p, li { text-wrap: pretty; }
   function applyReleases(list) {
     if (!Array.isArray(list) || !list.length) return;
     const rel = list.find((r) => !r.draft && !r.prerelease) || list[0];
-    const tag = rel.tag_name || "v1.0.0";
+    const tag = rel.tag_name || "v1.0.1";
     const verBadge = document.getElementById("ver-badge");
     if (verBadge) verBadge.textContent = tag;
     const clTag = document.getElementById("changelog-tag");

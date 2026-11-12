@@ -1,0 +1,5 @@
+AURA 1.0.1 update:
+• Listen Together capsule navigation bar, dynamic island elevation, and background chat notifications
+• Massive voice note and audio call volume boost with soft-saturation clarity
+• Restored original single-radial cover glow lighting and fixed startup splash artifact
+• Comprehensive performance optimizations: lower memory footprint, fluid scrolling, and 75% GPU shader fill-rate savings
