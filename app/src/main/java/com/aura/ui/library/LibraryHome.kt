@@ -271,52 +271,6 @@ fun LibraryScreen(contentPadding: PaddingValues, actions: SongActions, nav: Libr
         (pinned + rows.filter { it !in pinned }.sortedByDescending { it.plays }).take(5)
     }
 
-    var viewMode by androidx.compose.runtime.saveable.rememberSaveable {
-        mutableStateOf(if (libraryUi.playlistList) "list" else "crate")
-    }
-    val crateRecords = remember(rows) {
-        val mapped = rows.map { it.toCrateRecord() }
-        if (mapped.isNotEmpty()) mapped else getStarterCrateRecords(nav.browse)
-    }
-    val onPlayRecord: (CrateRecord) -> Unit = { record ->
-        scope.launch {
-            val local = LibraryStore.playlists.value.firstOrNull { it.id == record.id }
-            if (local != null && local.songs.isNotEmpty()) {
-                actions.playAll(local.songs.map { it.toSong() }, 0, false, record.title)
-            } else {
-                val col = runCatching {
-                    com.aura.data.MusicRepository.localCollection(record.id)
-                        ?: com.aura.data.library.LibraryCache.collection(record.id, AccountStore.account.value?.email.orEmpty())
-                        ?: com.aura.data.MusicRepository.collection(record.id)
-                }.getOrNull()
-                if (col != null && col.songs.isNotEmpty()) {
-                    actions.playAll(col.songs, 0, false, record.title)
-                } else {
-                    record.onClick()
-                }
-            }
-        }
-    }
-    val onShuffleRecord: (CrateRecord) -> Unit = { record ->
-        scope.launch {
-            val local = LibraryStore.playlists.value.firstOrNull { it.id == record.id }
-            if (local != null && local.songs.isNotEmpty()) {
-                actions.playAll(local.songs.map { it.toSong() }, 0, true, record.title)
-            } else {
-                val col = runCatching {
-                    com.aura.data.MusicRepository.localCollection(record.id)
-                        ?: com.aura.data.library.LibraryCache.collection(record.id, AccountStore.account.value?.email.orEmpty())
-                        ?: com.aura.data.MusicRepository.collection(record.id)
-                }.getOrNull()
-                if (col != null && col.songs.isNotEmpty()) {
-                    actions.playAll(col.songs, 0, true, record.title)
-                } else {
-                    record.onClick()
-                }
-            }
-        }
-    }
-
     val page: @Composable () -> Unit = { LazyColumn(state = listState, contentPadding = contentPadding, modifier = Modifier.fillMaxSize()) {
         item {
             PageHeader(com.aura.ui.theme.tr("Library"), actions = {
@@ -383,63 +337,41 @@ fun LibraryScreen(contentPadding: PaddingValues, actions: SongActions, nav: Libr
             })
         }
 
-        when {
-            libraryUi.playlistList || viewMode == "list" -> {
-                // The list, as Library had it before the tiles: new and import first, then the
-                // pinned ones and each source's own, five of each until "Show more".
-                item(key = "playlist-new") { ActionLine(Icons.Rounded.Add, "New playlist", if (signedIn) "Here and on YouTube Music" else "On this phone") { naming = true } }
-                item(key = "playlist-import") {
-                    ActionLine(null, "Import a playlist", "From a Spotify or YouTube Music link", onClick = nav.importPlaylist, picture = {
-                        androidx.compose.foundation.Image(androidx.compose.ui.res.painterResource(com.aura.R.drawable.ic_spotify), null, Modifier.size(30.dp))
-                    })
-                }
-                playlistGroups(rows, libraryUi.pinnedPlaylists).forEach { (group, inGroup) ->
-                    item(key = "group:$group") { GroupLabel(group) }
-                    val open = group == PINNED || openGroups[group] == true
-                    val visible = if (open) inGroup else inGroup.take(LIST_FOLD)
-                    items(visible, key = { "$group:${it.key}" }) { row -> PlaylistLine(row, Modifier.animateItem()) }
-                    if (group != PINNED && inGroup.size > LIST_FOLD) item(key = "fold:$group") {
-                        TextButton(onClick = { openGroups[group] = !open }, modifier = Modifier.fillMaxWidth()) {
-                            Text(if (open) "Show less" else "Show more (${inGroup.size - LIST_FOLD})")
-                        }
+        if (libraryUi.playlistList) {
+            // The list, as Library had it before the tiles: new and import first, then the
+            // pinned ones and each source's own, five of each until "Show more".
+            item(key = "playlist-new") { ActionLine(Icons.Rounded.Add, "New playlist", if (signedIn) "Here and on YouTube Music" else "On this phone") { naming = true } }
+            item(key = "playlist-import") {
+                ActionLine(null, "Import a playlist", "From a Spotify or YouTube Music link", onClick = nav.importPlaylist, picture = {
+                    androidx.compose.foundation.Image(androidx.compose.ui.res.painterResource(com.aura.R.drawable.ic_spotify), null, Modifier.size(30.dp))
+                })
+            }
+            playlistGroups(rows, libraryUi.pinnedPlaylists).forEach { (group, inGroup) ->
+                item(key = "group:$group") { GroupLabel(group) }
+                val open = group == PINNED || openGroups[group] == true
+                val visible = if (open) inGroup else inGroup.take(LIST_FOLD)
+                items(visible, key = { "$group:${it.key}" }) { row -> PlaylistLine(row, Modifier.animateItem()) }
+                if (group != PINNED && inGroup.size > LIST_FOLD) item(key = "fold:$group") {
+                    TextButton(onClick = { openGroups[group] = !open }, modifier = Modifier.fillMaxWidth()) {
+                        Text(if (open) "Show less" else "Show more (${inGroup.size - LIST_FOLD})")
                     }
                 }
             }
-            viewMode == "tiles" -> {
-                item(key = "playlist-tiles") {
-                    LazyRow(
-                        contentPadding = PaddingValues(horizontal = 16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                    ) {
-                        item(key = "new") { NewPlaylistTile(signedIn, { naming = true }, Modifier.width(TILE_WIDTH)) }
-                        item(key = "import") {
-                            ActionTile("Import Spotify", "From a playlist link", nav.importPlaylist, Modifier.width(TILE_WIDTH)) {
-                                androidx.compose.foundation.Image(androidx.compose.ui.res.painterResource(com.aura.R.drawable.ic_spotify), null, Modifier.size(64.dp))
-                            }
+        } else {
+            item(key = "playlist-tiles") {
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                ) {
+                    item(key = "new") { NewPlaylistTile(signedIn, { naming = true }, Modifier.width(TILE_WIDTH)) }
+                    item(key = "import") {
+                        ActionTile("Import Spotify", "From a playlist link", nav.importPlaylist, Modifier.width(TILE_WIDTH)) {
+                            androidx.compose.foundation.Image(androidx.compose.ui.res.painterResource(com.aura.R.drawable.ic_spotify), null, Modifier.size(64.dp))
                         }
-                        item(key = "liked") { LikedTile(liked.size, nav.liked, Modifier.width(TILE_WIDTH)) }
-                        items(top, key = { it.key }) { row -> PlaylistTile(row, Modifier.width(TILE_WIDTH).animateItem()) }
                     }
-                }
-            }
-            else -> {
-                // 📦 3D "Record Crate" digital vinyl digging mode
-                item(key = "record-crate") {
-                    RecordCrateSection(
-                        records = crateRecords,
-                        onPlayRecord = onPlayRecord,
-                        onShuffleRecord = onShuffleRecord,
-                        currentViewMode = viewMode,
-                        onViewModeChange = { mode ->
-                            viewMode = mode
-                            if (mode == "list") {
-                                AppSettings.updateUi { it.copy(playlistList = true) }
-                            } else {
-                                AppSettings.updateUi { it.copy(playlistList = false) }
-                            }
-                        },
-                    )
+                    item(key = "liked") { LikedTile(liked.size, nav.liked, Modifier.width(TILE_WIDTH)) }
+                    items(top, key = { it.key }) { row -> PlaylistTile(row, Modifier.width(TILE_WIDTH).animateItem()) }
                 }
             }
         }
@@ -482,10 +414,7 @@ fun AllPlaylistsScreen(contentPadding: PaddingValues, nav: LibraryNav, onBack: (
         top + order.sort(rows.filter { it !in top })
     }
     val asList = AppSettings.ui.collectAsState().value.playlistList
-    var viewMode by androidx.compose.runtime.saveable.rememberSaveable {
-        mutableStateOf(if (asList) "list" else "grid")
-    }
-    val full = androidx.compose.foundation.lazy.grid.GridItemSpan(if (asList || viewMode == "crate") 1 else 2)
+    val full = androidx.compose.foundation.lazy.grid.GridItemSpan(if (asList) 1 else 2)
     val grid = androidx.compose.foundation.lazy.grid.rememberLazyGridState()
     // Behind it all, the cover of the first playlist in view, blurred across the top and running
     // down into its colour; as the page scrolls, both follow the playlists on screen.
@@ -509,7 +438,7 @@ fun AllPlaylistsScreen(contentPadding: PaddingValues, nav: LibraryNav, onBack: (
     androidx.compose.foundation.lazy.grid.LazyVerticalGrid(
         state = grid,
         // Two tiles to a row, or one playlist to a line when Library shows them as a list.
-        columns = androidx.compose.foundation.lazy.grid.GridCells.Fixed(if (asList || viewMode == "crate") 1 else 2),
+        columns = androidx.compose.foundation.lazy.grid.GridCells.Fixed(if (asList) 1 else 2),
         contentPadding = contentPadding,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalArrangement = Arrangement.spacedBy(if (asList) 0.dp else 10.dp),
@@ -522,20 +451,10 @@ fun AllPlaylistsScreen(contentPadding: PaddingValues, nav: LibraryNav, onBack: (
                     Modifier.height(54.dp).glass(androidx.compose.foundation.shape.CircleShape).padding(horizontal = 5.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    IconButton(onClick = {
-                        viewMode = when (viewMode) {
-                            "grid" -> "crate"
-                            "crate" -> "list"
-                            else -> "grid"
-                        }
-                    }) {
+                    IconButton(onClick = { AppSettings.updateUi { it.copy(playlistList = !asList) } }) {
                         Icon(
-                            imageVector = when (viewMode) {
-                                "crate" -> Icons.Rounded.Album
-                                "list" -> Icons.AutoMirrored.Rounded.QueueMusic
-                                else -> Icons.Rounded.LibraryMusic
-                            },
-                            contentDescription = "Switch layout: $viewMode",
+                            imageVector = if (asList) Icons.Rounded.LibraryMusic else Icons.AutoMirrored.Rounded.QueueMusic,
+                            contentDescription = if (asList) "Switch to tiles" else "Switch to list",
                             modifier = Modifier.size(20.dp),
                         )
                     }
@@ -555,21 +474,7 @@ fun AllPlaylistsScreen(contentPadding: PaddingValues, nav: LibraryNav, onBack: (
                 }
             })
         }
-        if (viewMode == "crate") {
-            item(key = "crate-view", span = { full }) {
-                val crateRecords = remember(shown) {
-                    val mapped = shown.map { it.toCrateRecord() }
-                    if (mapped.isNotEmpty()) mapped else getStarterCrateRecords(nav.browse)
-                }
-                RecordCrateSection(
-                    records = crateRecords,
-                    onPlayRecord = { record -> record.onClick() },
-                    onShuffleRecord = { record -> record.onClick() },
-                    currentViewMode = viewMode,
-                    onViewModeChange = { viewMode = it },
-                )
-            }
-        } else if (asList || viewMode == "list") {
+        if (asList) {
             item(key = "new") { ActionLine(Icons.Rounded.Add, "New playlist", if (signedIn) "Here and on YouTube Music" else "On this phone") { naming = true } }
             item(key = "liked") { ActionLine(Icons.Rounded.Favorite, "Liked songs", "${liked.size} songs", onClick = nav.liked) }
             items(shown.size, key = { shown[it].key }) { i -> PlaylistLine(shown[i], Modifier.animateItem()) }
