@@ -667,7 +667,6 @@ fun ArtworkPane(
     val offsetX = remember { Animatable(0f) }
     val scope = rememberCoroutineScope()
     val threshold = with(LocalDensity.current) { 96.dp.toPx() }
-    val beatSwell = remember { androidx.compose.runtime.mutableFloatStateOf(0f) }
 
     Box(
         modifier
@@ -690,7 +689,7 @@ fun ArtworkPane(
             },
         contentAlignment = Alignment.Center,
     ) {
-        if (glow && !canvasShowing) CoverGlow(isPlaying, scale, Modifier.matchParentSize(), onBeatSwell = { beatSwell.floatValue = it })
+        if (glow && !canvasShowing) CoverGlow(isPlaying, scale, Modifier.matchParentSize())
         Box(Modifier.graphicsLayer { alpha = coverShown }, contentAlignment = Alignment.Center) {
         CoverSwap(CoverShown(song.thumbnailUrl, index, song.videoId), change) { url, motion ->
             UpgradingArtwork(
@@ -703,12 +702,11 @@ fun ArtworkPane(
                     .then(motion)
                     .then(with(com.aura.ui.components.PlayerMorph) { Modifier.playerLanding() })
                     .graphicsLayer {
-                        val kickBounce = 1f + (0.022f * beatSwell.floatValue)
-                        scaleX = scale * kickBounce
-                        scaleY = scale * kickBounce
+                        scaleX = scale
+                        scaleY = scale
                         translationX = offsetX.value
                         rotationZ = offsetX.value / 90f
-                        shadowElevation = (28.dp + 16.dp * beatSwell.floatValue).toPx()
+                        shadowElevation = 28.dp.toPx()
                         shape = androidx.compose.foundation.shape.RoundedCornerShape(28.dp)
                         clip = true
                         // Hidden under the morphing cover while it grows in or shrinks away.
@@ -801,122 +799,40 @@ internal fun SeekTaps(
     }
 }
 
-/**
- * Living fluid beat-reactive aura behind the album artwork:
- * Multi-layer radiant bloom that pulses, breathes, and blooms with the track's real-time bass and loudness.
- */
+/** A blurred light in the cover's colours under it, drifting a little lower and swelling with the bass. */
 @Composable
-private fun CoverGlow(
-    playing: Boolean,
-    scale: Float,
-    modifier: Modifier = Modifier,
-    onBeatSwell: ((Float) -> Unit)? = null,
-) {
-    val (primary, tertiary) = com.aura.ui.theme.songAccents()
-    val scheme = MaterialTheme.colorScheme
-    val secondary = scheme.secondary
-
-    val kickSwell = remember { androidx.compose.runtime.mutableFloatStateOf(0f) }
-    val bodySwell = remember { androidx.compose.runtime.mutableFloatStateOf(0f) }
-    val phaseAngle = remember { androidx.compose.runtime.mutableFloatStateOf(0f) }
-
+private fun CoverGlow(playing: Boolean, scale: Float, modifier: Modifier) {
+    val (a, b) = com.aura.ui.theme.songAccents()
+    val swell = remember { androidx.compose.runtime.mutableFloatStateOf(0f) }
     androidx.compose.runtime.DisposableEffect(Unit) {
         com.aura.playback.AudioLevels.hold()
         onDispose { com.aura.playback.AudioLevels.release() }
     }
-
     LaunchedEffect(playing) {
-        if (!playing) {
-            kickSwell.floatValue = 0f
-            bodySwell.floatValue = 0f
-            onBeatSwell?.invoke(0f)
-            return@LaunchedEffect
-        }
         var peak = 0.05f
         var last = 0L
         while (playing) {
             androidx.compose.runtime.withFrameNanos { now ->
                 val dt = if (last == 0L) 0.016f else ((now - last) / 1e9f).coerceIn(0f, 0.1f)
                 last = now
-                val levels = com.aura.playback.AudioLevels.at(System.nanoTime())
-                val rawBass = levels?.bass ?: 0f
-                val rawLevel = levels?.level ?: 0f
-
-                // Transient kick (punchy fast bass hit)
-                val rawKick = rawBass * 0.85f + rawLevel * 0.15f
-                peak = maxOf(rawKick, peak * (1f - dt * 0.35f)).coerceAtLeast(0.025f)
-                val targetKick = (rawKick / peak).coerceIn(0f, 1f)
-
-                // Fast-attack, snappy-decay kick envelope
-                val currentKick = kickSwell.floatValue
-                val kickRate = if (targetKick > currentKick) 16f else 4.5f
-                val newKick = currentKick + (targetKick - currentKick) * (dt * kickRate).coerceAtMost(1f)
-                kickSwell.floatValue = newKick
-                onBeatSwell?.invoke(newKick)
-
-                // Smooth body resonance (warm, rolling envelope for atmospheric bloom)
-                val rawBody = rawBass * 0.5f + rawLevel * 0.5f
-                val targetBody = (rawBody / peak).coerceIn(0f, 1f)
-                val currentBody = bodySwell.floatValue
-                val bodyRate = if (targetBody > currentBody) 4f else 1.8f
-                bodySwell.floatValue = currentBody + (targetBody - currentBody) * (dt * bodyRate).coerceAtMost(1f)
-
-                // Organic revolving phase for satellite plasma lobes
-                phaseAngle.floatValue += dt * (0.8f + 1.2f * newKick)
+                val level = com.aura.playback.AudioLevels.at(System.nanoTime())?.let { it.bass * 0.8f + it.level * 0.2f } ?: 0f
+                peak = maxOf(level, peak * (1f - dt * 0.3f)).coerceAtLeast(0.02f)
+                val target = (level / peak).coerceIn(0f, 1f)
+                swell.floatValue += (target - swell.floatValue) * (dt * if (target > swell.floatValue) 6f else 2f).coerceAtMost(1f)
             }
         }
+        swell.floatValue = 0f
     }
-
     val strength by animateFloatAsState(if (playing) 1f else 0.45f, tween(600), label = "glow")
-
-    Canvas(
-        modifier.graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
-    ) {
-        val kick = kickSwell.floatValue
-        val body = bodySwell.floatValue
+    Canvas(modifier) {
+        val s = swell.floatValue
         val w = size.width * scale
-        val centerPoint = Offset(center.x, center.y + w * 0.05f)
-        val phase = phaseAngle.floatValue
-
-        // Layer 1: Wide Deep Atmospheric Halo (Diffuses ambient warmth across the screen)
-        val outerRadius = w * (0.95f + 0.35f * body)
-        val outerPeak = (0.45f + 0.25f * body) * strength
-        val outerStops = com.aura.ui.components.glowStops(tertiary, outerPeak, primary, shape = 2.2f)
-        drawCircle(
-            brush = Brush.radialGradient(*outerStops, center = centerPoint, radius = outerRadius),
-            radius = outerRadius,
-            center = centerPoint,
-        )
-
-        // Layer 2: Orbiting Chromatic Satellite Plasma Lobes (Organic fluid motion around the card)
-        val satelliteCount = 3
-        for (i in 0 until satelliteCount) {
-            val angle = phase + (i * (2f * PI.toFloat() / satelliteCount))
-            val orbitDist = w * (0.16f + 0.12f * kick)
-            val lobeX = centerPoint.x + orbitDist * cos(angle)
-            val lobeY = centerPoint.y + orbitDist * sin(angle * 1.3f)
-            val lobeRadius = w * (0.55f + 0.20f * kick)
-            val lobeColor = if (i % 2 == 0) primary else secondary
-            val lobePeak = (0.55f + 0.35f * kick) * strength
-            val lobeStops = com.aura.ui.components.glowStops(lobeColor, lobePeak, tertiary, shape = 2.0f)
-            drawCircle(
-                brush = Brush.radialGradient(*lobeStops, center = Offset(lobeX, lobeY), radius = lobeRadius),
-                radius = lobeRadius,
-                center = Offset(lobeX, lobeY),
-                blendMode = BlendMode.Screen,
-            )
-        }
-
-        // Layer 3: Intense Core Bloom (Directly behind album artwork, pulses hard on kick transients)
-        val coreRadius = w * (0.68f + 0.26f * kick)
-        val corePeak = (0.75f + 0.25f * kick).coerceAtMost(1f) * strength
-        val coreStops = com.aura.ui.components.glowStops(primary, corePeak, tertiary, shape = 2.8f)
-        drawCircle(
-            brush = Brush.radialGradient(*coreStops, center = centerPoint, radius = coreRadius),
-            radius = coreRadius,
-            center = centerPoint,
-            blendMode = BlendMode.Screen,
-        )
+        val c = Offset(center.x, center.y + w * 0.12f)
+        val r = w * (0.7f + 0.07f * s)
+        val peak = (0.7f + 0.25f * s).coerceAtMost(1f) * strength
+        // A straight fade to transparent black showed its edge as a line across the player.
+        val stops = com.aura.ui.components.glowStops(a, peak, b)
+        drawCircle(Brush.radialGradient(*stops, center = c, radius = r), r, c)
     }
 }
 

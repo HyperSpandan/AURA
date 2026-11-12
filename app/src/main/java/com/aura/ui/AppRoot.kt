@@ -245,6 +245,7 @@ fun AppRoot(vm: PlayerViewModel) {
     val route = entry?.destination?.route
     val isCapsulePage = route == Tab.EXPLORE.route ||
         route == "explore" ||
+        route?.startsWith("together") == true ||
         route?.startsWith("collection") == true ||
         route?.startsWith("server/album") == true ||
         route?.startsWith("playlist") == true ||

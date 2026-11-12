@@ -8,6 +8,7 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
@@ -38,6 +39,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -501,11 +503,23 @@ internal fun RoomView(r: Together.Room, onBack: () -> Unit, contentPadding: Padd
     val typing = remember { FocusRequester() }
     val list = rememberLazyListState()
     // The island sits on the dock, and on the keyboard while it's up.
-    KeepChromeOut()
     KeyboardResizes()
     val island = r.phase != Together.Phase.Ended
     val keyboard = WindowInsets.ime.asPaddingValues().calculateBottomPadding()
-    val above = maxOf(contentPadding.calculateBottomPadding() - ISLAND_DROP, keyboard + 8.dp, 8.dp)
+    // When folded into capsule mode (56.dp + insets), the capsule dock is compact, so the island
+    // rests lower. When the bar enlarges/expands from capsule form, the island smoothly animates up
+    // so it is never hidden behind the enlarged bottom bar.
+    val chromeScroll = com.aura.ui.LocalChromeScroll.current
+    val isFolded = chromeScroll?.inline == true
+    val capsuleBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 56.dp + 16.dp
+    val expandedBottom = contentPadding.calculateBottomPadding() - ISLAND_DROP
+    val targetBaseBottom = if (isFolded) capsuleBottom else expandedBottom
+    val animatedBaseBottom by animateDpAsState(
+        targetValue = targetBaseBottom,
+        animationSpec = if (still) snap() else spring(dampingRatio = 0.8f, stiffness = 300f),
+        label = "islandBaseBottom",
+    )
+    val above = maxOf(animatedBaseBottom, keyboard + 8.dp, 8.dp)
     var islandHeight by remember { mutableStateOf(ISLAND_HEIGHT) }
     val listBottom = if (island) above + islandHeight + 16.dp else contentPadding.calculateBottomPadding()
     val last = { (list.layoutInfo.totalItemsCount - 1).coerceAtLeast(0) }
