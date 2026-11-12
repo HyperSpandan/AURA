@@ -64,6 +64,12 @@ fun ShelfItem.cardMenu(): com.aura.ui.components.CardMenu? {
  */
 internal object ScreenCache {
     @Synchronized fun clear() { entries.clear() }
+    @Synchronized fun trim(keepCount: Int = 16) {
+        while (entries.size > keepCount) {
+            val firstKey = entries.keys.firstOrNull() ?: break
+            entries.remove(firstKey)
+        }
+    }
     private class Entry(val value: Any?, val at: Long)
 
     private val entries = object : LinkedHashMap<String, Entry>(64, 0.75f, true) {

@@ -394,7 +394,7 @@ internal fun ExploreBoard(
                 )
             }
             val moodPairs = moods.chunked(2)
-            items(moodPairs) { pair ->
+            items(moodPairs, key = { it.joinToString("-") { m -> m.browseId } }) { pair ->
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -1104,7 +1104,7 @@ fun MoodScreen(
                 ErrorState(s.message, onRetry = { loader.reload() })
             }
             is UiState.Success -> LazyColumn(contentPadding = contentPadding) {
-                items(s.data) { HomeShelfView(it, onItemClick) }
+                items(s.data, key = { it.title + (it.items.firstOrNull()?.browseId ?: it.items.firstOrNull()?.videoId ?: "") }) { HomeShelfView(it, onItemClick) }
             }
         }
     }

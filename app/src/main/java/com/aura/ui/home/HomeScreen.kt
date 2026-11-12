@@ -416,7 +416,7 @@ fun HomeScreen(
                 }
                 "recommendations" -> {
                     when (val s = state) {
-                        is UiState.Loading -> items(3) { ShelfPlaceholder() }
+                        is UiState.Loading -> items(3, key = { "loading-shelf:$it" }) { ShelfPlaceholder() }
                         is UiState.Error -> item(key = "error") {
                             ErrorState(s.message, onRetry = { loader.reload() }, modifier = Modifier.padding(top = 24.dp))
                         }

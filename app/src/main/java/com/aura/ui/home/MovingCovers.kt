@@ -1,5 +1,6 @@
 package com.aura.ui.home
 
+import android.app.ActivityManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -121,6 +122,8 @@ class MovingCovers internal constructor(private val rtl: Boolean, private val sc
     var pageScrolling by mutableStateOf(false)
     /** A drag or fling anywhere inside the page, shelves included, seen through nested scrolling. */
     private var nestedScrolling by mutableStateOf(false)
+    /** How many cards may move simultaneously (tuned down on low-RAM devices to preserve frame rates). */
+    var maxMoving by mutableStateOf(MovingCoverRules.MAX_MOVING)
 
     val moving: Set<Any> by derivedStateOf {
         // Read nothing else while still, so a scroll's every frame of new
@@ -128,7 +131,7 @@ class MovingCovers internal constructor(private val rtl: Boolean, private val sc
         if (!allowed || pageScrolling || nestedScrolling) emptySet()
         else MovingCoverRules.pick(
             spots.values.map { it.copy(cached = loaded[it.key] == true) },
-            allowed = true, scrolling = false, metered = metered, rtl = rtl,
+            allowed = true, scrolling = false, metered = metered, rtl = rtl, max = maxMoving,
         )
     }
 
@@ -182,11 +185,17 @@ internal fun rememberMovingCovers(rtl: Boolean, covered: Boolean): MovingCovers 
     val ui by AppSettings.ui.collectAsState()
     val powerSave = rememberPowerSaveMode()
     val metered = rememberMeteredNetwork()
+    val context = LocalContext.current
+    val isLowRam = remember(context) {
+        val am = context.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
+        am?.isLowRamDevice == true
+    }
     val scope = rememberCoroutineScope()
     val covers = remember(rtl, scope) { MovingCovers(rtl, scope) }
     covers.enabled = MovingCoverRules.allowed(ui.homeMovingCovers, ui.reduceAnimation, powerSave = false)
     covers.allowed = MovingCoverRules.allowed(ui.homeMovingCovers, ui.reduceAnimation, powerSave, covered)
     covers.metered = metered
+    covers.maxMoving = if (isLowRam) 1 else MovingCoverRules.MAX_MOVING
     return covers
 }
 

@@ -1,5 +1,7 @@
 package com.aura.ui.player
 
+import android.app.ActivityManager
+import android.content.Context
 import android.os.Build
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
@@ -22,6 +24,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.aura.playback.AudioLevels
 import kotlin.math.PI
@@ -73,9 +76,15 @@ fun AmbientLights(
             }
         }
     }
+    val context = LocalContext.current
+    val isLowRam = remember(context) {
+        val am = context.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
+        am?.isLowRamDevice == true
+    }
+    val blurRadius = if (isLowRam) 16.dp else 40.dp
     Canvas(
         modifier
-            .then(if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) Modifier.blur(40.dp, BlurredEdgeTreatment.Unbounded) else Modifier)
+            .then(if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) Modifier.blur(blurRadius, BlurredEdgeTreatment.Unbounded) else Modifier)
             .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
             .drawWithContent {
                 drawContent()

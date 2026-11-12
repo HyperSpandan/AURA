@@ -1,6 +1,9 @@
 package com.aura.ui.components
 
+import android.app.ActivityManager
+import android.content.Context
 import android.os.Build
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.animation.core.EaseOutCubic
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.height
@@ -35,6 +38,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -81,16 +85,28 @@ val liquidGlassSupported: Boolean get() = Build.VERSION.SDK_INT >= Build.VERSION
 /** Blurring a recorded layer needs RenderEffect, which arrived in Android 12. */
 val backdropBlurSupported: Boolean get() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
 
-/** Whether glass blurs a recorded copy of what's behind it: Android 12+, blur not reduced. */
+/** Whether glass blurs a recorded copy of what's behind it: Android 12+, blur not reduced, not low-RAM constrained. */
 @Composable
 fun backdropBlurOn(): Boolean {
     val ui by AppSettings.ui.collectAsState()
-    return backdropBlurSupported && !ui.reduceBlur
+    val context = LocalContext.current
+    val isLowRam = remember(context) {
+        val am = context.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
+        am?.isLowRamDevice == true
+    }
+    return backdropBlurSupported && !ui.reduceBlur && !isLowRam
 }
 
 @Composable
 fun liquidGlassOn(): Boolean {
     val ui by AppSettings.ui.collectAsState()
+    val context = LocalContext.current
+    val isLowRam = remember(context) {
+        val am = context.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
+        am?.isLowRamDevice == true
+    }
+    // On low-end / low-RAM devices, runtime refraction shaders severely throttle frame rates; safe fallback ensures 60 FPS.
+    if (isLowRam) return false
     // The Liquid style is Liquid Glass by definition, whatever the switch says.
     return liquidGlassSupported && (ui.liquidGlass || ui.glassStyle == GlassStyle.LIQUID) && !ui.reduceBlur
 }
@@ -209,7 +225,9 @@ fun Modifier.glass(shape: Shape, tint: Color = MaterialTheme.colorScheme.surface
                 blurRadius = look.blur,
                 noiseFactor = look.noise,
             ),
-        )
+        ) {
+            inputScale = HazeInputScale.Fixed(0.5f)
+        }
     }
     return filled.border(0.75.dp, edge, shape)
 }

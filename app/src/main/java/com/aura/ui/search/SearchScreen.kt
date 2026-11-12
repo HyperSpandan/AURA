@@ -255,7 +255,7 @@ fun SearchScreen(
                     contentPadding = PaddingValues(horizontal = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    items(SearchFilter.entries) { f ->
+                    items(SearchFilter.entries, key = { it.name }) { f ->
                         FilterChip(selected = f == filter, onClick = { vm.setFilter(f) }, label = { Text(f.label) })
                     }
                 }
@@ -310,7 +310,7 @@ private fun Typing(
                         TextButton(onClick = AppSettings::clearRecentSearches) { Text("Clear all") }
                     }
                 }
-                items(recent) { q ->
+                items(recent, key = { "recent:$it" }) { q ->
                     QueryRow(q, Icons.Filled.History, onClick = { onPick(q) }) {
                         IconButton(onClick = { AppSettings.removeRecentSearch(q) }) { Icon(Icons.Filled.Close, "Remove") }
                     }

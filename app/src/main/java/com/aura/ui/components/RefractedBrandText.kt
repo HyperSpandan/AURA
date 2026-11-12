@@ -84,6 +84,34 @@ fun RefractedBrandText(
     val fontSizePx = heightPx * 0.94f
     val letterSpacingPx = with(density) { 5.dp.toPx() }
 
+    // Vertical stroke expansion bevel gradient (vertical polished chrome)
+    val strokeShader = remember(heightPx) {
+        LinearGradient(
+            0f, 0f, 0f, heightPx,
+            intArrayOf(
+                AndroidColor.argb(0xFA, 0xFF, 0xFF, 0xFF), // Pure white top crest
+                AndroidColor.argb(0xD8, 0xE2, 0xE8, 0xF0), // Bright platinum
+                AndroidColor.argb(0xA0, 0xA0, 0xAA, 0xB8), // Liquid silver
+                AndroidColor.argb(0xB0, 0x47, 0x55, 0x69)  // Slate metallic base
+            ),
+            floatArrayOf(0.00f, 0.25f, 0.65f, 1.00f),
+            Shader.TileMode.CLAMP
+        )
+    }
+
+    // Specular crest highlight gradient (razor-sharp top rim)
+    val crestShader = remember(heightPx) {
+        LinearGradient(
+            0f, 0f, 0f, heightPx * 0.45f,
+            intArrayOf(
+                AndroidColor.argb(0xFF, 0xFF, 0xFF, 0xFF),
+                AndroidColor.argb(0x00, 0xFF, 0xFF, 0xFF)
+            ),
+            floatArrayOf(0.00f, 1.00f),
+            Shader.TileMode.CLAMP
+        )
+    }
+
     // Reusable Skia Paint objects
     val bodyPaint = remember {
         Paint().apply {
@@ -95,7 +123,7 @@ fun RefractedBrandText(
         }
     }
 
-    val strokeExpansionPaint = remember {
+    val strokeExpansionPaint = remember(strokeShader) {
         Paint().apply {
             isAntiAlias = true
             isSubpixelText = true
@@ -105,10 +133,11 @@ fun RefractedBrandText(
             strokeCap = Paint.Cap.ROUND
             typeface = outfitTypeface
             textSize = fontSizePx
+            shader = strokeShader
         }
     }
 
-    val crestPaint = remember {
+    val crestPaint = remember(crestShader) {
         Paint().apply {
             isAntiAlias = true
             isSubpixelText = true
@@ -118,6 +147,7 @@ fun RefractedBrandText(
             strokeCap = Paint.Cap.ROUND
             typeface = outfitTypeface
             textSize = fontSizePx
+            shader = crestShader
         }
     }
 
@@ -128,6 +158,11 @@ fun RefractedBrandText(
             style = Paint.Style.FILL
             typeface = outfitTypeface
             textSize = fontSizePx
+            setShadowLayer(
+                with(density) { 14.dp.toPx() },
+                0f, 0f,
+                AndroidColor.argb(0x60, 0xFF, 0xFF, 0xFF)
+            )
         }
     }
 
@@ -159,12 +194,9 @@ fun RefractedBrandText(
     val stagger = 0.55f
 
     // ---- Truly Slow, Endless, Continuous Harmonic Light Wave ----
-    // Period = 6.8 seconds for a calm, slow, hypnotic, luxurious flow.
-    // The wave never stops, never pauses, and never becomes static.
     val period = 6.8f
     val wavelength = totalWordWidth * 1.55f
     val velocity = wavelength / period
-    val offset = (elapsedSec * velocity) % wavelength
 
     // Diagonal angle: 22 degrees for a refined metallic refraction slant
     val angleRad = 22f * (PI.toFloat() / 180f)
@@ -172,89 +204,61 @@ fun RefractedBrandText(
     val dy = sin(angleRad) * heightPx
 
     // Liquid Titanium Silver & Polished Chrome Palette
-    // Start (0.0) and end (1.0) colors are identical, guaranteeing 100% seamless cyclic repetition
-    val substrateColor = AndroidColor.rgb(0x64, 0x74, 0x8B) // Slate titanium substrate
-    val frostedSilver = AndroidColor.rgb(0x94, 0xA3, 0xB8)  // Frosted slate-silver
-    val polishedChrome = AndroidColor.rgb(0xCB, 0xD5, 0xE1) // Liquid titanium silver
-    val champagneGlint = AndroidColor.rgb(0xF5, 0xEF, 0xEB) // Warm champagne glint
-    val pureWhite = AndroidColor.rgb(0xFF, 0xFF, 0xFF)      // Diamond radiant crest
-    val platinumEdge = AndroidColor.rgb(0xD4, 0xD9, 0xE2)   // Polished platinum
-
-    val gradientColors = intArrayOf(
-        substrateColor,  // 0.00: Resting slate titanium
-        frostedSilver,   // 0.18: Leading metallic curve
-        polishedChrome,  // 0.36: Chrome swell
-        champagneGlint,  // 0.45: Warm champagne glint
-        pureWhite,       // 0.50: Pure radiant diamond-white specular peak
-        pureWhite,       // 0.52: Specular core plateau
-        champagneGlint,  // 0.57: Trailing glint
-        platinumEdge,    // 0.68: Departing platinum
-        frostedSilver,   // 0.84: Trailing silver
-        substrateColor   // 1.00: Resting slate titanium (seamlessly meets 0.00!)
-    )
-    val gradientStops = floatArrayOf(
-        0.00f,
-        0.18f,
-        0.36f,
-        0.45f,
-        0.50f,
-        0.52f,
-        0.57f,
-        0.68f,
-        0.84f,
-        1.00f
-    )
-
-    // Continuous, endlessly repeating LinearGradient across the entire canvas space
-    val unifiedBodyShader = LinearGradient(
-        offset - dx, -dy,
-        offset, heightPx,
-        gradientColors,
-        gradientStops,
-        Shader.TileMode.REPEAT
-    )
-
-    // Stroke expansion bevel gradient (vertical polished chrome)
-    val strokeShader = LinearGradient(
-        0f, 0f, 0f, heightPx,
+    val gradientColors = remember {
+        val substrateColor = AndroidColor.rgb(0x64, 0x74, 0x8B) // Slate titanium substrate
+        val frostedSilver = AndroidColor.rgb(0x94, 0xA3, 0xB8)  // Frosted slate-silver
+        val polishedChrome = AndroidColor.rgb(0xCB, 0xD5, 0xE1) // Liquid titanium silver
+        val champagneGlint = AndroidColor.rgb(0xF5, 0xEF, 0xEB) // Warm champagne glint
+        val pureWhite = AndroidColor.rgb(0xFF, 0xFF, 0xFF)      // Diamond radiant crest
+        val platinumEdge = AndroidColor.rgb(0xD4, 0xD9, 0xE2)   // Polished platinum
         intArrayOf(
-            AndroidColor.argb(0xFA, 0xFF, 0xFF, 0xFF), // Pure white top crest
-            AndroidColor.argb(0xD8, 0xE2, 0xE8, 0xF0), // Bright platinum
-            AndroidColor.argb(0xA0, 0xA0, 0xAA, 0xB8), // Liquid silver
-            AndroidColor.argb(0xB0, 0x47, 0x55, 0x69)  // Slate metallic base
-        ),
-        floatArrayOf(0.00f, 0.25f, 0.65f, 1.00f),
-        Shader.TileMode.CLAMP
-    )
-
-    // Specular crest highlight gradient (razor-sharp top rim)
-    val crestShader = LinearGradient(
-        0f, 0f, 0f, heightPx * 0.45f,
-        intArrayOf(
-            AndroidColor.argb(0xFF, 0xFF, 0xFF, 0xFF),
-            AndroidColor.argb(0x00, 0xFF, 0xFF, 0xFF)
-        ),
-        floatArrayOf(0.00f, 1.00f),
-        Shader.TileMode.CLAMP
-    )
-
-    bodyPaint.shader = unifiedBodyShader
-    strokeExpansionPaint.shader = strokeShader
-    crestPaint.shader = crestShader
-
-    // Soft dispersed ambient bloom that travels in lockstep with the wave
-    bloomPaint.shader = unifiedBodyShader
-    bloomPaint.setShadowLayer(
-        with(density) { 14.dp.toPx() },
-        0f, 0f,
-        AndroidColor.argb(0x60, 0xFF, 0xFF, 0xFF)
-    )
+            substrateColor,  // 0.00: Resting slate titanium
+            frostedSilver,   // 0.18: Leading metallic curve
+            polishedChrome,  // 0.36: Chrome swell
+            champagneGlint,  // 0.45: Warm champagne glint
+            pureWhite,       // 0.50: Pure radiant diamond-white specular peak
+            pureWhite,       // 0.52: Specular core plateau
+            champagneGlint,  // 0.57: Trailing glint
+            platinumEdge,    // 0.68: Departing platinum
+            frostedSilver,   // 0.84: Trailing silver
+            substrateColor   // 1.00: Resting slate titanium
+        )
+    }
+    val gradientStops = remember {
+        floatArrayOf(
+            0.00f,
+            0.18f,
+            0.36f,
+            0.45f,
+            0.50f,
+            0.52f,
+            0.57f,
+            0.68f,
+            0.84f,
+            1.00f
+        )
+    }
 
     Canvas(
         modifier = modifier
             .height(height)
             .width(totalWordWidthDp)
     ) {
+        val currentElapsed = elapsedSec
+        val offset = (currentElapsed * velocity) % wavelength
+
+        // Continuous, endlessly repeating LinearGradient across the entire canvas space
+        val unifiedBodyShader = LinearGradient(
+            offset - dx, -dy,
+            offset, heightPx,
+            gradientColors,
+            gradientStops,
+            Shader.TileMode.REPEAT
+        )
+
+        bodyPaint.shader = unifiedBodyShader
+        bloomPaint.shader = unifiedBodyShader
+
         drawIntoCanvas { composeCanvas ->
             val canvas = composeCanvas.nativeCanvas
 

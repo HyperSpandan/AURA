@@ -605,7 +605,7 @@ internal fun RoomView(r: Together.Room, onBack: () -> Unit, contentPadding: Padd
             if (r.chat.isEmpty()) {
                 item { Text("Say hi.", Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.onSurfaceVariant) }
             }
-            items(r.chat.size) { i -> ChatBubble(r.chat[i]) }
+            items(r.chat.size, key = { "chat:${r.chat[it].at}_${r.chat[it].fromId}_$it" }) { i -> ChatBubble(r.chat[i]) }
         }
         // The page fades out above the island and is still under it and the
         // dock, so they rest on something rather than hang over the chat.
