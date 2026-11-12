@@ -55,6 +55,10 @@ private const val MIME = MediaFormat.MIMETYPE_AUDIO_AAC
 /** Samples in one AAC-LC frame. */
 private const val FRAME_SAMPLES = 1024
 private const val TAG = "Voice"
+/** Boost microphone input PCM so low sensitivity / distant mic speech encodes crisply. */
+private const val MIC_GAIN_BOOST = 2.4f
+/** Boost playback PCM so received speech and voice notes cut clearly above background and music. */
+private const val PLAYBACK_GAIN_BOOST = 1.8f
 
 /** ms of audio in [frames] AAC frames. */
 internal fun framesMs(frames: Int): Long = frames * FRAME_SAMPLES * 1000L / RATE
@@ -102,6 +106,22 @@ internal class SpeechGate(private val hangFrames: Int = 10) {
                 sum += v * v
             }
             return kotlin.math.sqrt(sum / n)
+        }
+
+        /**
+         * Amplifies 16-bit little-endian mono PCM samples in place by [gain]
+         * with soft-limiting / saturation clamping to [-32768, 32767].
+         */
+        fun applyGain(pcm: ByteArray, bytes: Int, gain: Float) {
+            if (gain == 1f) return
+            val n = bytes / 2
+            for (i in 0 until n) {
+                val idx = 2 * i
+                val raw = ((pcm[idx + 1].toInt() shl 8) or (pcm[idx].toInt() and 0xFF)).toShort().toInt()
+                val boosted = (raw * gain).toInt().coerceIn(-32768, 32767)
+                pcm[idx] = (boosted and 0xFF).toByte()
+                pcm[idx + 1] = (boosted ushr 8).toByte()
+            }
         }
     }
 }
@@ -209,6 +229,7 @@ class VoiceRecorder(
                     } else {
                         val n = record.read(pcm, 0, minOf(pcm.size, buf.capacity()))
                         if (n > 0) {
+                            SpeechGate.applyGain(pcm, n, MIC_GAIN_BOOST)
                             buf.clear(); buf.put(pcm, 0, n)
                             codec.queueInputBuffer(inIndex, 0, n, samplesIn * 1_000_000 / RATE, 0)
                             samplesIn += n / 2
@@ -389,7 +410,10 @@ class VoicePlayer(context: Context) {
                     val out = codec.getOutputBuffer(outIndex)!!
                     val pcm = ByteArray(info.size).also { out.position(info.offset); out.get(it) }
                     codec.releaseOutputBuffer(outIndex, false)
-                    if (pcm.isNotEmpty()) track.write(pcm, 0, pcm.size)
+                    if (pcm.isNotEmpty()) {
+                        SpeechGate.applyGain(pcm, pcm.size, PLAYBACK_GAIN_BOOST)
+                        track.write(pcm, 0, pcm.size)
+                    }
                     if (info.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM != 0) break
                 }
             }

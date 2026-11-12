@@ -266,14 +266,12 @@ data class PlaybackSettings(
     val wifiQuality: AudioQuality = AudioQuality.MAX,
     val mobileQuality: AudioQuality = AudioQuality.MAX,
     /**
-     * Carry the signal to the output as 32-bit float. With float output on, the
-     * decoder is asked for high-res PCM rather than 16-bit (Android 12+ FLAC
-     * decoders oblige), so a 24-bit source keeps its precision to the mixer
-     * instead of being cut to 16-bit at the decoder. On by default for
-     * end-to-end hi-res; a device whose mixer dislikes float can turn it off and
-     * fall back to dithered 16-bit.
+     * Carry the signal to the output as 32-bit float. Off by default for
+     * clean, jitter-free compatibility across all phone DACs and drivers;
+     * 16-bit PCM is dithered with TPDF noise shaping. Devices or DACs that
+     * benefit from float can toggle it on in Settings.
      */
-    val floatOutput: Boolean = true,
+    val floatOutput: Boolean = false,
     val preferUsbDac: Boolean = true,
     /** Slowly level every track toward the same loudness. */
     val loudnessNormalization: Boolean = true,
@@ -283,7 +281,7 @@ data class PlaybackSettings(
      */
     val normalizeOnSpeaker: Boolean = false,
     /** Where normalization sets songs: below, at or above YouTube's reference level. */
-    val volumeLevel: VolumeLevel = VolumeLevel.LOUD,
+    val volumeLevel: VolumeLevel = VolumeLevel.NORMAL,
     val skipSilence: Boolean = false,
     /** Mid/side stereo widening. */
     val spatialAudio: Boolean = false,

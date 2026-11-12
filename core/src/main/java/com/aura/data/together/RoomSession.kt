@@ -145,6 +145,7 @@ internal class RoomSession(
     private val talkSink: TalkSink = TalkSink { _, _, _, _, _ -> },
     private val hereMs: Long = HERE_MS,
     private val memberTimeoutMs: Long = MEMBER_TIMEOUT_MS,
+    private val onChatIn: ((senderName: String, text: String, isVoice: Boolean) -> Unit)? = null,
 ) {
     private val key = Schnorr.newPrivateKey()
     private val me = Schnorr.publicKey(key).toHex()
@@ -453,7 +454,12 @@ internal class RoomSession(
                     "prev" -> p.skipPrevious()
                 }
             }
-            is Msg.Chat -> addChat(ChatLine(members[from]?.name ?: "Someone", msg.text.take(300), fromId = from))
+            is Msg.Chat -> {
+                val sender = members[from]?.name ?: "Someone"
+                val text = msg.text.take(300)
+                addChat(ChatLine(sender, text, fromId = from))
+                onChatIn?.invoke(sender, text, false)
+            }
             is Msg.Voice -> voiceIn(from, msg)
             else -> Unit
         }
@@ -568,7 +574,12 @@ internal class RoomSession(
                     offset = clockOffset(msg.c, msg.h, now)
                 }
             }
-            is Msg.Chat -> addChat(ChatLine(nameOf(from), msg.text.take(300), fromId = from))
+            is Msg.Chat -> {
+                val sender = nameOf(from)
+                val text = msg.text.take(300)
+                addChat(ChatLine(sender, text, fromId = from))
+                onChatIn?.invoke(sender, text, false)
+            }
             is Msg.Voice -> voiceIn(from, msg)
             else -> Unit
         }
@@ -806,6 +817,9 @@ internal class RoomSession(
             val i = r.chat.indexOfFirst { it.voice?.id == id }
             val line = ChatLine(name, "", mine = mine, fromId = from, voice = clip)
             r.copy(chat = if (i >= 0) r.chat.toMutableList().also { it[i] = line.copy(at = r.chat[i].at) } else (r.chat + line).takeLast(MAX_CHAT))
+        }
+        if (!mine && !live && complete) {
+            onChatIn?.invoke(name, "", true)
         }
     }
 

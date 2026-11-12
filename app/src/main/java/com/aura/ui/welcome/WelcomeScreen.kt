@@ -115,11 +115,19 @@ import com.aura.data.releases.NewReleases
 import com.aura.data.settings.AppSettings
 import com.aura.data.settings.GlassStyle
 import com.aura.data.settings.ThemeMode
+import androidx.compose.foundation.Image
+import androidx.compose.material.icons.rounded.GraphicEq
+import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.ui.res.painterResource
+import com.aura.R
 import com.aura.ui.BottomChrome
 import com.aura.ui.ChromeTab
 import com.aura.ui.PageMotion
 import com.aura.ui.ScreenCache
 import com.aura.ui.account.LoginScreen
+import com.aura.ui.account.SpotifyGreen
+import com.aura.ui.account.YouTubeMusicRed
 import com.aura.ui.components.Artwork
 import com.aura.ui.components.GlassBackButton
 import com.aura.ui.components.GlassPage
@@ -128,6 +136,8 @@ import com.aura.ui.components.glass
 import com.aura.ui.components.pressable
 import com.aura.ui.components.rememberHaptics
 import com.aura.ui.player.MiniPlayer
+import com.aura.ui.spotify.SpotifyConnectActivity
+import com.aura.ui.spotify.SpotifyConnection
 import java.util.Locale
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -255,7 +265,7 @@ fun WelcomeScreen(
                         when (step) {
                             WelcomeStep.ARTISTS -> { follow(); step = WelcomeStep.LOOK }
                             WelcomeStep.LOOK -> step = WelcomeStep.SIGN_IN
-                            WelcomeStep.SIGN_IN -> if (AccountStore.signedIn.value) finish() else signingIn = true
+                            WelcomeStep.SIGN_IN -> finish()
                         }
                     },
                     onNotNow = ::finish,
@@ -300,7 +310,7 @@ fun WelcomeScreen(
                         },
                     )
                     WelcomeStep.LOOK -> LookStep(picks)
-                    WelcomeStep.SIGN_IN -> SignInStep()
+                    WelcomeStep.SIGN_IN -> SignInStep(onSignInYouTube = { signingIn = true })
                 }
             }
         }
@@ -377,6 +387,7 @@ private fun StepDots(step: WelcomeStep, reduceMotion: Boolean, modifier: Modifie
 private fun BoxScope.WelcomeBottomBar(step: WelcomeStep, picks: List<ExploreFeed.Artist>, onContinue: () -> Unit, onNotNow: () -> Unit) {
     val picked = picks.size
     val signedIn by AccountStore.signedIn.collectAsState()
+    val spotifyConnected by SpotifyConnection.connected.collectAsState()
     val page = MaterialTheme.colorScheme.background
     Column(
         Modifier.align(Alignment.BottomCenter).fillMaxWidth()
@@ -393,7 +404,7 @@ private fun BoxScope.WelcomeBottomBar(step: WelcomeStep, picks: List<ExploreFeed
                 else -> "Done · $picked artists"
             }
             WelcomeStep.LOOK -> "Continue"
-            WelcomeStep.SIGN_IN -> if (signedIn) "Start listening" else "Sign in to YouTube Music"
+            WelcomeStep.SIGN_IN -> if (signedIn || spotifyConnected) "Start listening" else "Start listening"
         }
         Button(
             onClick = onContinue,
@@ -404,7 +415,7 @@ private fun BoxScope.WelcomeBottomBar(step: WelcomeStep, picks: List<ExploreFeed
             if (step == WelcomeStep.ARTISTS && picked > 0) PickedFaces(picks.takeLast(3).asReversed())
             Text(label, style = MaterialTheme.typography.titleMedium)
         }
-        if (step == WelcomeStep.SIGN_IN && !signedIn) {
+        if (step == WelcomeStep.SIGN_IN && !signedIn && !spotifyConnected) {
             TextButton(onClick = onNotNow, modifier = Modifier.padding(top = 4.dp).height(48.dp)) {
                 Text("Not now", style = MaterialTheme.typography.titleMedium)
             }
@@ -828,32 +839,128 @@ internal fun LookPreview(picks: List<ExploreFeed.Artist>, modifier: Modifier = M
 // ---- Step 3: sign in ------------------------------------------------------
 
 @Composable
-private fun SignInStep() {
+private fun SignInStep(onSignInYouTube: () -> Unit) {
+    val context = LocalContext.current
     val signedIn by AccountStore.signedIn.collectAsState()
     val account by AccountStore.account.collectAsState()
+    val spotifyConnected by SpotifyConnection.connected.collectAsState()
+
+    LaunchedEffect(Unit) {
+        SpotifyConnection.refresh()
+    }
+
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         Spacer(Modifier.height(topInset()))
         StepTitle(
-            "Sign in",
-            if (signedIn) "You're signed in${account?.name?.let { " as $it" }.orEmpty()}. Your playlists and liked songs are in Library."
-            else "Sign in to YouTube Music to bring your playlists, liked songs and recommendations. It's optional, and you can do it later in Settings › Account.",
+            "Connect services",
+            if (signedIn || spotifyConnected) "Your connected accounts will bring your playlists and library into AURA."
+            else "Connect YouTube Music or Spotify to bring your playlists, liked songs and recommendations. It's optional, and you can always do it later in Settings.",
         )
-        Box(Modifier.fillMaxWidth().padding(top = 24.dp), contentAlignment = Alignment.Center) {
-            Box(Modifier.size(132.dp).clip(CircleShape).glass(CircleShape), contentAlignment = Alignment.Center) {
-                val photo = account?.thumbnailUrl
-                if (signedIn && photo != null) Artwork(photo, Modifier.size(132.dp), CircleShape)
-                else Icon(Icons.Rounded.AccountCircle, null, Modifier.size(72.dp), tint = MaterialTheme.colorScheme.primary)
+
+        Column(
+            Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            // YouTube Music Card
+            Surface(
+                shape = RoundedCornerShape(24.dp),
+                color = MaterialTheme.colorScheme.surfaceContainerLow,
+                modifier = Modifier.fillMaxWidth().glass(RoundedCornerShape(24.dp)),
+            ) {
+                Column(Modifier.padding(20.dp)) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(14.dp),
+                    ) {
+                        Box(
+                            Modifier.size(48.dp).clip(CircleShape).background(YouTubeMusicRed.copy(alpha = 0.15f)),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(Icons.Rounded.PlayArrow, null, Modifier.size(28.dp), tint = YouTubeMusicRed)
+                        }
+                        Column(Modifier.weight(1f)) {
+                            Text("YouTube Music", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                            Text(
+                                if (signedIn) "Connected${account?.name?.let { " as $it" }.orEmpty()}"
+                                else "Playlists, liked songs and recommendations",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        if (signedIn) {
+                            Icon(Icons.Rounded.Check, "Connected", tint = MaterialTheme.colorScheme.primary)
+                        }
+                    }
+
+                    if (!signedIn) {
+                        Spacer(Modifier.height(14.dp))
+                        Button(
+                            onClick = onSignInYouTube,
+                            shape = RoundedCornerShape(20.dp),
+                            modifier = Modifier.fillMaxWidth().height(44.dp),
+                        ) {
+                            Text("Sign in with Google", style = MaterialTheme.typography.labelLarge)
+                        }
+                    }
+                }
+            }
+
+            // Spotify Card
+            Surface(
+                shape = RoundedCornerShape(24.dp),
+                color = MaterialTheme.colorScheme.surfaceContainerLow,
+                modifier = Modifier.fillMaxWidth().glass(RoundedCornerShape(24.dp)),
+            ) {
+                Column(Modifier.padding(20.dp)) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(14.dp),
+                    ) {
+                        Box(
+                            Modifier.size(48.dp).clip(CircleShape).background(SpotifyGreen.copy(alpha = 0.15f)),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Image(painterResource(R.drawable.ic_spotify), "Spotify", Modifier.size(28.dp))
+                        }
+                        Column(Modifier.weight(1f)) {
+                            Text("Spotify", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                            Text(
+                                if (spotifyConnected) "Connected · Library playlists and Canvas"
+                                else "Bring Spotify playlists and song Canvas",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        if (spotifyConnected) {
+                            Icon(Icons.Rounded.Check, "Connected", tint = SpotifyGreen)
+                        }
+                    }
+
+                    if (!spotifyConnected) {
+                        Spacer(Modifier.height(14.dp))
+                        OutlinedButton(
+                            onClick = {
+                                context.startActivity(android.content.Intent(context, SpotifyConnectActivity::class.java))
+                            },
+                            shape = RoundedCornerShape(20.dp),
+                            modifier = Modifier.fillMaxWidth().height(44.dp),
+                        ) {
+                            Text("Connect Spotify", style = MaterialTheme.typography.labelLarge)
+                        }
+                    }
+                }
             }
         }
-        Column(Modifier.padding(start = 24.dp, end = 24.dp, top = 28.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+
+        Column(Modifier.padding(start = 24.dp, end = 24.dp, top = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             listOf(
-                "Your YouTube Music playlists and likes in Library",
-                "Home's recommendations from your account",
-                "Your sign-in stays on this phone; the password goes only to Google",
+                "Your sign-in stays private on this device",
+                "Both services can be connected or disconnected anytime in Settings",
+                "Sign-in is optional; you can listen without signing in",
             ).forEach { line ->
                 Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Icon(Icons.Rounded.Check, null, Modifier.size(20.dp).padding(top = 2.dp), tint = MaterialTheme.colorScheme.primary)
-                    Text(line, style = MaterialTheme.typography.bodyLarge)
+                    Icon(Icons.Rounded.Check, null, Modifier.size(18.dp).padding(top = 2.dp), tint = MaterialTheme.colorScheme.primary)
+                    Text(line, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }

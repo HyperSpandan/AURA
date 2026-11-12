@@ -71,6 +71,7 @@ import androidx.compose.material.icons.rounded.MicOff
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.PersonAdd
 import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.SportsEsports
 import androidx.compose.material.icons.rounded.Stop
 import androidx.compose.material3.Button
@@ -134,6 +135,7 @@ import com.aura.data.settings.AppSettings
 import com.aura.data.together.Member
 import com.aura.data.together.RoomCode
 import com.aura.data.together.Together
+import com.aura.data.together.TogetherNotification
 import com.aura.ui.KeepChromeOut
 import com.aura.ui.components.Artwork
 import com.aura.ui.components.GlassPage
@@ -154,6 +156,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 fun TogetherScreen(contentPadding: PaddingValues, code: String?, onBack: () -> Unit) {
     val room by Together.room.collectAsState()
     val r = room
+    val context = LocalContext.current
     var handled by rememberSaveable(code) { mutableStateOf(false) }
     var switchRoom by rememberSaveable(code) { mutableStateOf(false) }
     val invite = RoomCode.parse(code)
@@ -191,6 +194,13 @@ fun TogetherScreen(contentPadding: PaddingValues, code: String?, onBack: () -> U
         val now = Together.room.value
         if (now != null && now.hosting) inviteFor = now.code.raw
         opening = false
+    }
+    DisposableEffect(Unit) {
+        TogetherNotification.isViewingRoom = true
+        TogetherNotification.clear(context)
+        onDispose {
+            TogetherNotification.isViewingRoom = false
+        }
     }
     // Both pages scroll behind the dock and stop short of it; the room's
     // island sits on top of the dock.
@@ -462,19 +472,18 @@ private fun PrivacyNote() {
 }
 
 /**
- * The room's glass: a film of the surface, lit a little along the top, with
- * a bright hairline edge, as on the app's popups. [inset] is the gap to the
- * screen edge.
+ * The room's card background: sleek, premium dark card matching the clean modern UI.
+ * [inset] is the gap to the screen edge.
  */
 @Composable
 private fun Modifier.roomCard(inset: Dp = 16.dp): Modifier {
     val scheme = MaterialTheme.colorScheme
     val dark = scheme.surface.luminance() <= 0.5f
     val shape = RoundedCornerShape(26.dp)
+    val cardBg = if (dark) Color(0xFF1E1E22) else scheme.surfaceContainerHigh
     return this.fillMaxWidth().padding(horizontal = inset).clip(shape)
-        .background(scheme.surfaceContainerHigh.copy(alpha = if (dark) 0.78f else 0.88f))
-        .background(Brush.verticalGradient(0f to Color.White.copy(alpha = if (dark) 0.06f else 0.16f), 0.4f to Color.White.copy(alpha = 0f)))
-        .border(1.dp, Brush.verticalGradient(listOf(Color.White.copy(alpha = if (dark) 0.16f else 0.5f), Color.White.copy(alpha = 0.03f))), shape)
+        .background(cardBg)
+        .border(1.dp, if (dark) Color.White.copy(alpha = 0.07f) else Color.Black.copy(alpha = 0.05f), shape)
 }
 
 /** The gap above and below each card on the room page. */
@@ -916,23 +925,42 @@ private fun MessageBox(message: String, onChange: (String) -> Unit, onSend: () -
 @Composable
 private fun CodeCard(r: Together.Room, onInvite: () -> Unit, onCopy: () -> Unit) {
     Column(
-        Modifier.padding(vertical = GAP).roomCard().padding(start = 20.dp, end = 20.dp, top = 22.dp, bottom = 10.dp),
+        Modifier.padding(vertical = GAP).roomCard().padding(start = 16.dp, end = 16.dp, top = 22.dp, bottom = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text("ROOM CODE", style = MaterialTheme.typography.labelMedium, letterSpacing = 2.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.height(6.dp))
-        Text(r.code.pretty, fontSize = 32.sp, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace, letterSpacing = 2.sp, maxLines = 1)
+        Text(
+            r.code.pretty,
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold,
+            fontFamily = FontFamily.Monospace,
+            letterSpacing = 1.sp,
+            maxLines = 1,
+            softWrap = false,
+        )
         Spacer(Modifier.height(10.dp))
         LiveStatus(r)
         if (r.phase != Together.Phase.Ended) {
             Spacer(Modifier.height(18.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Button(onClick = onInvite, Modifier.weight(1f).height(48.dp)) {
-                    Icon(Icons.Rounded.PersonAdd, null, Modifier.size(18.dp)); Spacer(Modifier.width(8.dp)); Text("Invite")
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(horizontal = 6.dp)) {
+                Button(
+                    onClick = onInvite,
+                    modifier = Modifier.weight(1f).height(48.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFFFB2A8),
+                        contentColor = Color(0xFF3E110D),
+                    ),
+                ) {
+                    Icon(Icons.Rounded.Share, null, Modifier.size(18.dp)); Spacer(Modifier.width(8.dp)); Text("Invite", fontWeight = FontWeight.SemiBold)
                 }
                 FilledTonalButton(
                     onClick = onCopy,
-                    Modifier.weight(1f).height(48.dp),
+                    modifier = Modifier.weight(1f).height(48.dp),
+                    colors = ButtonDefaults.filledTonalButtonColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.5f),
+                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    ),
                     contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
                 ) {
                     Icon(Icons.Rounded.ContentCopy, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text("Copy code", maxLines = 1, overflow = TextOverflow.Ellipsis)

@@ -22,10 +22,11 @@
 <meta name="twitter:title" content="AURA — Open-Source Music Player">
 <meta name="twitter:description" content="Every song. Zero ads. Lossless FLAC add-ons, USB DAC pass-through, 3D Cover Flow, and Nostr rooms.">
 <meta name="twitter:image" content="https://hyperspandan.github.io/AURA/img/share-card-v3.jpg">
-<link rel="icon" href="favicon.ico?v=1.0.1" sizes="16x16 32x32 48x48">
-<link rel="icon" type="image/png" sizes="96x96" href="favicon-96x96.png?v=1.0.1">
-<link rel="icon" type="image/svg+xml" sizes="any" href="favicon.svg?v=1.0.1">
-<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=1.0.1">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png?v=1.0.3">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png?v=1.0.3">
+<link rel="icon" type="image/png" sizes="96x96" href="favicon-96x96.png?v=1.0.3">
+<link rel="shortcut icon" href="favicon.ico?v=1.0.3">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=1.0.3">
 <link rel="manifest" href="site.webmanifest">
 <meta name="apple-mobile-web-app-title" content="AURA">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1334,30 +1335,36 @@ p, li { text-wrap: pretty; }
   color: var(--white-muted);
 }
 .footer-links a { text-decoration: none; }
-.footer-credit {
-  margin-top: 14px;
+.site-end-credit {
+  width: 100%;
+  padding: 28px 20px calc(36px + env(safe-area-inset-bottom, 0px));
+  text-align: center;
   font-family: var(--sans);
   font-style: italic;
   font-size: 15px;
-  color: var(--white-muted);
-  display: inline-flex;
+  color: #8e8e93;
+  background: #000000;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  display: flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   letter-spacing: -0.01em;
+  box-sizing: border-box;
 }
-.footer-credit .heart {
+.site-end-credit .heart {
   font-style: normal;
   display: inline-block;
   transform: translateY(-0.5px);
 }
-.footer-credit a {
-  color: var(--white);
+.site-end-credit a {
+  color: #ffffff;
   text-decoration: none;
   font-style: italic;
   font-weight: 500;
   transition: color 180ms ease;
 }
-.footer-credit a:hover {
+.site-end-credit a:hover {
   color: var(--theme-accent, var(--orange));
   text-decoration: underline;
   text-underline-offset: 3px;
@@ -2875,7 +2882,6 @@ p, li { text-wrap: pretty; }
   <div>
     <div style="font-family:var(--display);font-size:24px;text-transform:uppercase;margin-bottom:8px">AURA · GPL-3.0 Open Source</div>
     <p style="margin:0;color:var(--white-muted);font-size:14px;max-width:60ch">Zero ads, zero account wall, zero proprietary lock-in. Optional development support helps cover infrastructure and relay uptime.</p>
-    <div class="footer-credit">Built with <span class="heart" aria-label="love">❤️</span> by <a href="https://github.com/HyperSpandan" target="_blank" rel="noopener">@HyperSpandan</a></div>
   </div>
   <div class="footer-right" style="display:flex;flex-direction:column;align-items:flex-end;gap:12px">
     <div class="upi-box">
@@ -2892,6 +2898,10 @@ p, li { text-wrap: pretty; }
     </nav>
   </div>
 </footer>
+
+<div class="site-end-credit">
+  Built with <span class="heart" aria-label="love">❤️</span> by <a href="https://github.com/HyperSpandan" target="_blank" rel="noopener">@HyperSpandan</a>
+</div>
 
 <script src="download-tracking.js" defer></script>
 <script>

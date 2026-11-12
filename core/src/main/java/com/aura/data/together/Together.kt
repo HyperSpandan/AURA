@@ -293,10 +293,16 @@ object Together {
             put("since", System.currentTimeMillis() / 1000 - 10)
         }
         val talk = TalkSink { id, _, cfg, frames, done -> if (!_talkMuted.value) voicePlayer?.talk(id, cfg, frames, done) }
-        session = RoomSession(code, clean, hosting, p, RelayPool(RELAYS, filter), _room, ::notice, main, askToJoin, talk).also { it.start() }
+        val onChat: (String, String, Boolean) -> Unit = { sender, text, isVoice ->
+            appContext?.let { ctx ->
+                TogetherNotification.notifyChat(ctx, code, sender, text, isVoice)
+            }
+        }
+        session = RoomSession(code, clean, hosting, p, RelayPool(RELAYS, filter), _room, ::notice, main, askToJoin, talk, onChatIn = onChat).also { it.start() }
     }
 
     fun leave() {
+        appContext?.let { TogetherNotification.clear(it) }
         endCall()
         stopVoice()
         voicePlayer?.stop()

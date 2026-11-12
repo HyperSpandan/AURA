@@ -16,10 +16,9 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.withTimeoutOrNull
 
 /**
- * Prefer a cached source or a JioSaavn match, tried before YouTube's own
- * stream is looked up; never wait for FLAC at startup. With JioSaavn on,
- * YouTube is the last resort: the song waits a few seconds for JioSaavn's
- * answer rather than starting on YouTube when it's a little slow.
+ * Prefer a cached source or a pre-resolved lossless match, tried before YouTube's own
+ * stream is looked up; songs in the queue resolve lossless audio ahead of time so they
+ * start in lossless directly from the start without mid-song buffering.
  */
 @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 internal class StartupSelection(
@@ -33,6 +32,9 @@ internal class StartupSelection(
     /** Whether JioSaavn may be tried before YouTube's own stream: whenever external sources are allowed, not only at Max. */
     private val saavnWanted: () -> Boolean = { ExternalStreams.allowed(false) },
     private val lookupBudgetMs: Long = 6_000L,
+    private val findLossless: suspend (Song, Long) -> ExternalStreams.Rendition? = { s, d ->
+        ExternalStreams.find(s, d, beforePlayback = true, losslessOnly = true)
+    },
     private val findJioSaavn: suspend (Song, Long) -> ExternalStreams.Rendition? = ExternalStreams::findJioSaavn,
     private val cached: (String) -> ExternalStreams.Rendition? = ExternalStreams::cached,
 ) {
@@ -46,9 +48,19 @@ internal class StartupSelection(
             // A stream picked by hand in Search starts the song whatever the quality setting.
             val ready = picked(song.videoId)?.takeIf { it.mimeType == null }
                 ?: if (maximum() || losslessWanted()) cached(song.videoId)?.takeIf { it.mimeType == null && it.lossless } else null
-            // The song starts on YouTube only if JioSaavn has no match or is slower than the budget; the lookup itself
-            // carries on (see ExternalStreams.findJioSaavn) and the upgrade switches to it when it answers.
-            val rendition = ready ?: if (maximum() || saavnWanted()) try {
+
+            // If lossless is wanted and an in-flight prefetch is active, await it within budget to start in lossless directly
+            val rendition = ready ?: if (maximum() || losslessWanted()) try {
+                val lookup = ExternalStreams.background.async { findLossless(song, song.durationMillis()) }
+                withTimeoutOrNull(lookupBudgetMs) { lookup.await() }?.takeIf { it.mimeType == null && it.lossless }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                null
+            } else null
+
+            // Fallback to JioSaavn if lossless is not available
+            val chosen = rendition ?: if (maximum() || saavnWanted()) try {
                 val lookup = ExternalStreams.background.async { findJioSaavn(song, song.durationMillis()) }
                 withTimeoutOrNull(lookupBudgetMs) { lookup.await() }
             } catch (e: CancellationException) {
@@ -56,10 +68,11 @@ internal class StartupSelection(
             } catch (_: Exception) {
                 null
             } else null
-            selected = rendition?.let { externalStreamUri(song.videoId, it.key) } ?: original
+
+            selected = chosen?.let { externalStreamUri(song.videoId, it.key) } ?: original
             com.aura.data.DebugLog.d("StartupSelection", "${song.videoId} starts on " + when {
-                rendition != null -> rendition.label
-                maximum() || saavnWanted() -> "YouTube: JioSaavn had no match within ${lookupBudgetMs / 1000}s"
+                chosen != null -> chosen.label
+                maximum() || losslessWanted() || saavnWanted() -> "YouTube: no external match within ${lookupBudgetMs / 1000}s"
                 else -> "YouTube: external sources are off for this quality setting"
             })
         }
