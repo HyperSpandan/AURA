@@ -1,0 +1,5 @@
+AURA 1.0.2 update:
+• Fixed notification system: reliable delivery for room invitations, background chat alerts, and playback controls
+• High-fidelity room audio: eliminated voice distortion and jitter for joining room members with calibrated audio buffers and sample-rate alignment
+• Smoother room connection and session recovery over Nostr relays
+• Performance, memory, and stability improvements across playback and offline caching
