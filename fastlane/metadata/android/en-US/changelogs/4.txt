@@ -1,0 +1,6 @@
+AURA 1.0.3 update:
+• Fixed Explore screen crash when scrolling down into Moods & Genres
+• Fixed account sign-in loop when adding another YouTube Music account
+• Web player visual enhancements: red heart for liked songs, adjusted content scaling
+• Improved network stream resolution and session recovery
+• Performance, memory, and stability improvements across playback and caching
