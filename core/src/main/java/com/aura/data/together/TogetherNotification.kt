@@ -5,28 +5,29 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.net.toUri
 import com.aura.core.R
-import com.aura.data.releases.NewReleases
 
 /**
  * Posts notifications for room chat messages when the user is away from
  * the Listen Together room screen.
  */
 object TogetherNotification {
-    private const val CHANNEL = "together_chat"
+    const val CHANNEL = "together_chat"
     private const val NOTIFICATION_ID = 0x706574 // "tog"
+    private const val TAG = "TogetherNotification"
 
-    /** Tracks whether the user is actively viewing the Together screen */
+    /** Tracks whether the user is actively viewing the Together screen in the foreground */
     @Volatile
     var isViewingRoom: Boolean = false
 
-    fun notifyChat(context: Context, code: RoomCode, senderName: String, text: String, isVoice: Boolean = false) {
-        if (isViewingRoom) return
-        if (!NewReleases.canNotify(context)) return
+    fun canNotify(context: Context): Boolean =
+        NotificationManagerCompat.from(context).areNotificationsEnabled()
 
+    fun ensureChannel(context: Context) {
         val nm = context.getSystemService(NotificationManager::class.java) ?: return
         if (nm.getNotificationChannel(CHANNEL) == null) {
             val channel = NotificationChannel(
@@ -39,6 +40,19 @@ object TogetherNotification {
             }
             nm.createNotificationChannel(channel)
         }
+    }
+
+    fun notifyChat(context: Context, code: RoomCode, senderName: String, text: String, isVoice: Boolean = false) {
+        if (isViewingRoom) {
+            Log.d(TAG, "Suppressed chat notification: user is actively viewing room")
+            return
+        }
+        if (!canNotify(context)) {
+            Log.w(TAG, "Cannot notify: notification permission not granted or disabled")
+            return
+        }
+
+        ensureChannel(context)
 
         val content = if (isVoice) "🎤 Voice note" else text
         val intent = Intent(Intent.ACTION_VIEW, "aura://together/${code.raw}".toUri())
@@ -59,14 +73,16 @@ object TogetherNotification {
             .setStyle(NotificationCompat.BigTextStyle().bigText(content))
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
+            .setDefaults(NotificationCompat.DEFAULT_ALL)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_MESSAGE)
             .build()
 
         try {
             NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, notification)
-        } catch (_: SecurityException) {
-            // Permission revoked or not granted
+            Log.d(TAG, "Posted chat notification from $senderName")
+        } catch (e: SecurityException) {
+            Log.e(TAG, "SecurityException posting notification", e)
         }
     }
 

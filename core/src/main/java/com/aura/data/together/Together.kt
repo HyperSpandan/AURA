@@ -114,6 +114,7 @@ object Together {
         prefs = context.getSharedPreferences("together", Context.MODE_PRIVATE)
         _picksPlayNow.value = prefs?.getBoolean("picks_play_now", false) ?: false
         _talkMuted.value = prefs?.getBoolean("talk_muted", false) ?: false
+        TogetherNotification.ensureChannel(context)
     }
 
     /** Whether people who knock wait for approval in rooms this phone hosts. */

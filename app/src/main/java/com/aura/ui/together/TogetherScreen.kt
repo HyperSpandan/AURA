@@ -197,10 +197,39 @@ fun TogetherScreen(contentPadding: PaddingValues, code: String?, onBack: () -> U
         if (now != null && now.hosting) inviteFor = now.code.raw
         opening = false
     }
-    DisposableEffect(Unit) {
-        TogetherNotification.isViewingRoom = true
-        TogetherNotification.clear(context)
+    val askNotify = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestPermission(),
+    ) { /* user answered */ }
+
+    LaunchedEffect(Unit) {
+        TogetherNotification.ensureChannel(context)
+        if (android.os.Build.VERSION.SDK_INT >= 33 && !TogetherNotification.canNotify(context)) {
+            askNotify.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
+
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            when (event) {
+                androidx.lifecycle.Lifecycle.Event.ON_RESUME -> {
+                    TogetherNotification.isViewingRoom = true
+                    TogetherNotification.clear(context)
+                }
+                androidx.lifecycle.Lifecycle.Event.ON_PAUSE,
+                androidx.lifecycle.Lifecycle.Event.ON_STOP -> {
+                    TogetherNotification.isViewingRoom = false
+                }
+                else -> Unit
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        if (lifecycleOwner.lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) {
+            TogetherNotification.isViewingRoom = true
+            TogetherNotification.clear(context)
+        }
         onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
             TogetherNotification.isViewingRoom = false
         }
     }

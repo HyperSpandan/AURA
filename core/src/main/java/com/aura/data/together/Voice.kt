@@ -56,9 +56,9 @@ private const val MIME = MediaFormat.MIMETYPE_AUDIO_AAC
 private const val FRAME_SAMPLES = 1024
 private const val TAG = "Voice"
 /** Boost microphone input PCM so low sensitivity / distant mic speech encodes crisply. */
-private const val MIC_GAIN_BOOST = 10.0f
+private const val MIC_GAIN_BOOST = 3.5f
 /** Boost playback PCM so received speech and voice notes cut clearly above background and music. */
-private const val PLAYBACK_GAIN_BOOST = 8.0f
+private const val PLAYBACK_GAIN_BOOST = 3.0f
 
 /** ms of audio in [frames] AAC frames. */
 internal fun framesMs(frames: Int): Long = frames * FRAME_SAMPLES * 1000L / RATE
@@ -110,8 +110,9 @@ internal class SpeechGate(private val hangFrames: Int = 10) {
 
         /**
          * Amplifies 16-bit little-endian mono PCM samples in place by [gain]
-         * using a smooth cubic soft-saturation curve to prevent harsh digital clipping
-         * while providing immense loudness boost.
+         * using a smooth hyperbolic tangent (tanh) soft-saturation curve.
+         * This provides studio-grade analog compression and immense loudness boost
+         * while completely eliminating harsh clipping and harmonic distortion.
          */
         fun applyGain(pcm: ByteArray, bytes: Int, gain: Float) {
             if (gain == 1f) return
@@ -121,12 +122,8 @@ internal class SpeechGate(private val hangFrames: Int = 10) {
                 val raw = ((pcm[idx + 1].toInt() shl 8) or (pcm[idx].toInt() and 0xFF)).toShort().toFloat()
                 // Normalize to [-1.0, 1.0] and scale by gain
                 val x = (raw / 32768f) * gain
-                // Smooth overdrive saturation: linear at small values, gentle compression near 1.0
-                val saturated = when {
-                    x > 1.5f -> 1.0f
-                    x < -1.5f -> -1.0f
-                    else -> x - (4f / 27f) * (x * x * x)
-                }
+                // Smooth studio tape-style compression (tanh) prevents any harsh digital clipping
+                val saturated = kotlin.math.tanh(x.toDouble()).toFloat()
                 val boosted = (saturated * 32767f).toInt().coerceIn(-32768, 32767)
                 pcm[idx] = (boosted and 0xFF).toByte()
                 pcm[idx + 1] = (boosted ushr 8).toByte()

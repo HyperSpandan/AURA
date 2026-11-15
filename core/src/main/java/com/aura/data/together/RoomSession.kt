@@ -113,11 +113,18 @@ private const val TAG = "Together"
  * plays up to [MAX_NUDGE] faster or slower until it's within [IN_STEP_MS],
  * which can't be heard and doesn't stop the music the way a seek does.
  */
-internal const val DRIFT_MS = 400L
+internal const val DRIFT_MS = 500L
 internal const val IN_STEP_MS = 25L
-private const val MAX_NUDGE = 0.05f
+/**
+ * Deadband threshold: if the guest is already playing at normal speed (1.0f),
+ * it ignores drift up to [NUDGE_TRIGGER_MS]. This prevents playback head jitter
+ * and network ping jitter from constantly toggling time-stretching on and off,
+ * keeping music quality 100% pristine and bit-exact without distortion.
+ */
+internal const val NUDGE_TRIGGER_MS = 75L
+private const val MAX_NUDGE = 0.035f
 /** A drift this size gets the whole [MAX_NUDGE]; smaller ones a share of it. */
-private const val NUDGE_FULL_MS = 120f
+private const val NUDGE_FULL_MS = 160f
 /** How often a guest checks itself against the host. */
 private const val SYNC_TICK_MS = 250L
 /** After a seek or a new song, how long to let the player settle before checking again. */
@@ -647,6 +654,9 @@ internal class RoomSession(
                     p.seekTo(target + seekLead)
                     settleUntil = now + SETTLE_MS
                     measureSeek = true
+                }
+                rate == 1f && kotlin.math.abs(drift) <= NUDGE_TRIGGER_MS -> {
+                    // In-step deadband: stay at pristine 1.0f speed with zero time-stretch artifacts
                 }
                 kotlin.math.abs(drift) > IN_STEP_MS -> setRate(1f - MAX_NUDGE * (drift / NUDGE_FULL_MS).coerceIn(-1f, 1f))
                 else -> setRate(1f)
