@@ -60,7 +60,7 @@ function AccountItems({ track, onClose, onPlaylists }: { track: Track; onClose: 
     <>
       <MenuSeparator />
       <MenuItem
-        icon={<Heart size={15} fill={liked ? 'currentColor' : 'none'} />}
+        icon={<Heart size={15} fill={liked ? '#ef4444' : 'none'} className={liked ? 'text-red-500' : 'text-current'} />}
         disabled={status.isPending}
         onSelect={() => {
           setLiked.mutate({ videoId: track.videoId, liked: !liked });

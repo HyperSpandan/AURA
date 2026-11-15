@@ -14,7 +14,10 @@
 
 /* A page arriving: a short fade and a few pixels of rise, done before the eye waits on it.
    Opacity and translate only, so it stays on the compositor however heavy the page. */
-.ot-page { animation: ot-page-in 0.32s var(--ot-ease-emph) both; }
+.ot-page {
+  zoom: 1.1;
+  animation: ot-page-in 0.32s var(--ot-ease-emph) both;
+}
 @keyframes ot-page-in { from { opacity: 0; translate: 0 10px; } }
 
 /* A shelf's first cards rise in one after another when they arrive in place of the skeleton.
@@ -87,10 +90,11 @@
 
 /* The favourite star pops and throws sparks when it's turned on. */
 .ot-fav { position: relative; }
+.ot-fav[aria-pressed='true'] { color: #ef4444 !important; }
 .ot-fav[data-burst][aria-pressed='true'] svg { animation: ot-pop 0.5s var(--ot-ease-settle); }
 .ot-burst { position: absolute; inset: 0; pointer-events: none; }
-.ot-burst i { position: absolute; left: 50%; top: 50%; width: 4px; height: 4px; margin: -2px; border-radius: 50%; background: var(--ot-key-on-dark); animation: ot-spark 0.6s var(--ot-ease-emph) forwards; }
-.ot-burst i:nth-child(even) { width: 3px; height: 3px; background: currentColor; }
+.ot-burst i { position: absolute; left: 50%; top: 50%; width: 4px; height: 4px; margin: -2px; border-radius: 50%; background: #ef4444; animation: ot-spark 0.6s var(--ot-ease-emph) forwards; }
+.ot-burst i:nth-child(even) { width: 3px; height: 3px; background: #f87171; }
 @keyframes ot-pop { 0% { scale: 0.4; } 60% { scale: 1.25; } }
 @keyframes ot-spark {
   from { transform: rotate(var(--a)) translateY(-4px) scale(1); opacity: 1; }

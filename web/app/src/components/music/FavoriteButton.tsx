@@ -34,7 +34,11 @@ export function FavoriteButton({ videoId, className, size = 18 }: FavoriteButton
         setLiked.mutate({ videoId, liked: !liked });
       }}
     >
-      <Heart size={size} fill={liked ? 'currentColor' : 'none'} />
+      <Heart
+        size={size}
+        fill={liked ? '#ef4444' : 'none'}
+        className={liked ? 'text-red-500' : 'text-current'}
+      />
       {liked && bursts > 0 && (
         <span key={bursts} className="ot-burst" aria-hidden="true">
           {Array.from({ length: 8 }, (_, i) => <i key={i} style={{ '--a': `${i * 45}deg` } as React.CSSProperties} />)}
