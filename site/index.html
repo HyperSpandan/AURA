@@ -1200,6 +1200,13 @@ p, li { text-wrap: pretty; }
   border-color: rgba(255, 255, 255, 0.22);
   font-weight: 600;
 }
+.install-chip.is-disabled,
+.install-pill-btn.is-disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  pointer-events: none;
+  border-style: dashed;
+}
 .install-subtext {
   font-family: var(--mono);
   font-size: 13px;
@@ -2566,17 +2573,17 @@ p, li { text-wrap: pretty; }
             <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
           </div>
           <h3>Windows, macOS and Linux</h3>
-          <p>A desktop app with a sidebar, synced lyrics beside the page, the queue, Discord status and Last.fm scrobbling. On Windows 11 it draws its own title bar over Mica.</p>
-          <div class="install-card-note">Not signed by Apple or Microsoft yet, so the first launch shows a warning. On a Mac, right-click the app and choose Open.</div>
+          <p>A desktop app with a sidebar, synced lyrics beside the page, the queue, Discord status and Last.fm scrobbling. Built for large screens.</p>
+          <div class="install-card-note">Desktop builds are undergoing updates. Coming soon!</div>
         </div>
         <div class="install-card-actions">
           <div class="install-chips-row" id="desktop-downloads">
-            <a class="install-chip is-featured" id="dl-win" href="https://github.com/HyperSpandan/AURA/releases/latest">Windows · 185.4 MB</a>
-            <a class="install-chip" id="dl-mac" href="https://github.com/HyperSpandan/AURA/releases/latest">macOS · 191.5 MB</a>
-            <a class="install-chip" id="dl-linux" href="https://github.com/HyperSpandan/AURA/releases/latest">Linux · 181.1 MB</a>
+            <span class="install-chip is-disabled">Windows · Coming Soon</span>
+            <span class="install-chip is-disabled">macOS · Coming Soon</span>
+            <span class="install-chip is-disabled">Linux · Coming Soon</span>
           </div>
           <div class="install-subtext">
-            Also as an <a href="https://github.com/HyperSpandan/AURA/releases" target="_blank" rel="noopener">.msi</a>, a portable <a href="https://github.com/HyperSpandan/AURA/releases" target="_blank" rel="noopener">.zip</a>, a <a href="https://github.com/HyperSpandan/AURA/releases" target="_blank" rel="noopener">.deb</a> and an <a href="https://github.com/HyperSpandan/AURA/releases" target="_blank" rel="noopener">.rpm</a> on GitHub Releases.
+            Desktop releases will be available on GitHub Releases soon.
           </div>
         </div>
       </div>
@@ -2588,22 +2595,15 @@ p, li { text-wrap: pretty; }
             <svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="3"/><circle cx="12" cy="18" r="1"/></svg>
           </div>
           <h3>iOS and iPadOS</h3>
-          <p>Unsigned IPA updated alongside CI commits. Add our repository URL directly in SideStore or AltStore on your device for automatic background refreshing.</p>
-          <div class="install-card-note" id="ios-ver">Source: hyperspandan.github.io/AURA/ios/source.json</div>
+          <p>Native SwiftUI music streaming experience with dynamic player and synced lyrics. Sideloadable IPA release coming soon.</p>
+          <div class="install-card-note" id="ios-ver">SideStore &amp; AltStore builds coming soon</div>
         </div>
         <div class="install-card-actions">
           <div class="install-chips-row">
-            <a class="install-pill-btn secondary" id="sidestore-btn" href="sidestore://source?url=https://hyperspandan.github.io/AURA/ios/source.json">
-              <span>Add to SideStore</span>
-            </a>
-            <a class="install-chip" id="altstore-btn" href="altstore://source?url=https://hyperspandan.github.io/AURA/ios/source.json">AltStore</a>
-            <a class="install-chip" id="ios-ipa-btn" href="https://hyperspandan.github.io/AURA/ios/source.json">Download IPA</a>
+            <span class="install-pill-btn secondary is-disabled" id="sidestore-btn">
+              <span>Coming Soon for iOS</span>
+            </span>
           </div>
-          <ol class="steps-list" style="margin: 10px 0 0; padding-left: 18px; font-size: 12.5px; color: var(--white-muted); display: grid; gap: 4px;">
-            <li>Tap <strong>Add to SideStore</strong> above on your iPhone.</li>
-            <li>Approve the HyperSpandan AURA repository source.</li>
-            <li>Sign with your personal Apple ID inside SideStore.</li>
-          </ol>
         </div>
       </div>
 
@@ -4080,28 +4080,6 @@ p, li { text-wrap: pretty; }
       const mb = tvApk.size ? ` · ${(tvApk.size / 1048576).toFixed(1)} MB` : "";
       const span = tvBtn.querySelector("span");
       if (span) span.textContent = `APK for the TV${mb}`;
-    }
-
-    // Desktop downloads: Windows, macOS, Linux
-    const winAsset = assets.find((a) => /\.(exe|msi)$/i.test(a.name));
-    const dlWin = document.getElementById("dl-win");
-    if (dlWin && winAsset) {
-      dlWin.href = winAsset.browser_download_url;
-      dlWin.textContent = `Windows · ${(winAsset.size / 1048576).toFixed(1)} MB`;
-    }
-
-    const macAsset = assets.find((a) => /\.dmg$/i.test(a.name));
-    const dlMac = document.getElementById("dl-mac");
-    if (dlMac && macAsset) {
-      dlMac.href = macAsset.browser_download_url;
-      dlMac.textContent = `macOS · ${(macAsset.size / 1048576).toFixed(1)} MB`;
-    }
-
-    const linuxAsset = assets.find((a) => /\.(appimage|deb|rpm)$/i.test(a.name));
-    const dlLinux = document.getElementById("dl-linux");
-    if (dlLinux && linuxAsset) {
-      dlLinux.href = linuxAsset.browser_download_url;
-      dlLinux.textContent = `Linux · ${(linuxAsset.size / 1048576).toFixed(1)} MB`;
     }
 
     // Checksums
