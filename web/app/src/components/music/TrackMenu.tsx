@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, ListEnd, ListPlus, ListStart, MoreHorizontal, Star } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Heart, ListEnd, ListPlus, ListStart, MoreHorizontal } from 'lucide-react';
 import { useCallback, useState } from 'react';
 import { Menu, MenuHeader, MenuItem, MenuSeparator } from '@/components/Menu';
 import {
@@ -60,14 +60,14 @@ function AccountItems({ track, onClose, onPlaylists }: { track: Track; onClose: 
     <>
       <MenuSeparator />
       <MenuItem
-        icon={<Star size={15} fill={liked ? 'currentColor' : 'none'} />}
+        icon={<Heart size={15} fill={liked ? 'currentColor' : 'none'} />}
         disabled={status.isPending}
         onSelect={() => {
           setLiked.mutate({ videoId: track.videoId, liked: !liked });
           onClose();
         }}
       >
-        {liked ? 'Unfavorite' : 'Favorite'}
+        {liked ? 'Unlike' : 'Like'}
       </MenuItem>
       <MenuItem icon={<ListPlus size={15} />} trailing={<ChevronRight size={14} />} onSelect={onPlaylists}>
         Add to Playlist

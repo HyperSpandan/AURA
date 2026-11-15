@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { StarFilledIcon, StarIcon } from '@/components/icons/Transport';
+import { Heart } from 'lucide-react';
 import { useLikeStatus, useSetLiked, useSignedIn } from '@/data/music/queries';
 
 interface FavoriteButtonProps {
@@ -9,7 +9,7 @@ interface FavoriteButtonProps {
 }
 
 /**
- * Apple's Favorite star, backed by YouTube Music's like (a liked song joins
+ * Like / favorite heart button, backed by YouTube Music's like (a liked song joins
  * Liked Music). Only shown signed in; the state is read from the track's
  * watch page, as YouTube's own player reads it.
  */
@@ -24,7 +24,7 @@ export function FavoriteButton({ videoId, className, size = 18 }: FavoriteButton
   return (
     <button
       className={`ot-fav ${className ?? ''}`}
-      aria-label={liked ? 'Unfavorite' : 'Favorite'}
+      aria-label={liked ? 'Unlike' : 'Like'}
       aria-pressed={liked}
       data-burst={bursts > 0 || undefined}
       disabled={status.isPending}
@@ -34,7 +34,7 @@ export function FavoriteButton({ videoId, className, size = 18 }: FavoriteButton
         setLiked.mutate({ videoId, liked: !liked });
       }}
     >
-      {liked ? <StarFilledIcon size={size} /> : <StarIcon size={size} />}
+      <Heart size={size} fill={liked ? 'currentColor' : 'none'} />
       {liked && bursts > 0 && (
         <span key={bursts} className="ot-burst" aria-hidden="true">
           {Array.from({ length: 8 }, (_, i) => <i key={i} style={{ '--a': `${i * 45}deg` } as React.CSSProperties} />)}
