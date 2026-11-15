@@ -35,7 +35,7 @@ import androidx.compose.material.icons.rounded.PlayCircle
 private const val MUSIC = "https://music.youtube.com"
 private const val DESTROY_AFTER_MS = 1_500L
 private const val SIGN_IN_URL =
-    "https://accounts.google.com/ServiceLogin?ltmpl=music&service=youtube&passive=true&continue=" +
+    "https://accounts.google.com/ServiceLogin?ltmpl=music&service=youtube&continue=" +
         "https%3A%2F%2Fwww.youtube.com%2Fsignin%3Faction_handle_signin%3Dtrue%26next%3Dhttps%253A%252F%252Fmusic.youtube.com%252F"
 
 /**
@@ -136,8 +136,16 @@ fun LoginScreen(onDone: () -> Unit) {
                             if (!gone.get()) check(view, url)
                         }
                     }
-                    loadUrl(SIGN_IN_URL)
                     web.set(this)
+                    com.aura.ui.spotify.SpotifyConnection.keepingSpotify { cb ->
+                        CookieManager.getInstance().removeAllCookies { result ->
+                            cb.onReceiveValue(result)
+                            android.webkit.WebStorage.getInstance().deleteAllData()
+                            post {
+                                if (!gone.get()) loadUrl(SIGN_IN_URL)
+                            }
+                        }
+                    }
                 }
             },
             // Taken down only once it's off the screen: destroying it while still attached,

@@ -394,7 +394,11 @@ internal fun ExploreBoard(
                 )
             }
             val moodPairs = moods.chunked(2)
-            items(moodPairs, key = { it.joinToString("-") { m -> m.browseId } }) { pair ->
+            items(moodPairs.size, key = { index ->
+                val pair = moodPairs[index]
+                "mood-pair-$index-" + pair.joinToString("-") { "${it.browseId}_${it.title}_${it.params}" }
+            }) { index ->
+                val pair = moodPairs[index]
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
