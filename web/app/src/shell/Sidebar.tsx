@@ -1,6 +1,5 @@
-import { ArrowUpRight, Heart, ListMusic, PanelLeftClose, PanelLeftOpen, Settings } from 'lucide-react';
+import { ArrowUpRight, ListMusic, PanelLeftClose, PanelLeftOpen, Settings } from 'lucide-react';
 import { useEffect } from 'react';
-import { MdOutlineExtension } from 'react-icons/md';
 import { SiSpotify } from 'react-icons/si';
 import { PrefetchLink, PrefetchNavLink } from '@/components/PrefetchLink';
 import { LogoMark } from '@/components/icons/LogoMark';
@@ -21,7 +20,6 @@ import { config } from '@/config';
 import { LIBRARY_SECTIONS, type LibrarySection } from '@/data/music/library';
 import { useLibraryPlaylists, useSignedIn } from '@/data/music/queries';
 import { useSpotifyPlaylists } from '@/data/spotify/queries';
-import { useExtensionUpdate } from '@/extension/useExtensionUpdate';
 import { useSpotifySignedIn } from '@/extension/useSpotifyAuth';
 import { useUi } from '@/state/ui';
 import { AccountButton } from './AccountButton';
@@ -147,12 +145,10 @@ function SpotifyNav({ onNavigate }: { onNavigate: () => void }) {
 export function Sidebar() {
   const drawerOpen = useUi((s) => s.drawerOpen);
   const setDrawerOpen = useUi((s) => s.setDrawerOpen);
-  const update = useExtensionUpdate();
   const signedIn = useSignedIn();
   const spotifySignedIn = useSpotifySignedIn();
   const folded = useUi((s) => s.sidebarCollapsed);
   const toggleSidebar = useUi((s) => s.toggleSidebar);
-  const setSupportOpen = useUi((s) => s.setSupportOpen);
   const close = () => setDrawerOpen(false);
   // The page and the player pill take their left edge from --web-navigation-width (tokens.css).
   useEffect(() => {
@@ -192,32 +188,6 @@ export function Sidebar() {
           {spotifySignedIn && <SpotifyNav onNavigate={close} />}
         </div>
         <div className="ot-side-bottom flex flex-col gap-2 pt-3 pr-3 pb-5 pl-5">
-          <PrefetchNavLink to="/extension" className={`${item} relative`} onClick={close} title={tip('AURA Extension')}>
-            {/* Chrome's own toolbar glyph for extensions (Material "extension"). */}
-            <span className={icon}>
-              <MdOutlineExtension size={18} />
-            </span>
-            <span className={navLabel}>AURA Extension</span>
-            {update.state === 'available' && (
-              <span className="ot-side-badge ml-auto rounded-[10px] bg-key px-[7px] py-0.5 type-subhead-emphasized text-white" title={`Version ${update.latest.version} is available`}>
-                Update
-              </span>
-            )}
-          </PrefetchNavLink>
-          <button
-            type="button"
-            className={`${item} group text-[#ff375f] hover:text-[#ff375f]`}
-            onClick={() => {
-              close();
-              setSupportOpen(true);
-            }}
-            title={tip('Support AURA')}
-          >
-            <span className={icon}>
-              <Heart size={18} className="fill-[#ff375f]/20 text-[#ff375f] transition-transform duration-200 group-hover:scale-115" />
-            </span>
-            <span className={navLabel}>Support AURA</span>
-          </button>
           <div className="ot-side-full flex flex-col">
             <AccountButton />
           </div>
