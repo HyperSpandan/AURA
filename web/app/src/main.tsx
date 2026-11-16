@@ -19,8 +19,14 @@ createRoot(document.getElementById('root')!).render(
 if (typeof window !== 'undefined' && 'serviceWorker' in navigator && import.meta.env.PROD) {
   window.addEventListener('load', () => {
     const swUrl = `${import.meta.env.BASE_URL}sw.js`;
-    navigator.serviceWorker.register(swUrl).catch(() => {
-      // SW registration fallback
-    });
+    navigator.serviceWorker
+      .register(swUrl)
+      .then((registration) => {
+        // Check for updates on every page load
+        void registration.update();
+      })
+      .catch(() => {
+        // SW registration fallback
+      });
   });
 }

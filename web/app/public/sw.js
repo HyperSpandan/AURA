@@ -1,4 +1,4 @@
-const CACHE_NAME = 'aura-web-v1';
+const CACHE_NAME = 'aura-web-v2';
 const PRECACHE_URLS = [
   './',
   './index.html',
@@ -36,34 +36,45 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Network-first for navigation requests with fallback to index.html
+  // Network-first with cache fallback for navigation requests (HTML)
   if (event.request.mode === 'navigate') {
     event.respondWith(
-      fetch(event.request).catch(async () => {
-        const cached = (await caches.match('./index.html')) || (await caches.match('./'));
-        if (cached) return cached;
-        return new Response('AURA Offline - No cached page found', {
-          headers: { 'Content-Type': 'text/plain' },
-        });
-      }),
+      fetch(event.request)
+        .then((response) => {
+          if (response && response.status === 200) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put('./index.html', clone));
+          }
+          return response;
+        })
+        .catch(async () => {
+          const cached = (await caches.match('./index.html')) || (await caches.match('./'));
+          if (cached) return cached;
+          return new Response('AURA Offline - No cached page found', {
+            headers: { 'Content-Type': 'text/plain' },
+          });
+        }),
     );
     return;
   }
 
-  // Cache-first / stale-while-revalidate for local static assets
+  // Network-first with cache fallback for application assets
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      const fetchPromise = fetch(event.request)
-        .then((response) => {
-          if (response && response.status === 200 && (response.type === 'basic' || response.type === 'cors')) {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-          }
-          return response;
-        })
-        .catch(() => cached);
-
-      return cached || fetchPromise;
-    }),
+    fetch(event.request)
+      .then((response) => {
+        if (response && response.status === 200 && (response.type === 'basic' || response.type === 'cors')) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+        }
+        return response;
+      })
+      .catch(async () => {
+        const cached = await caches.match(event.request);
+        if (cached) return cached;
+        if (event.request.destination === 'document') {
+          return caches.match('./index.html');
+        }
+        throw new Error('Offline and asset not in cache');
+      }),
   );
 });
