@@ -20,6 +20,7 @@ import { Appearance } from './Appearance';
 import { MobileDock } from './MobileDock';
 import { RoomNotice } from './RoomNotice';
 import { Sidebar } from './Sidebar';
+import { SupportModal } from '@/components/SupportModal';
 
 const mobile = isMobileBrowser();
 
@@ -227,6 +228,7 @@ export function AppShell() {
         <MobileDock />
         <SidePanel />
         <RoomNotice />
+        <SupportModal />
       </div>
       {banner}
       {(fullScreen || playerUp) && (

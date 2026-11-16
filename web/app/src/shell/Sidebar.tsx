@@ -1,4 +1,4 @@
-import { ArrowUpRight, ListMusic, PanelLeftClose, PanelLeftOpen, Settings } from 'lucide-react';
+import { ArrowUpRight, Heart, ListMusic, PanelLeftClose, PanelLeftOpen, Settings } from 'lucide-react';
 import { useEffect } from 'react';
 import { MdOutlineExtension } from 'react-icons/md';
 import { SiSpotify } from 'react-icons/si';
@@ -152,6 +152,7 @@ export function Sidebar() {
   const spotifySignedIn = useSpotifySignedIn();
   const folded = useUi((s) => s.sidebarCollapsed);
   const toggleSidebar = useUi((s) => s.toggleSidebar);
+  const setSupportOpen = useUi((s) => s.setSupportOpen);
   const close = () => setDrawerOpen(false);
   // The page and the player pill take their left edge from --web-navigation-width (tokens.css).
   useEffect(() => {
@@ -203,20 +204,42 @@ export function Sidebar() {
               </span>
             )}
           </PrefetchNavLink>
+          <button
+            type="button"
+            className={`${item} group text-[#ff375f] hover:text-[#ff375f]`}
+            onClick={() => {
+              close();
+              setSupportOpen(true);
+            }}
+            title={tip('Support AURA')}
+          >
+            <span className={icon}>
+              <Heart size={18} className="fill-[#ff375f]/20 text-[#ff375f] transition-transform duration-200 group-hover:scale-115" />
+            </span>
+            <span className={navLabel}>Support AURA</span>
+          </button>
           <div className="ot-side-full flex flex-col">
             <AccountButton />
           </div>
           <div className="ot-side-compact hidden flex-col">
             <AccountButton compact />
           </div>
-          <div className="ot-side-foot flex items-center justify-between">
-            <a className="ot-side-android inline-flex items-center gap-1 ps-1 type-callout text-primary hover:underline" href={config.androidAppUrl} target="_blank" rel="noreferrer">
-              <span>Get the Android app</span>
-              <ArrowUpRight size={14} strokeWidth={2} />
-            </a>
-            <PrefetchNavLink to="/settings" className="grid size-7 place-items-center rounded-nav text-secondary hover:bg-quinary hover:text-primary aria-[current=page]:bg-quinary aria-[current=page]:text-primary" aria-label="Settings" title="Settings" onClick={close}>
-              <Settings size={17} strokeWidth={1.9} />
-            </PrefetchNavLink>
+          <div className="ot-side-foot flex flex-col gap-1.5 pt-1">
+            <div className="flex items-center justify-between">
+              <a className="ot-side-android inline-flex items-center gap-1 ps-1 type-callout text-primary hover:underline" href={config.androidAppUrl} target="_blank" rel="noreferrer">
+                <span>Get the Android app</span>
+                <ArrowUpRight size={14} strokeWidth={2} />
+              </a>
+              <PrefetchNavLink to="/settings" className="grid size-7 place-items-center rounded-nav text-secondary hover:bg-quinary hover:text-primary aria-[current=page]:bg-quinary aria-[current=page]:text-primary" aria-label="Settings" title="Settings" onClick={close}>
+                <Settings size={17} strokeWidth={1.9} />
+              </PrefetchNavLink>
+            </div>
+            <div className="ot-side-full px-1 text-[11px] text-tertiary">
+              Crafted by{' '}
+              <a href="https://github.com/HyperSpandan" target="_blank" rel="noreferrer" className="text-secondary hover:text-primary underline transition-colors">
+                Spandan Dhage
+              </a>
+            </div>
           </div>
         </div>
       </nav>

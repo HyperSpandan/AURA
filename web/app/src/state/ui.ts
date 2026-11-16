@@ -19,6 +19,9 @@ interface UiState {
   /** The extension install banner, dismissed for this tab only. */
   installBannerDismissed: boolean;
   dismissInstallBanner: () => void;
+  /** Support AURA modal dialog */
+  supportOpen: boolean;
+  setSupportOpen: (open: boolean) => void;
 }
 
 const BANNER_KEY = 'aura:install-banner-dismissed';
@@ -57,6 +60,8 @@ export const useUi = create<UiState>()((set) => ({
     sessionStorage.setItem(BANNER_KEY, '1');
     set({ installBannerDismissed: true });
   },
+  supportOpen: false,
+  setSupportOpen: (supportOpen) => set({ supportOpen }),
 }));
 
 // For browser-driven tests, next to __bcPlayer.

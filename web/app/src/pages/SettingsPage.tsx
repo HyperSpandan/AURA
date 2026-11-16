@@ -1,4 +1,4 @@
-import { ArrowUpRight, AudioLines, ChevronRight, Info, Mic2, Palette, Play, Plug, Smartphone, Tv, Users, Wrench, type LucideIcon } from 'lucide-react';
+import { ArrowUpRight, AudioLines, ChevronRight, Heart, Info, Mic2, Palette, Play, Plug, Smartphone, Tv, Users, Wrench, type LucideIcon } from 'lucide-react';
 import { lazy, Suspense, useEffect, useRef, useState, type ComponentType, type ReactNode } from 'react';
 import { MdOutlineExtension } from 'react-icons/md';
 import { SiApplemusic, SiDiscord, SiGithub, SiSpotify, SiYoutubemusic } from 'react-icons/si';
@@ -14,6 +14,7 @@ import { useYtAuth } from '@/extension/useYtAuth';
 import { useRoom } from '@/together/room';
 import { useHistorySettings } from '@/playback/historyReporting';
 import { CROSSFADE_CHOICES, usePlayer } from '@/state/player';
+import { useUi } from '@/state/ui';
 import { AppleMusicIntegration, AppleMusicToggles, CanvasToggle, LyricSourcesAccess, SpotifyIntegration, Toggle } from './IntegrationSettings';
 import { AppearanceSettings } from './AppearanceSettings';
 import { settingsUi } from './settingsStyles';
@@ -65,6 +66,7 @@ const SECTIONS: { id: string; name: string; icon: LucideIcon; color: string }[] 
   { id: 'appearance', name: 'Appearance', icon: Palette, color: '#8e5bd8' },
   { id: 'accounts', name: 'Accounts', icon: Plug, color: '#3478f6' },
   { id: 'together', name: 'Listen Together', icon: Users, color: '#f08a24' },
+  { id: 'support', name: 'Support & Credits', icon: Heart, color: '#ff2d55' },
   { id: 'about', name: 'About', icon: Info, color: '#636366' },
 ];
 
@@ -196,6 +198,7 @@ export default function SettingsPage() {
   const setShareHistory = useHistorySettings((s) => s.setShare);
   const { setAutoplay, setCrossfade } = usePlayer.getState();
   const [lyrics, setLyrics] = useState(false);
+  const setSupportOpen = useUi((s) => s.setSupportOpen);
   const lossless = useAddons((st) => st.lossless);
   const setLossless = useAddons((st) => st.setLossless);
   const sources = useAddons((st) => st.sources.filter((a) => a.enabled && !a.ownerOff).length);
@@ -331,6 +334,32 @@ export default function SettingsPage() {
                 value={room && room.phase !== 'ended' ? (room.hosting ? 'Hosting a room' : `In ${room.hostName ?? 'a'}’s room`) : 'With the web player and the Android app'}
               />
             </section>
+          </Section>
+
+          <Section id="support" title="Support & Credits">
+            <section className={settingsUi.group}>
+              <button
+                type="button"
+                className={`${settingsUi.integration} w-full text-left cursor-pointer transition-colors hover:bg-white/[0.04]`}
+                onClick={() => setSupportOpen(true)}
+              >
+                <Glyph Icon={Heart} color="#ff2d55" />
+                <span className={settingsUi.integrationName}>Support AURA</span>
+                <span className={settingsUi.value}>
+                  <span className="text-[#ff375f] font-medium">Contribute</span>
+                  <ChevronRight size={16} className="flex-none text-tertiary" />
+                </span>
+              </button>
+              <ExternalRow
+                href="https://github.com/HyperSpandan"
+                icon={<Glyph Icon={SiGithub} color="#24292f" />}
+                title="Developer"
+                value="Spandan Dhage (@HyperSpandan)"
+              />
+            </section>
+            <p className={settingsUi.footer}>
+              AURA is free, ad-free, and open source. Supporting helps cover server costs and ongoing development.
+            </p>
           </Section>
 
           <Section id="about" title="About">
