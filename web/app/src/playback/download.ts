@@ -7,6 +7,7 @@ import {
   type OfflineTrackRecord,
 } from '@/data/download/offlineStore';
 import type { Track } from '@/data/music/types';
+import { lookupLyrics, type LyricsResult } from '@/lyrics/repository';
 import { getInnertube } from './youtube/innertube';
 import { resolvePlayer } from './youtube/resolver';
 import { trackLog } from './trackLog';
@@ -168,6 +169,21 @@ export async function downloadTrack(track: Track): Promise<OfflineTrackRecord> {
   const artUrl = track.thumbnail;
   const artworkDataUrl = await fetchArtworkDataUrl(artUrl);
 
+  // Fetch lyrics so offline full-screen player has synced lyrics
+  let lyrics: LyricsResult | null = null;
+  try {
+    const artist = track.artists.map((a) => a.name).join(', ') || 'Unknown Artist';
+    lyrics = await lookupLyrics({
+      videoId: track.videoId,
+      title: track.title,
+      artist,
+      durationMs: Math.round((track.durationSec ?? 0) * 1000),
+      album: track.album?.name ?? null,
+    });
+  } catch (e) {
+    trackLog.d(`Lyrics lookup during download skipped: ${String(e)}`, track.videoId);
+  }
+
   const storedTrack: Track = {
     ...track,
     thumbnail: artworkDataUrl || track.thumbnail,
@@ -183,10 +199,11 @@ export async function downloadTrack(track: Track): Promise<OfflineTrackRecord> {
     sizeBytes: audio.blob.size,
     downloadedAt: Date.now(),
     artworkDataUrl,
+    lyrics,
   };
 
   await saveOfflineTrack(record);
-  trackLog.i(`Saved track to offline storage (${audio.format}, ${(audio.blob.size / (1024 * 1024)).toFixed(1)} MB)`, track.videoId);
+  trackLog.i(`Saved track to offline storage (${audio.format}, ${(audio.blob.size / (1024 * 1024)).toFixed(1)} MB, lyrics: ${lyrics ? 'yes' : 'no'})`, track.videoId);
   return record;
 }
 

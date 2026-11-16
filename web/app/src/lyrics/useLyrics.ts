@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { create } from 'zustand';
+import { getOfflineTrack, saveOfflineTrack } from '@/data/download/offlineStore';
 import { usePlayer } from '@/state/player';
 import { queryClient } from '@/lib/queryClient';
 import { onGranted } from './http';
@@ -51,11 +52,23 @@ export function useLyrics() {
     staleTime: Infinity,
     gcTime: 30 * 60_000,
     retry: false,
-    queryFn: () => {
+    queryFn: async () => {
+      // 1. If song is downloaded and has offline lyrics stored, return them immediately
+      if (!only) {
+        try {
+          const offline = await getOfflineTrack(videoId!);
+          if (offline?.lyrics) {
+            return offline.lyrics;
+          }
+        } catch {
+          // Continue to online lookup
+        }
+      }
+
       const player = usePlayer.getState();
       const entry = player.queue[player.index];
       const durationSec = entry?.track.durationSec || player.nowPlaying?.durationSec || 0;
-      return lookupLyrics(
+      const result = await lookupLyrics(
         {
           videoId: videoId!,
           title,
@@ -65,6 +78,19 @@ export function useLyrics() {
         },
         { ...(only && { only }), onSource: (source, state) => reportState(videoId!, source, state) },
       );
+
+      // If we found lyrics and this song is in offline storage without lyrics, cache them offline
+      if (result && !only) {
+        getOfflineTrack(videoId!)
+          .then((offline) => {
+            if (offline && !offline.lyrics) {
+              void saveOfflineTrack({ ...offline, lyrics: result });
+            }
+          })
+          .catch(() => undefined);
+      }
+
+      return result;
     },
   });
 }

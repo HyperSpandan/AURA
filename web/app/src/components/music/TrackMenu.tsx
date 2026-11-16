@@ -338,8 +338,8 @@ function TrackMenuItems({ track, onClose }: { track: Track; onClose: () => void 
         {isDownloading
           ? 'Downloading…'
           : isDownloaded
-            ? 'Remove from Downloads'
-            : 'Download for Offline'}
+            ? 'Remove download'
+            : 'Download'}
       </MenuItem>
       <MenuItem icon={<FileDown size={15} />} onSelect={handleExportAudio}>
         Export Audio File

@@ -1,4 +1,5 @@
 import type { Track } from '@/data/music/types';
+import type { LyricsResult } from '@/lyrics/repository';
 
 export interface OfflineTrackRecord {
   videoId: string;
@@ -10,6 +11,7 @@ export interface OfflineTrackRecord {
   sizeBytes: number;
   downloadedAt: number;
   artworkDataUrl?: string;
+  lyrics?: LyricsResult | null;
 }
 
 const DB_NAME = 'aura_offline_db';

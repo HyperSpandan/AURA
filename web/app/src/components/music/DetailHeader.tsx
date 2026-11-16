@@ -20,6 +20,8 @@ interface DetailHeaderProps {
   extra?: React.ReactNode;
   /** Apple's motion artwork for an album, over the cover once it plays. */
   motion?: AppleMotion | null;
+  /** Custom artwork element (e.g. 2x2 collage for downloads / dynamic playlists). */
+  artworkNode?: React.ReactNode;
 }
 
 /** Shuffle (circle) · Play (pill), report §14; also the Spotify playlist's Import button. */
@@ -33,7 +35,7 @@ export const detailButton = {
  * Album and playlist header (report §3, §14): artwork with its glow, title,
  * artist, metadata, a three-line description, then Shuffle · Play.
  */
-export function DetailHeader({ info, onPlay, onShuffle, canPlay, extra, motion }: DetailHeaderProps) {
+export function DetailHeader({ info, onPlay, onShuffle, canPlay, extra, motion, artworkNode }: DetailHeaderProps) {
   const [expanded, setExpanded] = useState(false);
   const signedIn = useSignedIn();
   const setSaved = useSetListSaved();
@@ -50,7 +52,9 @@ export function DetailHeader({ info, onPlay, onShuffle, canPlay, extra, motion }
               <Artwork src={info.thumbnail} displayWidth={80} radius="var(--radius-artwork-large)" />
             </div>
           )}
-          <Artwork src={info.thumbnail} displayWidth={270} radius="var(--radius-artwork-large)" eager />
+          {artworkNode ?? (
+            <Artwork src={info.thumbnail} displayWidth={270} radius="var(--radius-artwork-large)" eager />
+          )}
           {/* Apple's motion artwork, over the cover once it's playing. */}
           {motion && (
             <MotionArtwork

@@ -1,5 +1,5 @@
 import { Maximize, Minimize, X } from 'lucide-react';
-import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { Component, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { useLocation } from 'react-router';
 import {
   BackwardIcon,
@@ -121,6 +121,33 @@ const artworkLayer = 'absolute inset-0 size-full rounded-[inherit] object-cover 
 /** How long the pointer can rest before a playing music video hides its controls. */
 const IDLE_MS = 3000;
 
+class FullScreenErrorBoundary extends Component<{ children: ReactNode; onClose: () => void }, { hasError: boolean }> {
+  override state = { hasError: false };
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  override componentDidCatch(error: unknown) {
+    console.error('FullScreenPlayer failed to render:', error);
+  }
+  override render() {
+    if (this.state.hasError) {
+      return (
+        <div className="fixed inset-0 z-[calc(var(--z-contextual-menus)-2)] flex flex-col items-center justify-center bg-black/90 p-6 text-white backdrop-blur-xl">
+          <p className="type-title-2-emphasized">Playback active</p>
+          <p className="mt-2 text-center type-body text-secondary">The full screen interface encountered an issue, but your music is still playing.</p>
+          <button
+            onClick={this.props.onClose}
+            className="mt-6 rounded-full bg-white px-6 py-2.5 type-callout-emphasized text-black hover:bg-white/90"
+          >
+            Close Full Screen
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 /**
  * The full-screen player (report §7): the artwork on the left with the
  * track's names, the seek line and the transport under it; the lyrics, the
@@ -132,7 +159,7 @@ const IDLE_MS = 3000;
  * the names and transport over its foot, fading out while the pointer rests;
  * beside the lyrics or Up Next, it takes the artwork's place at 16:9.
  */
-export function FullScreenPlayer({ closing = false, onClosed }: { closing?: boolean; onClosed?: () => void }) {
+function FullScreenPlayerContent({ closing = false, onClosed }: { closing?: boolean; onClosed?: () => void }) {
   const nowPlaying = usePlayer((s) => s.nowPlaying);
   const appearance = useAppearance();
   const coverColor = useArtworkColor(nowPlaying?.artworkUrl);
@@ -144,7 +171,7 @@ export function FullScreenPlayer({ closing = false, onClosed }: { closing?: bool
   const currentTrack: Track | null = track ?? (nowPlaying ? {
     videoId: nowPlaying.videoId,
     title: nowPlaying.title,
-    artists: [{ name: nowPlaying.artist, id: null }],
+    artists: nowPlaying.artist ? [{ name: nowPlaying.artist, id: null }] : [],
     album: null,
     durationSec: nowPlaying.durationSec || null,
     explicit: false,
@@ -479,6 +506,15 @@ export function FullScreenPlayer({ closing = false, onClosed }: { closing?: bool
         <UpNextIcon size={18} />
       </button>
     </div>
+  );
+}
+
+export function FullScreenPlayer({ closing = false, onClosed }: { closing?: boolean; onClosed?: () => void }) {
+  const setFullScreen = useUi((s) => s.setFullScreen);
+  return (
+    <FullScreenErrorBoundary onClose={() => setFullScreen(false)}>
+      <FullScreenPlayerContent closing={closing} onClosed={onClosed} />
+    </FullScreenErrorBoundary>
   );
 }
 

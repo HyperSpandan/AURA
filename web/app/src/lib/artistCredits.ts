@@ -57,9 +57,9 @@ function splitCreditLine(artist: string): ArtistRef[] {
  * credit, so it is split like one.
  */
 export function artistCredits(artist: string, artists: readonly ArtistRef[]): ArtistRef[] {
-  const stated = artists.filter((a) => a.name.trim());
+  const stated = (artists ?? []).filter((a) => a && typeof a.name === 'string' && a.name.trim());
   const wholeLine = stated.length === 1 && !stated[0]!.id && new RegExp(CREDIT_JOINER.source).test(stated[0]!.name);
-  return stated.length && !wholeLine ? stated : splitCreditLine(stated[0]?.name ?? artist);
+  return stated.length && !wholeLine ? stated : splitCreditLine(stated[0]?.name ?? artist ?? '');
 }
 
 /**
@@ -72,8 +72,8 @@ export function artistCredits(artist: string, artists: readonly ArtistRef[]): Ar
 export function creditSegments(text: string, credits: readonly ArtistRef[]): CreditSegment[] {
   if (!text) return [];
   const seen = new Set<string>();
-  const names = credits
-    .filter((c) => c.name.trim())
+  const names = (credits ?? [])
+    .filter((c) => c && typeof c.name === 'string' && c.name.trim())
     .filter((c) => {
       const key = normalizedArtistName(c.name);
       if (seen.has(key)) return false;

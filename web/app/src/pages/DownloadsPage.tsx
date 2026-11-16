@@ -1,11 +1,15 @@
-import { ArrowDownToLine, HardDrive, Play, Search, Shuffle, Trash2 } from 'lucide-react';
-import { useMemo, useState } from 'react';
-import { PageHeader } from '@/components/PageHeader';
+import { Trash2 } from 'lucide-react';
+import { useMemo } from 'react';
+import { Artwork } from '@/components/music/Artwork';
+import { DetailHeader, detailButton } from '@/components/music/DetailHeader';
 import { EmptyState } from '@/components/music/States';
 import { TrackList } from '@/components/music/TrackList';
-import { useDownloads } from '@/data/download/useDownloads';
 import { playList, shuffleList } from '@/components/music/play';
-import { seeAllTracks } from './pageStyles';
+import { useDownloads } from '@/data/download/useDownloads';
+import type { HeaderInfo } from '@/data/music/types';
+import { useArtworkColor } from '@/lib/artworkColor';
+import { usePageTint } from '@/lib/usePageTint';
+import { detailFooter } from './pageStyles';
 
 function formatBytes(bytes: number): string {
   if (bytes <= 0) return '0 B';
@@ -14,36 +18,77 @@ function formatBytes(bytes: number): string {
   return `${(bytes / Math.pow(1024, i)).toFixed(i > 1 ? 1 : 0)} ${units[i]}`;
 }
 
+function formatDuration(totalSeconds: number): string {
+  if (totalSeconds <= 0) return '';
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  if (hours > 0) {
+    return `${hours} hour${hours > 1 ? 's' : ''}${minutes > 0 ? `, ${minutes} minute${minutes > 1 ? 's' : ''}` : ''}`;
+  }
+  return `${minutes} minute${minutes > 1 ? 's' : ''}`;
+}
+
+function DownloadsCollage({ thumbnails }: { thumbnails: string[] }) {
+  if (thumbnails.length >= 4) {
+    return (
+      <div className="relative aspect-square size-full overflow-hidden rounded-artwork-lg bg-joe artwork-stroke grid grid-cols-2 grid-rows-2">
+        {thumbnails.slice(0, 4).map((src, i) => (
+          <img
+            key={i}
+            src={src}
+            alt=""
+            className="size-full object-cover"
+            loading="eager"
+            decoding="async"
+            draggable={false}
+          />
+        ))}
+      </div>
+    );
+  }
+  return <Artwork src={thumbnails[0] ?? null} displayWidth={270} radius="var(--radius-artwork-large)" eager />;
+}
+
 export default function DownloadsPage() {
   const tracks = useDownloads((s) => s.tracks);
   const totalBytes = useDownloads((s) => s.totalBytes);
   const clearAll = useDownloads((s) => s.clearAll);
-  const [filter, setFilter] = useState('');
 
-  const filteredTracks = useMemo(() => {
-    const q = filter.trim().toLowerCase();
-    if (!q) return tracks;
-    return tracks.filter((t) => {
-      const matchTitle = t.title.toLowerCase().includes(q);
-      const matchArtist = t.artists.some((a) => a.name.toLowerCase().includes(q));
-      const matchAlbum = t.album?.name?.toLowerCase().includes(q);
-      return matchTitle || matchArtist || matchAlbum;
-    });
-  }, [tracks, filter]);
+  const collageThumbnails = useMemo(() => {
+    const urls: string[] = [];
+    for (const t of tracks) {
+      if (t.thumbnail && !urls.includes(t.thumbnail)) {
+        urls.push(t.thumbnail);
+      }
+      if (urls.length === 4) break;
+    }
+    return urls;
+  }, [tracks]);
 
-  const handlePlayAll = (shuffle = false) => {
-    if (!filteredTracks.length) return;
-    const context = {
+  const heroThumbnail = collageThumbnails[0] ?? null;
+  usePageTint(useArtworkColor(heroThumbnail));
+
+  const totalDurationSec = useMemo(() => {
+    return tracks.reduce((sum, t) => sum + (t.durationSec || 0), 0);
+  }, [tracks]);
+
+  const context = useMemo(
+    () => ({
       source: {
         title: 'Downloads',
         type: 'library' as const,
         id: 'downloads',
       },
-    };
+    }),
+    [],
+  );
+
+  const handlePlayAll = (shuffle = false) => {
+    if (!tracks.length) return;
     if (shuffle) {
-      shuffleList(filteredTracks, context);
+      shuffleList(tracks, context);
     } else {
-      playList(filteredTracks, 0, context);
+      playList(tracks, 0, context);
     }
   };
 
@@ -53,86 +98,55 @@ export default function DownloadsPage() {
     }
   };
 
+  if (tracks.length === 0) {
+    return (
+      <EmptyState
+        title="No downloaded songs"
+        detail="Pick “Download” from any song’s 3-dots menu to listen offline without internet."
+      />
+    );
+  }
+
+  const durationText = formatDuration(totalDurationSec);
+  const sizeText = formatBytes(totalBytes);
+  const metaParts = ['Offline', `${tracks.length} track${tracks.length === 1 ? '' : 's'}`];
+  if (durationText) metaParts.push(durationText);
+  if (sizeText) metaParts.push(sizeText);
+
+  const header: HeaderInfo = {
+    title: 'Downloads',
+    subtitle: 'Playlist',
+    meta: metaParts.join(' · '),
+    description: null,
+    thumbnail: heroThumbnail,
+    artists: [],
+    explicit: false,
+    library: null,
+  };
+
   return (
     <>
-      <PageHeader title="Downloads" />
-
-      {tracks.length === 0 ? (
-        <EmptyState
-          title="No downloaded songs yet"
-          detail="Pick 'Download to AURA' from any song's 3-dots menu to listen offline without internet."
-        />
-      ) : (
-        <div className="flex flex-col gap-4">
-          {/* Header Action & Stats Toolbar */}
-          <div className="flex flex-wrap items-center justify-between gap-3 px-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={() => handlePlayAll(false)}
-                className="inline-flex h-9 items-center gap-2 rounded-full bg-key px-4 type-callout-emphasized text-white transition-opacity hover:opacity-90"
-              >
-                <Play size={15} className="fill-current" />
-                <span>Play all</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => handlePlayAll(true)}
-                className="inline-flex h-9 items-center gap-2 rounded-full bg-quinary px-3.5 type-callout text-primary transition-colors hover:bg-quinary/80"
-              >
-                <Shuffle size={15} />
-                <span>Shuffle</span>
-              </button>
-              <button
-                type="button"
-                onClick={handleClearAll}
-                className="inline-flex h-9 items-center gap-1.5 rounded-full px-3 type-callout text-secondary transition-colors hover:bg-red-500/10 hover:text-red-400"
-                title="Remove all downloaded songs"
-              >
-                <Trash2 size={14} />
-                <span>Clear all</span>
-              </button>
-            </div>
-
-            <div className="flex items-center gap-3 type-caption text-secondary">
-              <span className="inline-flex items-center gap-1.5 rounded-md bg-quinary/60 px-2.5 py-1">
-                <HardDrive size={13} className="text-secondary" />
-                <span>{tracks.length} song{tracks.length === 1 ? '' : 's'} · {formatBytes(totalBytes)}</span>
-              </span>
-              <span className="inline-flex items-center gap-1 text-emerald-500">
-                <ArrowDownToLine size={13} />
-                <span>Offline ready</span>
-              </span>
-            </div>
-          </div>
-
-          {/* Quick Search / Filter Filter */}
-          {tracks.length > 5 && (
-            <div className="relative px-1">
-              <Search
-                size={16}
-                className="absolute top-1/2 left-4 -translate-y-1/2 text-tertiary"
-              />
-              <input
-                type="text"
-                value={filter}
-                onChange={(e) => setFilter(e.target.value)}
-                placeholder="Filter downloaded songs…"
-                className="h-9 w-full rounded-full border border-white/8 bg-quinary/50 pr-4 pl-10 type-callout text-primary placeholder:text-tertiary focus:border-key/60 focus:outline-none"
-              />
-            </div>
-          )}
-
-          {/* Tracklist */}
-          <div className={seeAllTracks}>
-            <TrackList
-              tracks={filteredTracks}
-              variant="playlist"
-              source={{ title: 'Downloads', type: 'library', id: 'downloads' }}
-            />
-          </div>
-        </div>
-      )}
+      <DetailHeader
+        info={header}
+        canPlay={tracks.length > 0}
+        onPlay={() => handlePlayAll(false)}
+        onShuffle={() => handlePlayAll(true)}
+        artworkNode={<DownloadsCollage thumbnails={collageThumbnails} />}
+        extra={
+          <button
+            className={detailButton.circle}
+            aria-label="Clear all downloads"
+            title="Clear all downloads"
+            onClick={handleClearAll}
+          >
+            <Trash2 size={18} strokeWidth={2.2} />
+          </button>
+        }
+      />
+      <TrackList tracks={tracks} variant="playlist" source={context.source} />
+      <footer className={detailFooter}>
+        <p>{header.meta}</p>
+      </footer>
     </>
   );
 }

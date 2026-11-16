@@ -5,6 +5,8 @@ export type Rgb = [number, number, number];
 /** The mesh is the artwork averaged into a GRID × GRID square of means. */
 export const GRID = 4;
 
+export const FALLBACK: Rgb[] = Array.from({ length: GRID * GRID }, () => [52, 52, 56]);
+
 const cache = new Map<string, Rgb[]>();
 
 /**
@@ -29,7 +31,9 @@ function shape([r, g, b]: Rgb): Rgb {
  */
 async function measure(url: string): Promise<Rgb[]> {
   const image = new Image();
-  image.crossOrigin = 'anonymous';
+  if (!url.startsWith('data:') && !url.startsWith('blob:')) {
+    image.crossOrigin = 'anonymous';
+  }
   image.referrerPolicy = 'no-referrer';
   image.decoding = 'async';
   // 60px: a size YouTube's pages request, so the CDN has it cached (lib/artwork.ts).
@@ -38,7 +42,8 @@ async function measure(url: string): Promise<Rgb[]> {
   const side = GRID * 3;
   const canvas = document.createElement('canvas');
   canvas.width = canvas.height = side;
-  const context = canvas.getContext('2d', { willReadFrequently: true })!;
+  const context = canvas.getContext('2d', { willReadFrequently: true });
+  if (!context) return FALLBACK;
   context.drawImage(image, 0, 0, side, side);
   const { data } = context.getImageData(0, 0, side, side);
   const cells: Rgb[] = [];
@@ -62,8 +67,10 @@ async function measure(url: string): Promise<Rgb[]> {
 export function meshPalette(url: string): Promise<Rgb[]> {
   const known = cache.get(url);
   if (known) return Promise.resolve(known);
-  return measure(url).then((cells) => {
-    cache.set(url, cells);
-    return cells;
-  });
+  return measure(url)
+    .then((cells) => {
+      cache.set(url, cells);
+      return cells;
+    })
+    .catch(() => FALLBACK);
 }

@@ -17,7 +17,9 @@ const cache = new Map<string, ArtworkColor>();
  */
 async function measure(url: string): Promise<ArtworkColor> {
   const image = new Image();
-  image.crossOrigin = 'anonymous';
+  if (!url.startsWith('data:') && !url.startsWith('blob:')) {
+    image.crossOrigin = 'anonymous';
+  }
   image.referrerPolicy = 'no-referrer';
   image.decoding = 'async';
   // 60px: a size YouTube's pages request, so the CDN has it cached (lib/artwork.ts).
@@ -25,7 +27,8 @@ async function measure(url: string): Promise<ArtworkColor> {
   await image.decode();
   const canvas = document.createElement('canvas');
   canvas.width = canvas.height = 8;
-  const context = canvas.getContext('2d', { willReadFrequently: true })!;
+  const context = canvas.getContext('2d', { willReadFrequently: true });
+  if (!context) return { background: '#222226', dark: true };
   context.drawImage(image, 0, 0, 8, 8);
   const { data } = context.getImageData(0, 0, 8, 8);
   let r = 0;
