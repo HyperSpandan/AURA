@@ -6,9 +6,14 @@ const b64 = (b: ArrayBuffer | Uint8Array<ArrayBuffer>) => btoa(String.fromCharCo
 const hash = async (s: string) => [...new Uint8Array(await crypto.subtle.digest('SHA-256', bytes(s)))].map(x => x.toString(16).padStart(2, '0')).join('');
 async function database(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
+    if (typeof indexedDB === 'undefined') {
+      reject(new Error('IndexedDB storage is not supported in this browser environment.'));
+      return;
+    }
     const request = indexedDB.open('aura-addon-device', 1);
     request.onupgradeneeded = () => { request.result.createObjectStore('session'); };
-    request.onsuccess = () => resolve(request.result); request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error ?? new Error('Browser storage access denied. Enable storage to verify this browser.'));
   });
 }
 async function stored(write?: Session | null): Promise<Session | undefined> {
@@ -24,13 +29,45 @@ async function stored(write?: Session | null): Promise<Session | undefined> {
   } finally { db.close(); }
 }
 async function call(path: string, data: object): Promise<Record<string, unknown>> {
-  const r = await fetch(OFFICIAL_ADDON + path, { method: 'POST', body: JSON.stringify(data), headers: { 'Content-Type': 'application/json' },
-    credentials: 'omit', redirect: 'error', referrerPolicy: 'no-referrer', signal: AbortSignal.timeout(15_000) });
-  const result = await r.json() as Record<string, unknown>;
-  if (!r.ok) throw new Error(typeof result.error === 'string' ? result.error : 'Verification failed');
+  let r: Response;
+  try {
+    r = await fetch(OFFICIAL_ADDON + path, {
+      method: 'POST',
+      body: JSON.stringify(data),
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'omit',
+      redirect: 'error',
+      referrerPolicy: 'no-referrer',
+      signal: AbortSignal.timeout(15_000),
+    });
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'TimeoutError') {
+      throw new Error('Connection to verification server timed out.');
+    }
+    throw new Error('Could not reach verification server. Network connection error.');
+  }
+
+  let result: Record<string, unknown> = {};
+  try {
+    result = (await r.json()) as Record<string, unknown>;
+  } catch {
+    throw new Error(`Verification service returned an invalid response (HTTP ${r.status}).`);
+  }
+
+  if (!r.ok) {
+    const isLocalDev = typeof window !== 'undefined' && ['localhost', '127.0.0.1'].includes(window.location.hostname);
+    if (r.status === 401 && isLocalDev) {
+      throw new Error(`Local development (${window.location.origin}) cannot be paired with the mobile app. Browser pairing requires the official hosted web app.`);
+    }
+    throw new Error(typeof result.error === 'string' ? result.error : `Verification failed (HTTP ${r.status})`);
+  }
   return result;
 }
 export async function startPairing(): Promise<Pairing> {
+  const isLocalDev = typeof window !== 'undefined' && ['localhost', '127.0.0.1'].includes(window.location.hostname);
+  if (isLocalDev) {
+    throw new Error(`Browser pairing is only supported on the production web app (https://hyperspandan.github.io/AURA/player/). Local development origins (${window.location.origin}) are rejected by the official add-on auth service.`);
+  }
   // The browser key cannot be exported. A copied session token cannot sign requests.
   const keys = await crypto.subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, false, ['sign', 'verify']);
   const publicKey = await crypto.subtle.exportKey('jwk', keys.publicKey);
@@ -47,7 +84,11 @@ export async function pollPairing(pair: Pairing): Promise<boolean> {
   return true;
 }
 export async function verifiedUntil(): Promise<number> {
-  const value = await stored(); return value && value.expires > Date.now() + value.offset ? value.expires : 0;
+  try {
+    const value = await stored(); return value && value.expires > Date.now() + value.offset ? value.expires : 0;
+  } catch {
+    return 0;
+  }
 }
 export async function disconnectVerification(): Promise<void> { await stored(null); }
 export function isOfficialAddon(url: string): boolean {
@@ -58,10 +99,15 @@ export function needsVerification(url: string): boolean {
 }
 export async function verificationHeaders(url: string): Promise<Record<string, string>> {
   if (!needsVerification(url)) return {};
-  const value = await stored();
-  if (!value || value.expires <= Date.now() + value.offset) throw new Error('Open Settings › Audio sources and verify this browser with the official AURA app');
-  const time = String(Date.now() + value.offset), nonce = b64(crypto.getRandomValues(new Uint8Array(24))), u = new URL(url);
-  const message = ['AURA-Addon-v1', value.session, time, nonce, 'GET', u.pathname + u.search, await hash('')].join('\n');
-  const signature = await crypto.subtle.sign({ name: 'ECDSA', hash: 'SHA-256' }, value.key, bytes(message));
-  return { Authorization: 'Bearer ' + value.session, 'X-AURA-Time': time, 'X-AURA-Nonce': nonce, 'X-AURA-Signature': b64(signature) };
+  try {
+    const value = await stored();
+    // In staged mode, an unverified browser can still stream without error.
+    if (!value || value.expires <= Date.now() + value.offset) return {};
+    const time = String(Date.now() + value.offset), nonce = b64(crypto.getRandomValues(new Uint8Array(24))), u = new URL(url);
+    const message = ['AURA-Addon-v1', value.session, time, nonce, 'GET', u.pathname + u.search, await hash('')].join('\n');
+    const signature = await crypto.subtle.sign({ name: 'ECDSA', hash: 'SHA-256' }, value.key, bytes(message));
+    return { Authorization: 'Bearer ' + value.session, 'X-AURA-Time': time, 'X-AURA-Nonce': nonce, 'X-AURA-Signature': b64(signature) };
+  } catch {
+    return {};
+  }
 }
