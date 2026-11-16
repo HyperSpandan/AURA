@@ -25,13 +25,20 @@ export function Menu({ anchor, placement = 'below-end', onClose, label, children
   useLayoutEffect(() => {
     const rect = anchor.getBoundingClientRect();
     const gap = 6;
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const spaceAbove = rect.top;
+    const goAbove = placement === 'above-start' || (spaceBelow < 320 && spaceAbove > spaceBelow);
     setPosition(
-      placement === 'above-start'
-        ? { left: Math.max(8, rect.left), bottom: window.innerHeight - rect.top + gap, maxHeight: rect.top - 2 * gap }
+      goAbove
+        ? {
+            right: Math.max(8, window.innerWidth - rect.right),
+            bottom: window.innerHeight - rect.top + gap,
+            maxHeight: Math.min(480, rect.top - 2 * gap),
+          }
         : {
             right: Math.max(8, window.innerWidth - rect.right),
             top: rect.bottom + gap,
-            maxHeight: window.innerHeight - rect.bottom - 2 * gap,
+            maxHeight: Math.min(480, window.innerHeight - rect.bottom - 2 * gap),
           },
     );
   }, [anchor, placement]);

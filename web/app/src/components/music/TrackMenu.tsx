@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router';
-import { Menu, MenuHeader, MenuItem, MenuSeparator } from '@/components/Menu';
+import { Menu, MenuHeader, MenuItem, type MenuPlacement, MenuSeparator } from '@/components/Menu';
 import {
   useAddToPlaylist,
   useLikeStatus,
@@ -345,7 +345,15 @@ function TrackMenuItems({ track, onClose }: { track: Track; onClose: () => void 
  * The ⋯ button at the end of a track row (report §14): Play Next and Add to
  * Queue, Start Radio, Go to Artist/Album, Lyrics, Share, and Account actions.
  */
-export function TrackMenu({ track, className }: { track: Track; className?: string }) {
+export function TrackMenu({
+  track,
+  className,
+  placement,
+}: {
+  track: Track;
+  className?: string;
+  placement?: MenuPlacement;
+}) {
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
   const close = useCallback(() => setAnchor(null), []);
   return (
@@ -365,7 +373,7 @@ export function TrackMenu({ track, className }: { track: Track; className?: stri
         <MoreHorizontal size={18} strokeWidth={2} />
       </button>
       {anchor && (
-        <Menu anchor={anchor} onClose={close} label={track.title}>
+        <Menu anchor={anchor} placement={placement} onClose={close} label={track.title}>
           <TrackMenuItems track={track} onClose={close} />
         </Menu>
       )}

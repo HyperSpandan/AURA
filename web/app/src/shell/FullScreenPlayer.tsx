@@ -13,10 +13,12 @@ import {
 } from '@/components/icons/Transport';
 import { ExplicitBadge } from '@/components/music/ExplicitBadge';
 import { FavoriteButton } from '@/components/music/FavoriteButton';
+import { TrackMenu } from '@/components/music/TrackMenu';
 import { albumHref } from '@/components/music/links';
 import { MotionArtwork } from '@/components/music/MotionArtwork';
 import { VideoSurface } from '@/components/music/VideoSurface';
 import { useTrackMotion } from '@/data/apple/motionArt';
+import type { Track } from '@/data/music/types';
 import { sizedArtwork } from '@/lib/artwork';
 import { useLyrics } from '@/lyrics/useLyrics';
 import { usePlayer } from '@/state/player';
@@ -139,6 +141,17 @@ export function FullScreenPlayer({ closing = false, onClosed }: { closing?: bool
     const entry = s.queue[s.index]?.track;
     return entry && entry.videoId === s.nowPlaying?.videoId ? entry : null;
   });
+  const currentTrack: Track | null = track ?? (nowPlaying ? {
+    videoId: nowPlaying.videoId,
+    title: nowPlaying.title,
+    artists: [{ name: nowPlaying.artist, id: null }],
+    album: null,
+    durationSec: nowPlaying.durationSec || null,
+    explicit: false,
+    thumbnail: nowPlaying.artworkUrl,
+    index: null,
+    plays: null,
+  } : null);
   // Apple's animated sleeve over the cover, as the phone's now-playing shows it.
   const motion = useTrackMotion(nowPlaying?.title, nowPlaying?.artist, track?.album?.name);
   const { pathname } = useLocation();
@@ -416,6 +429,12 @@ export function FullScreenPlayer({ closing = false, onClosed }: { closing?: bool
               className="grid size-8 flex-none place-items-center rounded-full bg-quinary text-primary hover:bg-quaternary"
               size={18}
             />
+            {currentTrack && (
+              <TrackMenu
+                track={currentTrack}
+                className="grid size-8 flex-none place-items-center rounded-full bg-quinary text-primary hover:bg-quaternary transition-[background-color,scale] active:scale-90"
+              />
+            )}
           </div>
 
           <Scrubber />
