@@ -1,24 +1,18 @@
-import { ArrowDownToLine, ArrowUpRight, ListMusic, PanelLeftClose, PanelLeftOpen, Settings } from 'lucide-react';
+import { ArrowUpRight, Library as LibraryIcon, ListMusic, PanelLeftClose, PanelLeftOpen, Settings } from 'lucide-react';
 import { useEffect } from 'react';
 import { SiSpotify } from 'react-icons/si';
 import { PrefetchLink, PrefetchNavLink } from '@/components/PrefetchLink';
 import { LogoMark } from '@/components/icons/LogoMark';
 import {
-  AlbumsIcon,
   AllPlaylistsIcon,
-  ArtistsIcon,
   HomeIcon,
-  MadeForYouIcon,
   NewIcon,
-  RecentlyAddedIcon,
   SearchIcon,
-  SongsIcon,
   type NavIconProps,
 } from '@/components/icons/NavIcons';
 import { hrefFor } from '@/components/music/links';
 import { config } from '@/config';
-import { useDownloads } from '@/data/download/useDownloads';
-import { LIBRARY_SECTIONS, type LibrarySection } from '@/data/music/library';
+import { LIBRARY_SECTIONS } from '@/data/music/library';
 import { useLibraryPlaylists, useSignedIn } from '@/data/music/queries';
 import { useSpotifyPlaylists } from '@/data/spotify/queries';
 import { useSpotifySignedIn } from '@/extension/useSpotifyAuth';
@@ -35,21 +29,12 @@ const PRIMARY: NavItem[] = [
   { to: '/search', label: 'Search', Icon: SearchIcon },
   { to: '/home', label: 'Home', Icon: HomeIcon },
   { to: '/new', label: 'New', Icon: NewIcon },
+  {
+    to: '/library',
+    label: 'Library',
+    Icon: ({ size = 24 }: NavIconProps) => <LibraryIcon size={size - 4} strokeWidth={2} />,
+  },
 ];
-
-const LIBRARY_ICONS: Record<Exclude<LibrarySection, 'playlists'>, NavItem['Icon']> = {
-  recent: RecentlyAddedIcon,
-  artists: ArtistsIcon,
-  albums: AlbumsIcon,
-  songs: SongsIcon,
-  'made-for-you': MadeForYouIcon,
-};
-
-const LIBRARY: NavItem[] = (Object.keys(LIBRARY_ICONS) as (keyof typeof LIBRARY_ICONS)[]).map((section) => ({
-  to: `/library/${section}`,
-  label: LIBRARY_SECTIONS[section].title,
-  Icon: LIBRARY_ICONS[section],
-}));
 
 // A sidebar row; NavLink sets aria-current on the page's own row.
 const item =
@@ -80,22 +65,11 @@ function NavList({ items, onNavigate }: { items: NavItem[]; onNavigate: () => vo
   );
 }
 
-/** Library and Playlists (report §1), once YouTube requests are made as the user. */
-function LibraryNav({ onNavigate, showHeading = true }: { onNavigate: () => void; showHeading?: boolean }) {
+/** Playlists (report §1), once YouTube requests are made as the user. */
+function PlaylistsNav({ onNavigate }: { onNavigate: () => void }) {
   const playlists = useLibraryPlaylists();
   return (
     <>
-      {showHeading && (
-        <PrefetchNavLink
-          to="/library"
-          className={`${sectionHeader} block hover:text-primary transition-colors cursor-pointer`}
-          onClick={onNavigate}
-          title={tip('Library')}
-        >
-          Library
-        </PrefetchNavLink>
-      )}
-      <NavList items={LIBRARY} onNavigate={onNavigate} />
       <h2 className={sectionHeader}>Playlists</h2>
       <ul className={list}>
         <li>
@@ -155,7 +129,6 @@ function SpotifyNav({ onNavigate }: { onNavigate: () => void }) {
 export function Sidebar() {
   const drawerOpen = useUi((s) => s.drawerOpen);
   const setDrawerOpen = useUi((s) => s.setDrawerOpen);
-  const downloadCount = useDownloads((s) => s.records.length);
   const signedIn = useSignedIn();
   const spotifySignedIn = useSpotifySignedIn();
   const folded = useUi((s) => s.sidebarCollapsed);
@@ -195,30 +168,7 @@ export function Sidebar() {
         </div>
         <div className="ot-side-scroll min-h-0 flex-1 overflow-y-auto pr-3 pl-5 [scrollbar-width:none]">
           <NavList items={PRIMARY} onNavigate={close} />
-          <PrefetchNavLink
-            to="/library"
-            className={`${sectionHeader} block hover:text-primary transition-colors cursor-pointer`}
-            onClick={close}
-            title={tip('Library')}
-          >
-            Library
-          </PrefetchNavLink>
-          <ul className={list}>
-            <li>
-              <PrefetchNavLink to="/library/downloads" className={item} onClick={close} title={tip('Downloads')}>
-                <span className={icon}>
-                  <ArrowDownToLine size={20} />
-                </span>
-                <span className={navLabel}>Downloads</span>
-                {downloadCount > 0 && (
-                  <span className="ot-side-badge ml-auto rounded-[10px] bg-quinary px-[7px] py-0.5 type-caption-emphasized text-secondary">
-                    {downloadCount}
-                  </span>
-                )}
-              </PrefetchNavLink>
-            </li>
-          </ul>
-          {signedIn && <LibraryNav onNavigate={close} showHeading={false} />}
+          {signedIn && <PlaylistsNav onNavigate={close} />}
           {spotifySignedIn && <SpotifyNav onNavigate={close} />}
         </div>
         <div className="ot-side-bottom flex flex-col gap-2 pt-3 pr-3 pb-5 pl-5">

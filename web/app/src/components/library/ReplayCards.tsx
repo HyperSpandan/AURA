@@ -55,8 +55,8 @@ export function ReplayCards({
   );
 
   return (
-    <div className="relative -mx-(--body-gutter) px-(--body-gutter)">
-      <div className="flex gap-3.5 overflow-x-auto pb-2 pt-1 scrollbar-none snap-x snap-mandatory">
+    <div className="relative">
+      <div className="flex gap-3.5 overflow-x-auto px-(--body-gutter) scroll-px-(--body-gutter) pb-2 pt-1 scrollbar-none snap-x snap-mandatory">
         {cards.map((card, i) => (
           <div
             key={i}

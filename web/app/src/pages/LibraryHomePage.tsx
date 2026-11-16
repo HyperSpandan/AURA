@@ -11,7 +11,6 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { PageHeader } from '@/components/PageHeader';
 import { PrefetchLink } from '@/components/PrefetchLink';
 import { SquareLockup } from '@/components/music/Lockups';
 import { TrackShelf } from '@/components/music/ShelfView';
@@ -146,21 +145,25 @@ export default function LibraryHomePage() {
   return (
     <div className="space-y-8 pb-12">
       {/* Header with History Quick-link */}
-      <div className="flex items-center justify-between">
-        <PageHeader title="Library" />
-        <PrefetchLink
-          to="/library/recent"
-          className="inline-flex h-9 items-center gap-2 rounded-full border border-quaternary bg-quinary/70 px-4 text-xs font-semibold text-secondary transition-all hover:bg-quaternary hover:text-primary active:scale-95"
-          title="Listening History"
-        >
-          <Clock size={15} />
-          <span>History</span>
-        </PrefetchLink>
-      </div>
+      <header className="ot-home-heading">
+        <div>
+          <h1 className="type-header-emphasized">Library</h1>
+        </div>
+        <div>
+          <PrefetchLink
+            className="ot-circle-button"
+            to="/library/recent"
+            aria-label="Listening history"
+            title="Listening history"
+          >
+            <Clock size={20} />
+          </PrefetchLink>
+        </div>
+      </header>
 
       {/* Your Listening Experience Cards (Replay) */}
       <section className="space-y-3">
-        <div className="flex items-center justify-between px-1">
+        <div className="mx-(--body-gutter) flex items-center justify-between">
           <h2 className="type-title-2-emphasized text-primary">Your Listening Experience</h2>
           <button
             type="button"
@@ -186,7 +189,7 @@ export default function LibraryHomePage() {
       </section>
 
       {/* Shortcut Tiles */}
-      <section className="space-y-3">
+      <section className="mx-(--body-gutter)">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {shortcutTiles.map((tile) => {
             const Icon = tile.icon;
@@ -239,8 +242,8 @@ export default function LibraryHomePage() {
 
       {/* Playlists Shelf */}
       {userPlaylists.length > 0 && (
-        <section className="space-y-4">
-          <div className="flex items-center justify-between px-1">
+        <section className="mx-(--body-gutter) space-y-4">
+          <div className="flex items-center justify-between">
             <h2 className="type-title-2-emphasized text-primary">Playlists</h2>
             <PrefetchLink
               to="/library/playlists"

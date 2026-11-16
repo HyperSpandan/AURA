@@ -93,24 +93,20 @@ export function computeReplay(recentTracks: Track[] = []): ReplaySummary {
   const local = getLocalRecords();
   const allRecords: PlayRecord[] = [...local];
 
-  // Merge recentTracks if not already covered in local records
-  const seenVideoIds = new Set(local.map((r) => r.videoId));
+  // Merge recentTracks if local records are empty or as supplementary events
   for (let i = 0; i < recentTracks.length; i++) {
     const t = recentTracks[i]!;
     if (!t.videoId || !t.title) continue;
-    if (!seenVideoIds.has(t.videoId)) {
-      seenVideoIds.add(t.videoId);
-      allRecords.push({
-        videoId: t.videoId,
-        title: t.title,
-        artist: t.artists?.map((a) => a.name).join(', ') || 'Unknown Artist',
-        thumbnailUrl: t.thumbnail ?? null,
-        durationSec: t.durationSec ?? null,
-        albumName: t.album?.name ?? null,
-        playedAt: Date.now() - (i + 1) * 3600_000,
-        listenedMs: (t.durationSec ?? 210) * 1000,
-      });
-    }
+    allRecords.push({
+      videoId: t.videoId,
+      title: t.title,
+      artist: t.artists?.map((a) => a.name).join(', ') || 'Unknown Artist',
+      thumbnailUrl: t.thumbnail ?? null,
+      durationSec: t.durationSec ?? null,
+      albumName: t.album?.name ?? null,
+      playedAt: Date.now() - (i + 1) * 3600_000,
+      listenedMs: (t.durationSec ?? 210) * 1000,
+    });
   }
 
   // Aggregate stats
