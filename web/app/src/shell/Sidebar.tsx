@@ -85,7 +85,16 @@ function LibraryNav({ onNavigate, showHeading = true }: { onNavigate: () => void
   const playlists = useLibraryPlaylists();
   return (
     <>
-      {showHeading && <h2 className={sectionHeader}>Library</h2>}
+      {showHeading && (
+        <PrefetchNavLink
+          to="/library"
+          className={`${sectionHeader} block hover:text-primary transition-colors cursor-pointer`}
+          onClick={onNavigate}
+          title={tip('Library')}
+        >
+          Library
+        </PrefetchNavLink>
+      )}
       <NavList items={LIBRARY} onNavigate={onNavigate} />
       <h2 className={sectionHeader}>Playlists</h2>
       <ul className={list}>
@@ -186,7 +195,14 @@ export function Sidebar() {
         </div>
         <div className="ot-side-scroll min-h-0 flex-1 overflow-y-auto pr-3 pl-5 [scrollbar-width:none]">
           <NavList items={PRIMARY} onNavigate={close} />
-          <h2 className={sectionHeader}>Library</h2>
+          <PrefetchNavLink
+            to="/library"
+            className={`${sectionHeader} block hover:text-primary transition-colors cursor-pointer`}
+            onClick={close}
+            title={tip('Library')}
+          >
+            Library
+          </PrefetchNavLink>
           <ul className={list}>
             <li>
               <PrefetchNavLink to="/library/downloads" className={item} onClick={close} title={tip('Downloads')}>

@@ -5,7 +5,7 @@ import { sizedArtwork } from '@/lib/artwork';
 import { usePlayer } from '@/state/player';
 import { useUi } from '@/state/ui';
 import { useLiquidGlass } from '@/lib/liquidGlass';
-const TABS = [[Home, '/home', 'Home'], [Compass, '/new', 'Explore'], [Library, '/library/playlists', 'Library'], [Search, '/search', 'Search'], [Settings, '/settings', 'Settings']] as const;
+const TABS = [[Home, '/home', 'Home'], [Compass, '/new', 'Explore'], [Library, '/library', 'Library'], [Search, '/search', 'Search'], [Settings, '/settings', 'Settings']] as const;
 
 export function MobileDock() {
   const track = usePlayer(s => s.nowPlaying);
@@ -14,7 +14,7 @@ export function MobileDock() {
   const { pathname } = useLocation();
   const mini = useLiquidGlass<HTMLElement>(20, 20);
   const dock = useLiquidGlass<HTMLElement>(22, 22);
-  const tab = TABS.findIndex(([, to]) => pathname.startsWith(to.replace(/\/playlists$/, '')));
+  const tab = TABS.findIndex(([, to]) => pathname === to || pathname.startsWith(to + '/'));
   return <div className="ot-mobile-dock">
     {track && <section ref={mini} className="ot-mini glass-pill" aria-label="Mini player" data-player-origin>
       <button className="ot-mini-track" onClick={() => useUi.getState().setFullScreen(true)} aria-label={`Open player: ${track.title}`}>

@@ -23,6 +23,7 @@ import {
 import { trackLog } from '@/playback/trackLog';
 import type { LoadedTrack, YouTubeEngine } from '@/playback/youtube/engine';
 import { prefetchLosslessTrack, prunePrewarmedStreams } from '@/playback/losslessPreload';
+import { recordPlay } from '@/data/history/historyStore';
 
 export interface NowPlaying {
   videoId: string;
@@ -733,6 +734,20 @@ function applyTrack(track: LoadedTrack, from?: Track) {
   usePlayer.setState({ nowPlaying, error: null });
   updateMediaSession(nowPlaying);
   followVideo();
+
+  // Log listening history for Replay & Library stats
+  const recordedTrack: Track = from || {
+    videoId: track.videoId,
+    title: nowPlaying.title,
+    artists: [{ name: nowPlaying.artist, id: null }],
+    album: null,
+    durationSec: nowPlaying.durationSec || null,
+    explicit: false,
+    thumbnail: nowPlaying.artworkUrl,
+    index: null,
+    plays: null,
+  };
+  recordPlay(recordedTrack);
 }
 
 /** A music video's picture follows the deck in front (playback/youtube/videoDeck.ts, loaded with the engine). */
