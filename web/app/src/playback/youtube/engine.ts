@@ -1,5 +1,6 @@
 import { fetchJson, findLossless, reportLoadFailures, useAddons, type LosslessResult } from '@/addons/client';
 import { findJioSaavn, type SaavnStream } from '@/addons/jiosaavn';
+import { consumePrewarmedStream, getPrewarmedStream } from '@/playback/losslessPreload';
 import { SabrStreamingAdapter } from 'googlevideo/sabr-streaming-adapter';
 import { buildSabrFormat } from 'googlevideo/utils';
 import shaka from 'shaka-player/dist/shaka-player.compiled';
@@ -162,6 +163,59 @@ export class YouTubeEngine {
     const started = performance.now();
     trackLog.i(`loading at ${startSec.toFixed(1)}s`, videoId);
     try {
+      const prewarmed = getPrewarmedStream(videoId);
+      if (prewarmed && tryAddons) {
+        try {
+          trackLog.i(`starting directly with pre-warmed ${prewarmed.format}`, videoId);
+          const player = await this.ensurePlayer();
+          this.checkCurrent(generation);
+          await player.unload();
+          this.checkCurrent(generation);
+          this.audio.crossOrigin = prewarmed.cors ? 'anonymous' : null;
+          this.adapter?.dispose();
+          this.adapter = null;
+          this.direct = null;
+          this.current = null;
+          for (const scheme of ['http', 'https']) {
+            shaka.net.NetworkingEngine.registerScheme(
+              scheme,
+              shaka.net.HttpFetchPlugin.parse,
+              shaka.net.NetworkingEngine.PluginPriority.FALLBACK,
+            );
+          }
+          await player.load(prewarmed.url, startSec, prewarmed.mime);
+          this.checkCurrent(generation);
+          if (autoplay) {
+            await this.audio.play().catch((error: unknown) => {
+              if (error instanceof DOMException && error.name === 'NotAllowedError') {
+                trackLog.w('autoplay was blocked by the browser; waiting for a tap', videoId);
+              } else throw error;
+            });
+          }
+          await this.firstAudio(generation);
+          this.checkCurrent(generation);
+          const track: LoadedTrack = {
+            videoId,
+            title: hint?.title || '',
+            author: hint?.artist || '',
+            durationSec: prewarmed.durationSec || Math.round(player.seekRange().end),
+            thumbnails: [],
+            client: prewarmed.client,
+            format: prewarmed.format,
+            loudnessDb: null,
+          };
+          this.addonTrack = track;
+          if (prewarmed.statusNote) useAddons.setState({ status: prewarmed.statusNote });
+          consumePrewarmedStream(videoId);
+          trackLog.i(`playing directly via pre-warmed ${track.client}, ${track.format}, first audio after ${Math.round(performance.now() - started)}ms`, videoId);
+          return track;
+        } catch (error) {
+          if (error instanceof SupersededError) throw error;
+          trackLog.w(`pre-warmed stream failed to load: ${describe(error)}; falling back to YouTube`, videoId);
+          consumePrewarmedStream(videoId);
+        }
+      }
+
       const player = await this.ensurePlayer();
       this.yt ??= await timed('InnerTube session', videoId, getInnertube);
       void botguard.init().catch((error: unknown) => trackLog.w(`BotGuard init failed: ${String(error)}`, videoId));

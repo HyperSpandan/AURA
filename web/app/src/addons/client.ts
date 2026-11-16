@@ -243,15 +243,19 @@ async function checkSourceSteps(source: Addon, recording: Recording): Promise<Lo
  * quality; equal quality keeps the listener's order. Each source has its own time
  * limits, so a slow one never cuts off another's answer.
  */
-export async function findLossless(recording: Recording): Promise<LosslessSearch> {
+export async function findLossless(recording: Recording, silent = false): Promise<LosslessSearch> {
   const { lossless, sources: allSources } = useAddons.getState();
   if (!lossless) return { ranked: [], notes: ['Lossless playback is turned off in settings.'], transient: false };
 
   // A new song: rate limits from the last one are forgotten, and every source is asked again.
-  const song = `${recording.title}\n${recording.artist}\n${recording.duration}`;
-  if (song !== cooldownSong) { cooldownSong = song; cooldown.clear(); }
+  if (!silent) {
+    const song = `${recording.title}\n${recording.artist}\n${recording.duration}`;
+    if (song !== cooldownSong) { cooldownSong = song; cooldown.clear(); }
+  }
   const sources = allSources.filter(s => s.enabled && !s.ownerOff);
-  useAddons.setState({ status: `Checking ${sources.map(s => s.name).join(', ')}…` });
+  if (!silent) {
+    useAddons.setState({ status: `Checking ${sources.map(s => s.name).join(', ')}…` });
+  }
   const results = await Promise.allSettled(sources.map(source => checkSource(source, recording)));
   const ranked: LosslessResult[] = []; const notes: string[] = []; let transient = false;
   results.forEach((result, i) => {
@@ -265,7 +269,9 @@ export async function findLossless(recording: Recording): Promise<LosslessSearch
   ranked.sort((a, b) => b.bits * b.rate - a.bits * a.rate);
   const best = ranked[0];
   const found = best ? `${best.provider} · ${best.stated ? 'FLAC, as the source states it' : 'verified FLAC'}` : 'No matching browser-compatible FLAC found';
-  useAddons.setState({ status: [found, ...notes].join('\n') });
+  if (!silent) {
+    useAddons.setState({ status: [found, ...notes].join('\n') });
+  }
   return { ranked, notes, transient };
 }
 /** Adds why the verified files didn't play under what was found. */

@@ -22,6 +22,7 @@ import {
 } from '@/playback/queue/timeline';
 import { trackLog } from '@/playback/trackLog';
 import type { LoadedTrack, YouTubeEngine } from '@/playback/youtube/engine';
+import { prefetchLosslessTrack, prunePrewarmedStreams } from '@/playback/losslessPreload';
 
 export interface NowPlaying {
   videoId: string;
@@ -436,6 +437,7 @@ function insertUser(tracks: Track[], source: QueueSource | null, isNext: boolean
   }
   const at = userQueueInsertionIndex(queue, index, isNext);
   usePlayer.setState({ queue: [...queue.slice(0, at), ...entries, ...queue.slice(at)] });
+  if (isNext) prefetchUpcomingTracks();
 }
 
 // ---- Loading and moving through the queue -------------------------------------------
@@ -538,7 +540,29 @@ function afterTrackStarted() {
       index: index - [...played].filter((i) => i < index).length,
     });
   }
-  void refillAutoplay();
+  void refillAutoplay().then(prefetchUpcomingTracks);
+  prefetchUpcomingTracks();
+}
+
+/**
+ * Prefetches and pre-buffers FLAC audio for the upcoming track in the queue,
+ * matching the Android app's readyAhead / ExternalStreams pipeline so FLAC audio
+ * for the next song is already ready while the current song is playing.
+ */
+export function prefetchUpcomingTracks() {
+  const plan = planNext(true);
+  if (!plan || plan.kind !== 'index') return;
+  const nextEntry = plan.queue[plan.index];
+  if (!nextEntry || !nextEntry.track) return;
+
+  const keepIds = new Set<string>();
+  for (let i = plan.index; i < Math.min(plan.index + 3, plan.queue.length); i++) {
+    const vId = plan.queue[i]?.track.videoId;
+    if (vId) keepIds.add(vId);
+  }
+  prunePrewarmedStreams(keepIds);
+
+  void prefetchLosslessTrack(nextEntry.track, searchHintOf(nextEntry.track));
 }
 
 // ---- AutoPlay ---------------------------------------------------------------------
