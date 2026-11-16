@@ -1,13 +1,16 @@
 import {
+  Check,
   ChevronLeft,
   ChevronRight,
   Disc,
+  Download,
   Heart,
   Image as ImageIcon,
   Info,
   ListEnd,
   ListPlus,
   ListStart,
+  Loader2,
   MessageSquareQuote,
   MoreHorizontal,
   Radio,
@@ -26,6 +29,7 @@ import {
   useSignedIn,
 } from '@/data/music/queries';
 import type { Track } from '@/data/music/types';
+import { downloadTrack } from '@/playback/download';
 import { usePlayer } from '@/state/player';
 import { useUi } from '@/state/ui';
 import { albumHref, artistHref, formatDuration } from './links';
@@ -135,6 +139,7 @@ function AccountItems({ track, onClose, onPlaylists }: { track: Track; onClose: 
 function TrackMenuItems({ track, onClose }: { track: Track; onClose: () => void }) {
   const [view, setView] = useState<'main' | 'playlists' | 'details'>('main');
   const [copied, setCopied] = useState(false);
+  const [downloadState, setDownloadState] = useState<'idle' | 'downloading' | 'done' | 'error'>('idle');
   const navigate = useNavigate();
   const signedIn = useSignedIn();
 
@@ -188,6 +193,19 @@ function TrackMenuItems({ track, onClose }: { track: Track; onClose: () => void 
       setTimeout(() => onClose(), 800);
     } catch {
       onClose();
+    }
+  };
+
+  const handleDownloadSong = async () => {
+    if (downloadState === 'downloading') return;
+    setDownloadState('downloading');
+    try {
+      await downloadTrack(track);
+      setDownloadState('done');
+      setTimeout(() => onClose(), 1200);
+    } catch {
+      setDownloadState('error');
+      setTimeout(() => setDownloadState('idle'), 2500);
     }
   };
 
@@ -275,6 +293,27 @@ function TrackMenuItems({ track, onClose }: { track: Track; onClose: () => void 
 
       <MenuSeparator />
 
+      <MenuItem
+        icon={
+          downloadState === 'downloading' ? (
+            <Loader2 size={15} className="animate-spin text-key" />
+          ) : downloadState === 'done' ? (
+            <Check size={15} className="text-emerald-500" />
+          ) : (
+            <Download size={15} />
+          )
+        }
+        onSelect={handleDownloadSong}
+        disabled={downloadState === 'downloading'}
+      >
+        {downloadState === 'downloading'
+          ? 'Downloading…'
+          : downloadState === 'done'
+            ? 'Download Started'
+            : downloadState === 'error'
+              ? 'Download Failed'
+              : 'Download Song'}
+      </MenuItem>
       <MenuItem icon={<Share2 size={15} />} onSelect={handleShare}>
         {copied ? 'Link Copied!' : 'Share Song'}
       </MenuItem>
