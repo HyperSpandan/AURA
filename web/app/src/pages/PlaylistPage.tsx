@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { useParams } from 'react-router';
 import { DetailHeader } from '@/components/music/DetailHeader';
+import { PlaylistMenu } from '@/components/music/PlaylistMenu';
 import { playList, shuffleList } from '@/components/music/play';
 import { LoadError, LoadMoreError, NeedsExtension } from '@/components/music/States';
 import { TrackList } from '@/components/music/TrackList';
@@ -36,6 +37,15 @@ export default function PlaylistPage() {
         canPlay={tracks.length > 0}
         onPlay={() => playList(tracks, 0, context)}
         onShuffle={() => shuffleList(tracks, context)}
+        menu={
+          <PlaylistMenu
+            id={id}
+            title={header.title}
+            tracks={tracks}
+            thumbnail={header.thumbnail}
+            library={header.library}
+          />
+        }
       />
       <TrackList tracks={tracks} variant="playlist" onNearEnd={onNearEnd} source={context.source} />
       {isFetchingNextPage && <div className="flex justify-center py-5 type-callout text-secondary">Loading more songs…</div>}

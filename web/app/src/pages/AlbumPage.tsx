@@ -1,5 +1,6 @@
 import { useParams } from 'react-router';
 import { DetailHeader } from '@/components/music/DetailHeader';
+import { PlaylistMenu } from '@/components/music/PlaylistMenu';
 import { playList, shuffleList } from '@/components/music/play';
 import { Shelves } from '@/components/music/ShelfView';
 import { LoadError, NeedsExtension } from '@/components/music/States';
@@ -32,6 +33,13 @@ export default function AlbumPage() {
     fallbackArtwork: data.thumbnail,
     fallbackArtists: data.artists,
   };
+  const normalizedTracks = tracks.map((t) => ({
+    ...t,
+    thumbnail: t.thumbnail || data.thumbnail,
+    artists: t.artists?.length ? t.artists : data.artists,
+    album: t.album || { name: data.title, id: data.id },
+  }));
+
   return (
     <>
       <DetailHeader
@@ -40,6 +48,14 @@ export default function AlbumPage() {
         motion={motion}
         onPlay={() => playList(tracks, 0, context)}
         onShuffle={() => shuffleList(tracks, context)}
+        menu={
+          <PlaylistMenu
+            id={data.id}
+            title={data.title}
+            tracks={normalizedTracks}
+            thumbnail={data.thumbnail}
+          />
+        }
       />
       <TrackList
         tracks={tracks}

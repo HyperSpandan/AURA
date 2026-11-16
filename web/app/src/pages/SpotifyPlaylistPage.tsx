@@ -3,6 +3,7 @@ import { ListPlus } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { DetailHeader, detailButton } from '@/components/music/DetailHeader';
+import { PlaylistMenu } from '@/components/music/PlaylistMenu';
 import { playList, shuffleList } from '@/components/music/play';
 import { EmptyState, LoadError, NeedsExtension } from '@/components/music/States';
 import { TrackList } from '@/components/music/TrackList';
@@ -66,6 +67,14 @@ export default function SpotifyPlaylistPage() {
         onPlay={() => playList(playable, 0, context)}
         onShuffle={() => shuffleList(playable, context)}
         extra={<ImportButton title={info.data.name} videoIds={playable.map((t) => t.videoId)} ready={rows.matching === 0} />}
+        menu={
+          <PlaylistMenu
+            id={`spotify:${id}`}
+            title={info.data.name}
+            tracks={playable}
+            thumbnail={info.data.imageUrl}
+          />
+        }
       />
       <TrackList tracks={rows.rows} variant="playlist" source={context.source} />
       <footer className={detailFooter}>

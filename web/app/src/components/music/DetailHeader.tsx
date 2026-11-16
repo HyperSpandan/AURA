@@ -18,6 +18,8 @@ interface DetailHeaderProps {
   canPlay: boolean;
   /** More actions after the library toggle (a Spotify playlist's Import). */
   extra?: React.ReactNode;
+  /** The ⋯ options menu (PlaylistMenu, TrackMenu, etc.) */
+  menu?: React.ReactNode;
   /** Apple's motion artwork for an album, over the cover once it plays. */
   motion?: AppleMotion | null;
   /** Custom artwork element (e.g. 2x2 collage for downloads / dynamic playlists). */
@@ -35,7 +37,7 @@ export const detailButton = {
  * Album and playlist header (report §3, §14): artwork with its glow, title,
  * artist, metadata, a three-line description, then Shuffle · Play.
  */
-export function DetailHeader({ info, onPlay, onShuffle, canPlay, extra, motion, artworkNode }: DetailHeaderProps) {
+export function DetailHeader({ info, onPlay, onShuffle, canPlay, extra, menu, motion, artworkNode }: DetailHeaderProps) {
   const [expanded, setExpanded] = useState(false);
   const signedIn = useSignedIn();
   const setSaved = useSetListSaved();
@@ -123,6 +125,7 @@ export function DetailHeader({ info, onPlay, onShuffle, canPlay, extra, motion, 
             </button>
           )}
           {extra}
+          {menu}
         </div>
       </div>
     </div>

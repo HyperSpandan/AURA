@@ -58,4 +58,33 @@ describe('useDownloads', () => {
     expect(useDownloads.getState().tracks).toHaveLength(0);
     expect(useDownloads.getState().totalBytes).toBe(0);
   });
+
+  it('downloads and removes entire playlists', async () => {
+    const track2: Track = { ...dummyTrack, videoId: 'dl_track_2', title: 'Reminder' };
+    const playlist = [dummyTrack, track2];
+
+    vi.spyOn(downloadModule, 'downloadTrack').mockImplementation(async (t) => ({
+      videoId: t.videoId,
+      track: t,
+      audioBlob: new Blob(['audio']),
+      mimeType: 'audio/flac',
+      format: 'FLAC',
+      source: 'Monochrome',
+      sizeBytes: 10_000_000,
+      downloadedAt: Date.now(),
+    }));
+    vi.spyOn(offlineStore, 'deleteOfflineTrack').mockResolvedValue();
+
+    expect(useDownloads.getState().isPlaylistDownloaded(playlist)).toBe(false);
+
+    await useDownloads.getState().downloadPlaylist('test_playlist', playlist);
+
+    expect(useDownloads.getState().isPlaylistDownloaded(playlist)).toBe(true);
+    expect(useDownloads.getState().tracks).toHaveLength(2);
+
+    await useDownloads.getState().removePlaylist(playlist);
+
+    expect(useDownloads.getState().isPlaylistDownloaded(playlist)).toBe(false);
+    expect(useDownloads.getState().tracks).toHaveLength(0);
+  });
 });

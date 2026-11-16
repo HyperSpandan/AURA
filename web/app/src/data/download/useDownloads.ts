@@ -11,6 +11,7 @@ import { downloadTrack } from '@/playback/download';
 interface DownloadsState {
   downloadedIds: Set<string>;
   downloadingIds: Set<string>;
+  playlistProgress: Record<string, { total: number; done: number }>;
   records: OfflineTrackRecord[];
   tracks: Track[];
   totalBytes: number;
@@ -19,8 +20,13 @@ interface DownloadsState {
   init: () => Promise<void>;
   isDownloaded: (videoId: string) => boolean;
   isDownloading: (videoId: string) => boolean;
+  isPlaylistDownloading: (playlistId: string) => boolean;
+  isPlaylistDownloaded: (tracks: Track[]) => boolean;
+  getPlaylistProgress: (playlistId: string) => { total: number; done: number } | null;
   download: (track: Track) => Promise<void>;
+  downloadPlaylist: (playlistId: string, tracks: Track[]) => Promise<void>;
   remove: (videoId: string) => Promise<void>;
+  removePlaylist: (tracks: Track[]) => Promise<void>;
   clearAll: () => Promise<void>;
   refresh: () => Promise<void>;
 }
@@ -28,6 +34,7 @@ interface DownloadsState {
 export const useDownloads = create<DownloadsState>()((set, get) => ({
   downloadedIds: new Set<string>(),
   downloadingIds: new Set<string>(),
+  playlistProgress: {},
   records: [],
   tracks: [],
   totalBytes: 0,
@@ -57,6 +64,20 @@ export const useDownloads = create<DownloadsState>()((set, get) => ({
 
   isDownloading: (videoId: string) => {
     return get().downloadingIds.has(videoId);
+  },
+
+  isPlaylistDownloading: (playlistId: string) => {
+    return Boolean(get().playlistProgress[playlistId]);
+  },
+
+  isPlaylistDownloaded: (tracks: Track[]) => {
+    if (!tracks.length) return false;
+    const { downloadedIds } = get();
+    return tracks.every((t) => downloadedIds.has(t.videoId));
+  },
+
+  getPlaylistProgress: (playlistId: string) => {
+    return get().playlistProgress[playlistId] ?? null;
   },
 
   download: async (track: Track) => {
@@ -95,6 +116,46 @@ export const useDownloads = create<DownloadsState>()((set, get) => ({
     }
   },
 
+  downloadPlaylist: async (playlistId: string, tracks: Track[]) => {
+    const { downloadedIds } = get();
+    const toDownload = tracks.filter((t) => t.videoId && !downloadedIds.has(t.videoId));
+    if (toDownload.length === 0) return;
+
+    set((state) => ({
+      playlistProgress: {
+        ...state.playlistProgress,
+        [playlistId]: { total: toDownload.length, done: 0 },
+      },
+    }));
+
+    for (const track of toDownload) {
+      try {
+        await get().download(track);
+      } catch (err) {
+        console.warn(`Failed to download ${track.title} in playlist ${playlistId}:`, err);
+      } finally {
+        set((state) => {
+          const current = state.playlistProgress[playlistId];
+          if (!current) return state;
+          return {
+            playlistProgress: {
+              ...state.playlistProgress,
+              [playlistId]: { ...current, done: current.done + 1 },
+            },
+          };
+        });
+      }
+    }
+
+    setTimeout(() => {
+      set((state) => {
+        const next = { ...state.playlistProgress };
+        delete next[playlistId];
+        return { playlistProgress: next };
+      });
+    }, 1500);
+  },
+
   remove: async (videoId: string) => {
     await deleteOfflineTrack(videoId);
     const nextDownloaded = new Set(get().downloadedIds);
@@ -110,6 +171,15 @@ export const useDownloads = create<DownloadsState>()((set, get) => ({
       tracks: nextTracks,
       totalBytes,
     });
+  },
+
+  removePlaylist: async (tracks: Track[]) => {
+    const { downloadedIds } = get();
+    for (const track of tracks) {
+      if (downloadedIds.has(track.videoId)) {
+        await get().remove(track.videoId);
+      }
+    }
   },
 
   clearAll: async () => {
