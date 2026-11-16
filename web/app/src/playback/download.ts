@@ -1,5 +1,11 @@
 import { fetchJson, findLossless } from '@/addons/client';
 import { findJioSaavn } from '@/addons/jiosaavn';
+import {
+  deleteOfflineTrack,
+  getOfflineTrack,
+  saveOfflineTrack,
+  type OfflineTrackRecord,
+} from '@/data/download/offlineStore';
 import type { Track } from '@/data/music/types';
 import { getInnertube } from './youtube/innertube';
 import { resolvePlayer } from './youtube/resolver';
@@ -9,7 +15,7 @@ function sanitizeFilename(name: string): string {
   return name.replace(/[/\\?%*:|"<>]/g, '_').trim() || 'Track';
 }
 
-function triggerBrowserDownload(url: string, filename: string): void {
+export function triggerBrowserDownload(url: string, filename: string): void {
   const a = document.createElement('a');
   a.href = url;
   a.download = filename;
@@ -19,15 +25,39 @@ function triggerBrowserDownload(url: string, filename: string): void {
   document.body.removeChild(a);
 }
 
+async function fetchArtworkDataUrl(url?: string | null): Promise<string | undefined> {
+  if (!url) return undefined;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return undefined;
+    const blob = await res.blob();
+    return await new Promise<string>((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = () => resolve(undefined as unknown as string);
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return undefined;
+  }
+}
+
+interface AudioPayload {
+  blob: Blob;
+  mime: string;
+  format: string;
+  source: string;
+  ext: string;
+}
+
 /**
- * Downloads a track:
- * 1. Checks lossless add-ons for FLAC (Monochrome, Internet Archive, Musopen).
- * 2. Checks JioSaavn add-on for 320 kbps AAC (M4A).
- * 3. Resolves YouTube stream and downloads the best audio format.
+ * Fetches the highest quality audio stream available for a track:
+ * 1. Lossless FLAC from add-ons (Monochrome, Internet Archive, Musopen)
+ * 2. High-bitrate 320 kbps AAC (M4A) from JioSaavn
+ * 3. YouTube adaptive audio stream (Opus / AAC)
  */
-export async function downloadTrack(track: Track): Promise<{ format: string; source: string }> {
+async function fetchTrackAudio(track: Track): Promise<AudioPayload> {
   const artist = track.artists.map((a) => a.name).join(', ') || 'Unknown Artist';
-  const baseName = sanitizeFilename(`${track.title} - ${artist}`);
   const recording = {
     title: track.title,
     artist,
@@ -39,20 +69,17 @@ export async function downloadTrack(track: Track): Promise<{ format: string; sou
     const lossless = await findLossless(recording);
     const candidate = lossless.ranked[0];
     if (candidate?.url) {
-      trackLog.i(`Downloading lossless FLAC from ${candidate.provider}`, track.videoId);
-      try {
-        const res = await fetch(candidate.url);
-        if (res.ok) {
-          const blob = await res.blob();
-          const blobUrl = URL.createObjectURL(blob);
-          triggerBrowserDownload(blobUrl, `${baseName}.flac`);
-          setTimeout(() => URL.revokeObjectURL(blobUrl), 30_000);
-          return { format: 'FLAC', source: candidate.provider };
-        }
-      } catch {
-        // Direct browser navigation / download link fallback
-        triggerBrowserDownload(candidate.url, `${baseName}.flac`);
-        return { format: 'FLAC', source: candidate.provider };
+      trackLog.i(`Fetching lossless FLAC from ${candidate.provider}`, track.videoId);
+      const res = await fetch(candidate.url);
+      if (res.ok) {
+        const blob = await res.blob();
+        return {
+          blob,
+          mime: 'audio/flac',
+          format: candidate.bits && candidate.rate ? `FLAC ${candidate.bits}-bit ${(candidate.rate / 1000).toFixed(1)} kHz` : 'FLAC Lossless',
+          source: candidate.provider,
+          ext: 'flac',
+        };
       }
     }
   } catch (e) {
@@ -66,19 +93,17 @@ export async function downloadTrack(track: Track): Promise<{ format: string; sou
       fetchJson,
     );
     if (saavn?.stream?.url) {
-      trackLog.i(`Downloading 320 kbps AAC from JioSaavn`, track.videoId);
-      try {
-        const res = await fetch(saavn.stream.url);
-        if (res.ok) {
-          const blob = await res.blob();
-          const blobUrl = URL.createObjectURL(blob);
-          triggerBrowserDownload(blobUrl, `${baseName}.m4a`);
-          setTimeout(() => URL.revokeObjectURL(blobUrl), 30_000);
-          return { format: 'AAC 320kbps', source: 'JioSaavn' };
-        }
-      } catch {
-        triggerBrowserDownload(saavn.stream.url, `${baseName}.m4a`);
-        return { format: 'AAC 320kbps', source: 'JioSaavn' };
+      trackLog.i(`Fetching 320 kbps AAC from JioSaavn`, track.videoId);
+      const res = await fetch(saavn.stream.url);
+      if (res.ok) {
+        const blob = await res.blob();
+        return {
+          blob,
+          mime: 'audio/mp4',
+          format: 'AAC 320kbps',
+          source: 'JioSaavn',
+          ext: 'm4a',
+        };
       }
     }
   } catch (e) {
@@ -86,13 +111,14 @@ export async function downloadTrack(track: Track): Promise<{ format: string; sou
   }
 
   // 3. Fallback to YouTube
-  trackLog.i(`Resolving YouTube stream for download`, track.videoId);
+  trackLog.i(`Resolving YouTube stream for track`, track.videoId);
   const yt = await getInnertube();
   const resolved = await resolvePlayer(yt, track.videoId);
   const format = resolved.info.chooseFormat({ type: 'audio', quality: 'best' });
 
   const mime = format.mime_type?.split(';')[0]?.toLowerCase() ?? 'audio/mp4';
   const ext = mime.includes('webm') ? 'webm' : mime.includes('opus') ? 'opus' : 'm4a';
+  const formatName = format.quality_label || (ext === 'opus' ? 'Opus 160kbps' : 'AAC 128kbps');
 
   try {
     const stream = await resolved.info.download({ type: 'audio', quality: 'best' });
@@ -104,17 +130,93 @@ export async function downloadTrack(track: Track): Promise<{ format: string; sou
       if (value) chunks.push(value);
     }
     const blob = new Blob(chunks as BlobPart[], { type: mime });
-    const blobUrl = URL.createObjectURL(blob);
-    triggerBrowserDownload(blobUrl, `${baseName}.${ext}`);
-    setTimeout(() => URL.revokeObjectURL(blobUrl), 30_000);
-    return { format: ext.toUpperCase(), source: 'YouTube' };
+    return {
+      blob,
+      mime,
+      format: formatName,
+      source: 'YouTube',
+      ext,
+    };
   } catch (streamError) {
-    trackLog.w(`Stream download chunking failed, trying decipher URL: ${String(streamError)}`, track.videoId);
+    trackLog.w(`Stream chunking failed, attempting decipher URL: ${String(streamError)}`, track.videoId);
     const decipheredUrl = await format.decipher(yt.session.player);
     if (decipheredUrl) {
-      triggerBrowserDownload(decipheredUrl, `${baseName}.${ext}`);
-      return { format: ext.toUpperCase(), source: 'YouTube' };
+      const res = await fetch(decipheredUrl);
+      if (res.ok) {
+        const blob = await res.blob();
+        return {
+          blob,
+          mime,
+          format: formatName,
+          source: 'YouTube',
+          ext,
+        };
+      }
     }
     throw streamError;
   }
+}
+
+/**
+ * Downloads a track and saves it inside the web player's offline IndexedDB storage.
+ */
+export async function downloadTrack(track: Track): Promise<OfflineTrackRecord> {
+  trackLog.i(`Starting in-app offline download`, track.videoId);
+  const audio = await fetchTrackAudio(track);
+
+  // Fetch artwork so offline playback shows album art even when disconnected
+  const artUrl = track.thumbnail;
+  const artworkDataUrl = await fetchArtworkDataUrl(artUrl);
+
+  const storedTrack: Track = {
+    ...track,
+    thumbnail: artworkDataUrl || track.thumbnail,
+  };
+
+  const record: OfflineTrackRecord = {
+    videoId: track.videoId,
+    track: storedTrack,
+    audioBlob: audio.blob,
+    mimeType: audio.mime,
+    format: audio.format,
+    source: audio.source,
+    sizeBytes: audio.blob.size,
+    downloadedAt: Date.now(),
+    artworkDataUrl,
+  };
+
+  await saveOfflineTrack(record);
+  trackLog.i(`Saved track to offline storage (${audio.format}, ${(audio.blob.size / (1024 * 1024)).toFixed(1)} MB)`, track.videoId);
+  return record;
+}
+
+/**
+ * Removes a track from offline storage.
+ */
+export async function removeDownloadedTrack(videoId: string): Promise<void> {
+  await deleteOfflineTrack(videoId);
+  trackLog.i(`Removed track from offline storage`, videoId);
+}
+
+/**
+ * Exports a track as a standalone audio file to the device's downloads folder.
+ */
+export async function exportTrackFile(track: Track): Promise<{ format: string; source: string }> {
+  const existing = await getOfflineTrack(track.videoId);
+  const artist = track.artists.map((a) => a.name).join(', ') || 'Unknown Artist';
+  const baseName = sanitizeFilename(`${track.title} - ${artist}`);
+
+  if (existing?.audioBlob) {
+    const ext = existing.mimeType.includes('flac') ? 'flac' : existing.mimeType.includes('webm') ? 'webm' : 'm4a';
+    const blobUrl = URL.createObjectURL(existing.audioBlob);
+    triggerBrowserDownload(blobUrl, `${baseName}.${ext}`);
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 30_000);
+    return { format: existing.format, source: existing.source };
+  }
+
+  const audio = await fetchTrackAudio(track);
+  const blobUrl = URL.createObjectURL(audio.blob);
+  triggerBrowserDownload(blobUrl, `${baseName}.${audio.ext}`);
+  setTimeout(() => URL.revokeObjectURL(blobUrl), 30_000);
+  return { format: audio.format, source: audio.source };
 }

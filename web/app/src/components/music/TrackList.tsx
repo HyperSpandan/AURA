@@ -1,7 +1,9 @@
 import { useVirtualizer } from '@tanstack/react-virtual';
+import { ArrowDownToLine } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { PrefetchLink } from '@/components/PrefetchLink';
 import { PauseIcon, PlayIcon } from '@/components/icons/Transport';
+import { useDownloads } from '@/data/download/useDownloads';
 import type { ArtistRef, Track } from '@/data/music/types';
 import { usePlayer } from '@/state/player';
 import { Artwork } from './Artwork';
@@ -96,6 +98,7 @@ function Row({ track, variant, position, fallbackArtwork, onPlayRow }: RowProps)
   const current = usePlayer((s) => s.nowPlaying?.videoId === track.videoId);
   const playing = usePlayer((s) => s.nowPlaying?.videoId === track.videoId && (s.status === 'playing' || s.status === 'buffering'));
   const togglePlay = usePlayer((s) => s.togglePlay);
+  const isDownloaded = useDownloads((s) => s.isDownloaded(track.videoId));
   const unavailable = track.unavailable;
   const onPlay = () => (unavailable ? undefined : current ? togglePlay() : onPlayRow());
 
@@ -148,9 +151,17 @@ function Row({ track, variant, position, fallbackArtwork, onPlayRow }: RowProps)
         <div
           className={`flex min-w-0 flex-col ${dimmed} group-data-[unavailable=matching]/row:animate-matching motion-reduce:group-data-[unavailable=matching]/row:animate-none`}
         >
-          <div className="flex min-w-0 items-center">
+          <div className="flex min-w-0 items-center gap-1.5">
             <span className="truncate type-body text-primary">{track.title}</span>
             {track.explicit && <ExplicitBadge />}
+            {isDownloaded && (
+              <span
+                className="inline-flex items-center text-emerald-500 shrink-0"
+                title="Downloaded for offline playback"
+              >
+                <ArrowDownToLine size={13} strokeWidth={2.5} />
+              </span>
+            )}
           </div>
           {variant === 'album' && track.artists.length > 0 && (
             <div className="truncate type-callout">

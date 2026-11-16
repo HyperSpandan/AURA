@@ -1,4 +1,4 @@
-import { ArrowUpRight, ListMusic, PanelLeftClose, PanelLeftOpen, Settings } from 'lucide-react';
+import { ArrowDownToLine, ArrowUpRight, ListMusic, PanelLeftClose, PanelLeftOpen, Settings } from 'lucide-react';
 import { useEffect } from 'react';
 import { SiSpotify } from 'react-icons/si';
 import { PrefetchLink, PrefetchNavLink } from '@/components/PrefetchLink';
@@ -17,6 +17,7 @@ import {
 } from '@/components/icons/NavIcons';
 import { hrefFor } from '@/components/music/links';
 import { config } from '@/config';
+import { useDownloads } from '@/data/download/useDownloads';
 import { LIBRARY_SECTIONS, type LibrarySection } from '@/data/music/library';
 import { useLibraryPlaylists, useSignedIn } from '@/data/music/queries';
 import { useSpotifyPlaylists } from '@/data/spotify/queries';
@@ -80,11 +81,11 @@ function NavList({ items, onNavigate }: { items: NavItem[]; onNavigate: () => vo
 }
 
 /** Library and Playlists (report §1), once YouTube requests are made as the user. */
-function LibraryNav({ onNavigate }: { onNavigate: () => void }) {
+function LibraryNav({ onNavigate, showHeading = true }: { onNavigate: () => void; showHeading?: boolean }) {
   const playlists = useLibraryPlaylists();
   return (
     <>
-      <h2 className={sectionHeader}>Library</h2>
+      {showHeading && <h2 className={sectionHeader}>Library</h2>}
       <NavList items={LIBRARY} onNavigate={onNavigate} />
       <h2 className={sectionHeader}>Playlists</h2>
       <ul className={list}>
@@ -145,6 +146,7 @@ function SpotifyNav({ onNavigate }: { onNavigate: () => void }) {
 export function Sidebar() {
   const drawerOpen = useUi((s) => s.drawerOpen);
   const setDrawerOpen = useUi((s) => s.setDrawerOpen);
+  const downloadCount = useDownloads((s) => s.records.length);
   const signedIn = useSignedIn();
   const spotifySignedIn = useSpotifySignedIn();
   const folded = useUi((s) => s.sidebarCollapsed);
@@ -184,7 +186,23 @@ export function Sidebar() {
         </div>
         <div className="ot-side-scroll min-h-0 flex-1 overflow-y-auto pr-3 pl-5 [scrollbar-width:none]">
           <NavList items={PRIMARY} onNavigate={close} />
-          {signedIn && <LibraryNav onNavigate={close} />}
+          <h2 className={sectionHeader}>Library</h2>
+          <ul className={list}>
+            <li>
+              <PrefetchNavLink to="/library/downloads" className={item} onClick={close} title={tip('Downloads')}>
+                <span className={icon}>
+                  <ArrowDownToLine size={20} />
+                </span>
+                <span className={navLabel}>Downloads</span>
+                {downloadCount > 0 && (
+                  <span className="ot-side-badge ml-auto rounded-[10px] bg-quinary px-[7px] py-0.5 type-caption-emphasized text-secondary">
+                    {downloadCount}
+                  </span>
+                )}
+              </PrefetchNavLink>
+            </li>
+          </ul>
+          {signedIn && <LibraryNav onNavigate={close} showHeading={false} />}
           {spotifySignedIn && <SpotifyNav onNavigate={close} />}
         </div>
         <div className="ot-side-bottom flex flex-col gap-2 pt-3 pr-3 pb-5 pl-5">

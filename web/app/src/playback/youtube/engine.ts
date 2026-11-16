@@ -1,5 +1,6 @@
 import { fetchJson, findLossless, reportLoadFailures, useAddons, type LosslessResult } from '@/addons/client';
 import { findJioSaavn, type SaavnStream } from '@/addons/jiosaavn';
+import { getOfflineTrack } from '@/data/download/offlineStore';
 import { consumePrewarmedStream, getPrewarmedStream } from '@/playback/losslessPreload';
 import { SabrStreamingAdapter } from 'googlevideo/sabr-streaming-adapter';
 import { buildSabrFormat } from 'googlevideo/utils';
@@ -163,6 +164,59 @@ export class YouTubeEngine {
     const started = performance.now();
     trackLog.i(`loading at ${startSec.toFixed(1)}s`, videoId);
     try {
+      // 0. Check offline storage for downloaded tracks
+      try {
+        const offline = await getOfflineTrack(videoId);
+        if (offline?.audioBlob) {
+          trackLog.i(`starting directly from offline storage: ${offline.format}`, videoId);
+          const player = await this.ensurePlayer();
+          this.checkCurrent(generation);
+          await player.unload();
+          this.checkCurrent(generation);
+          this.audio.crossOrigin = null;
+          this.adapter?.dispose();
+          this.adapter = null;
+          this.direct = null;
+          this.current = null;
+          for (const scheme of ['http', 'https', 'blob', 'data']) {
+            shaka.net.NetworkingEngine.registerScheme(
+              scheme,
+              shaka.net.HttpFetchPlugin.parse,
+              shaka.net.NetworkingEngine.PluginPriority.FALLBACK,
+            );
+          }
+          const blobUrl = URL.createObjectURL(offline.audioBlob);
+          await player.load(blobUrl, startSec, offline.mimeType);
+          this.checkCurrent(generation);
+          if (autoplay) {
+            await this.audio.play().catch((error: unknown) => {
+              if (error instanceof DOMException && error.name === 'NotAllowedError') {
+                trackLog.w('autoplay was blocked by the browser; waiting for a tap', videoId);
+              } else throw error;
+            });
+          }
+          await this.firstAudio(generation);
+          this.checkCurrent(generation);
+          const track: LoadedTrack = {
+            videoId,
+            title: hint?.title || offline.track.title || '',
+            author: hint?.artist || offline.track.artists.map((a) => a.name).join(', ') || '',
+            durationSec: offline.track.durationSec || Math.round(player.seekRange().end),
+            thumbnails: offline.track.thumbnail ? [{ url: offline.track.thumbnail, width: 300, height: 300 }] : [],
+            client: 'ADDON',
+            format: `${offline.format} (Offline)`,
+            loudnessDb: null,
+          };
+          this.addonTrack = track;
+          useAddons.setState({ status: `Offline · ${offline.format}` });
+          trackLog.i(`playing directly via offline storage ${track.format}, first audio after ${Math.round(performance.now() - started)}ms`, videoId);
+          return track;
+        }
+      } catch (offlineError) {
+        if (offlineError instanceof SupersededError) throw offlineError;
+        trackLog.d(`offline playback check bypassed: ${describe(offlineError)}`, videoId);
+      }
+
       const prewarmed = getPrewarmedStream(videoId);
       if (prewarmed && tryAddons) {
         try {

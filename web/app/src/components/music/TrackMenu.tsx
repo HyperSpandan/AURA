@@ -4,6 +4,7 @@ import {
   ChevronRight,
   Disc,
   Download,
+  FileDown,
   Heart,
   Image as ImageIcon,
   Info,
@@ -15,6 +16,7 @@ import {
   MoreHorizontal,
   Radio,
   Share2,
+  Trash2,
   User,
   Users,
 } from 'lucide-react';
@@ -29,7 +31,8 @@ import {
   useSignedIn,
 } from '@/data/music/queries';
 import type { Track } from '@/data/music/types';
-import { downloadTrack } from '@/playback/download';
+import { useDownloads } from '@/data/download/useDownloads';
+import { exportTrackFile } from '@/playback/download';
 import { usePlayer } from '@/state/player';
 import { useUi } from '@/state/ui';
 import { albumHref, artistHref, formatDuration } from './links';
@@ -139,7 +142,10 @@ function AccountItems({ track, onClose, onPlaylists }: { track: Track; onClose: 
 function TrackMenuItems({ track, onClose }: { track: Track; onClose: () => void }) {
   const [view, setView] = useState<'main' | 'playlists' | 'details'>('main');
   const [copied, setCopied] = useState(false);
-  const [downloadState, setDownloadState] = useState<'idle' | 'downloading' | 'done' | 'error'>('idle');
+  const isDownloaded = useDownloads((s) => s.isDownloaded(track.videoId));
+  const isDownloading = useDownloads((s) => s.isDownloading(track.videoId));
+  const download = useDownloads((s) => s.download);
+  const remove = useDownloads((s) => s.remove);
   const navigate = useNavigate();
   const signedIn = useSignedIn();
 
@@ -208,16 +214,27 @@ function TrackMenuItems({ track, onClose }: { track: Track; onClose: () => void 
     }
   };
 
-  const handleDownloadSong = async () => {
-    if (downloadState === 'downloading') return;
-    setDownloadState('downloading');
+  const handleToggleDownload = async () => {
+    if (isDownloading) return;
+    if (isDownloaded) {
+      await remove(track.videoId);
+      onClose();
+    } else {
+      try {
+        await download(track);
+        onClose();
+      } catch {
+        // Handled in store
+      }
+    }
+  };
+
+  const handleExportAudio = async () => {
     try {
-      await downloadTrack(track);
-      setDownloadState('done');
-      setTimeout(() => onClose(), 1200);
+      await exportTrackFile(track);
+      onClose();
     } catch {
-      setDownloadState('error');
-      setTimeout(() => setDownloadState('idle'), 2500);
+      // Handled
     }
   };
 
@@ -307,24 +324,25 @@ function TrackMenuItems({ track, onClose }: { track: Track; onClose: () => void 
 
       <MenuItem
         icon={
-          downloadState === 'downloading' ? (
+          isDownloading ? (
             <Loader2 size={15} className="animate-spin text-key" />
-          ) : downloadState === 'done' ? (
-            <Check size={15} className="text-emerald-500" />
+          ) : isDownloaded ? (
+            <Trash2 size={15} className="text-red-400" />
           ) : (
             <Download size={15} />
           )
         }
-        onSelect={handleDownloadSong}
-        disabled={downloadState === 'downloading'}
+        onSelect={handleToggleDownload}
+        disabled={isDownloading}
       >
-        {downloadState === 'downloading'
+        {isDownloading
           ? 'Downloading…'
-          : downloadState === 'done'
-            ? 'Download Started'
-            : downloadState === 'error'
-              ? 'Download Failed'
-              : 'Download Song'}
+          : isDownloaded
+            ? 'Remove from Downloads'
+            : 'Download for Offline'}
+      </MenuItem>
+      <MenuItem icon={<FileDown size={15} />} onSelect={handleExportAudio}>
+        Export Audio File
       </MenuItem>
       <MenuItem icon={<Share2 size={15} />} onSelect={handleShare}>
         {copied ? 'Link Copied!' : 'Share Song'}
