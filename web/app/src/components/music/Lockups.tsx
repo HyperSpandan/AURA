@@ -4,7 +4,8 @@ import type { MusicItem } from '@/data/music/types';
 import { Artwork } from './Artwork';
 import { ExplicitBadge } from './ExplicitBadge';
 import { artistHref, hrefFor } from './links';
-import { playTrack } from './play';
+import { playTrack, toTrack } from './play';
+import { TrackMenu } from './TrackMenu';
 
 const isPlayable = (item: MusicItem) => item.kind === 'song' || item.kind === 'video';
 
@@ -71,7 +72,17 @@ function LockupArtwork({ item, width, aspect }: { item: MusicItem; width: number
       ) : (
         <button className={overlayLink} aria-label={`Play ${item.title}`} onClick={() => playTrack(item)} />
       )}
-      <div className="ot-lockup-shade pointer-events-none absolute inset-0 z-2 rounded-[inherit]">{isPlayable(item) && <PlayPlatter item={item} />}</div>
+      <div className="ot-lockup-shade pointer-events-none absolute inset-0 z-2 rounded-[inherit]">
+        {isPlayable(item) && <PlayPlatter item={item} />}
+        {isPlayable(item) && (
+          <div className="pointer-events-auto absolute top-2.5 right-2.5">
+            <TrackMenu
+              track={toTrack(item)}
+              className="ot-platter grid size-8 place-items-center rounded-full bg-black/60 text-white opacity-0 hover:bg-black/80 hover:scale-105 transition-all group-hover/art:opacity-100 data-open:opacity-100 shadow-[0_4px_12px_rgb(0_0_0/0.3)]"
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -130,9 +141,10 @@ export function CircleLockup({ item, width = 160 }: { item: MusicItem; width?: n
 /** A song row inside a shelf (report §2, track lockup): 40px art, title, byline. */
 export function TrackLockup({ item, onPlay }: { item: MusicItem; onPlay?: () => void }) {
   const play = onPlay ?? (() => playTrack(item));
+  const track = toTrack(item);
   return (
-    // 52px art column (40 + 12 gap), content; 55px tall.
-    <div className="ot-track-lockup group/track grid h-[55px] grid-cols-[40px_minmax(0,1fr)] items-center gap-x-3 py-[7.5px] pr-3.5 pl-0">
+    // 52px art column (40 + 12 gap), content, options; 55px tall.
+    <div className="ot-track-lockup group/track relative grid h-[55px] grid-cols-[40px_minmax(0,1fr)] items-center gap-x-3 py-[7.5px] pr-9 pl-0">
       <button className="group/art relative w-10 rounded-artwork-sm" aria-label={`Play ${item.title}`} onClick={play}>
         <Artwork src={item.thumbnail} displayWidth={40} radius="var(--radius-artwork-small)" />
         <span
@@ -153,6 +165,10 @@ export function TrackLockup({ item, onPlay }: { item: MusicItem; onPlay?: () => 
           <Byline item={item} />
         </div>
       </div>
+      <TrackMenu
+        track={track}
+        className="absolute right-1.5 inset-y-0 my-auto hidden size-7 place-items-center rounded-full text-secondary hover:text-primary hover:bg-quinary group-hover/track:grid group-focus-within/track:grid data-open:grid"
+      />
     </div>
   );
 }
