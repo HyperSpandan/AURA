@@ -1,4 +1,4 @@
-const CACHE_NAME = 'aura-web-v2';
+const CACHE_NAME = 'aura-web-v3';
 const PRECACHE_URLS = [
   './',
   './index.html',
@@ -69,7 +69,7 @@ self.addEventListener('fetch', (event) => {
         return response;
       })
       .catch(async () => {
-        const cached = await caches.match(event.request);
+        const cached = await caches.match(event.request, { ignoreSearch: true });
         if (cached) return cached;
         if (event.request.destination === 'document') {
           return caches.match('./index.html');

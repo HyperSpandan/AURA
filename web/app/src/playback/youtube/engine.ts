@@ -169,24 +169,22 @@ export class YouTubeEngine {
         const offline = await getOfflineTrack(videoId);
         if (offline?.audioBlob) {
           trackLog.i(`starting directly from offline storage: ${offline.format}`, videoId);
-          const player = await this.ensurePlayer();
-          this.checkCurrent(generation);
-          await player.unload();
+          if (this.player) {
+            await this.player.unload().catch(() => {});
+            await this.player.detach().catch(() => {});
+          }
           this.checkCurrent(generation);
           this.audio.crossOrigin = null;
           this.adapter?.dispose();
           this.adapter = null;
           this.direct = null;
           this.current = null;
-          for (const scheme of ['http', 'https', 'blob', 'data']) {
-            shaka.net.NetworkingEngine.registerScheme(
-              scheme,
-              shaka.net.HttpFetchPlugin.parse,
-              shaka.net.NetworkingEngine.PluginPriority.FALLBACK,
-            );
-          }
+
           const blobUrl = URL.createObjectURL(offline.audioBlob);
-          await player.load(blobUrl, startSec, offline.mimeType);
+          this.audio.src = blobUrl;
+          if (startSec > 0) {
+            this.audio.currentTime = startSec;
+          }
           this.checkCurrent(generation);
           if (autoplay) {
             await this.audio.play().catch((error: unknown) => {
@@ -201,7 +199,7 @@ export class YouTubeEngine {
             videoId,
             title: hint?.title || offline.track.title || '',
             author: hint?.artist || offline.track.artists.map((a) => a.name).join(', ') || '',
-            durationSec: offline.track.durationSec || Math.round(player.seekRange().end),
+            durationSec: offline.track.durationSec || Math.round(this.audio.duration || 0),
             thumbnails: offline.track.thumbnail ? [{ url: offline.track.thumbnail, width: 300, height: 300 }] : [],
             client: 'ADDON',
             format: `${offline.format} (Offline)`,
@@ -214,7 +212,10 @@ export class YouTubeEngine {
         }
       } catch (offlineError) {
         if (offlineError instanceof SupersededError) throw offlineError;
-        trackLog.d(`offline playback check bypassed: ${describe(offlineError)}`, videoId);
+        trackLog.w(`offline playback error: ${describe(offlineError)}`, videoId);
+        if (typeof navigator !== 'undefined' && !navigator.onLine) {
+          throw new UnplayableError(`Offline playback failed: ${describe(offlineError)}`);
+        }
       }
 
       const prewarmed = getPrewarmedStream(videoId);
@@ -223,6 +224,9 @@ export class YouTubeEngine {
           trackLog.i(`starting directly with pre-warmed ${prewarmed.format}`, videoId);
           const player = await this.ensurePlayer();
           this.checkCurrent(generation);
+          if (player.getMediaElement() !== this.audio) {
+            await player.attach(this.audio);
+          }
           await player.unload();
           this.checkCurrent(generation);
           this.audio.crossOrigin = prewarmed.cors ? 'anonymous' : null;
@@ -340,6 +344,9 @@ export class YouTubeEngine {
   private async switchTo(track: LoadedTrack, generation: number, url: string, mime: string, client: 'ADDON' | 'JIOSAAVN', format: string, cors = true): Promise<boolean> {
     const at = this.audio.currentTime, playing = !this.audio.paused;
     const player = await this.ensurePlayer(); this.checkCurrent(generation);
+    if (player.getMediaElement() !== this.audio) {
+      await player.attach(this.audio);
+    }
     await player.unload(); this.checkCurrent(generation);
     // A file server without CORS still plays in an element that doesn't ask for CORS (nothing here routes audio through Web Audio).
     this.audio.crossOrigin = cors ? 'anonymous' : null;
@@ -434,6 +441,9 @@ export class YouTubeEngine {
     generation: number,
   ): Promise<LoadedTrack> {
     const { videoId, client, info, signed } = resolved;
+    if (player.getMediaElement() !== this.audio) {
+      await player.attach(this.audio);
+    }
     await player.unload();
     this.adapter?.dispose();
     this.adapter = null;

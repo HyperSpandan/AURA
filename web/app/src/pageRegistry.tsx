@@ -69,3 +69,19 @@ export function preloadRoute(href: string): void {
   });
   prefetchPageData(pathname);
 }
+
+// Warm offline-critical pages on idle so they are cached in sw.js before going offline
+if (typeof window !== 'undefined') {
+  const warmOffline = () => {
+    preloadRoute('/library');
+    preloadRoute('/library/downloads');
+  };
+  if ('requestIdleCallback' in window) {
+    (window as Window & { requestIdleCallback: (cb: () => void, opts?: { timeout: number }) => void }).requestIdleCallback(
+      warmOffline,
+      { timeout: 3000 },
+    );
+  } else {
+    setTimeout(warmOffline, 2000);
+  }
+}

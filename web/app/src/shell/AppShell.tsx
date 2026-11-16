@@ -21,11 +21,9 @@ import { MobileDock } from './MobileDock';
 import { RoomNotice } from './RoomNotice';
 import { Sidebar } from './Sidebar';
 import { SupportModal } from '@/components/SupportModal';
+import { FullScreenPlayer } from './FullScreenPlayer';
 
 const mobile = isMobileBrowser();
-
-// It carries am-lyrics; loaded the first time it opens, as the side panel's lyrics are.
-const FullScreenPlayer = lazy(() => import('./FullScreenPlayer').then((m) => ({ default: m.FullScreenPlayer })));
 
 /**
  * Where the page scrolls on navigation. A new page opens at its top instead of
@@ -232,9 +230,7 @@ export function AppShell() {
       </div>
       {banner}
       {(fullScreen || playerUp) && (
-        <Suspense fallback={null}>
-          <FullScreenPlayer closing={!fullScreen} onClosed={() => setPlayerUp(false)} />
-        </Suspense>
+        <FullScreenPlayer closing={!fullScreen} onClosed={() => setPlayerUp(false)} />
       )}
     </div>
   );
