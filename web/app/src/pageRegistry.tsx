@@ -38,7 +38,10 @@ export const pages: PageRoute[] = [
   { path: '/settings', load: () => import('@/pages/SettingsPage'), skeleton: <PlainSkeleton /> },
   { path: '/settings/discord', load: () => import('@/pages/DiscordSettingsPage'), skeleton: <PlainSkeleton /> },
   { path: '/settings/listen-together', load: () => import('@/pages/ListenTogetherPage'), skeleton: <PlainSkeleton /> },
+  { path: '/together', load: () => import('@/pages/ListenTogetherPage'), skeleton: <PlainSkeleton /> },
   { path: '/invite/:code', load: () => import('@/pages/ListenTogetherPage'), skeleton: <PlainSkeleton /> },
+  { path: '/watch', load: () => import('@/pages/WatchPage'), skeleton: <AlbumSkeleton /> },
+  { path: '/track/:id', load: () => import('@/pages/WatchPage'), skeleton: <AlbumSkeleton /> },
   { path: '/extension', load: () => import('@/pages/ExtensionPage'), skeleton: <PlainSkeleton /> },
   { path: '/debug', load: () => import('@/pages/DebugPage'), skeleton: <PlainSkeleton /> },
 ];

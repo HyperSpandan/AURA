@@ -172,13 +172,25 @@ function TrackMenuItems({ track, onClose }: { track: Track; onClose: () => void 
     onClose();
   };
 
+  const handleListenTogether = () => {
+    onClose();
+    const player = usePlayer.getState();
+    if (player.nowPlaying?.videoId !== track.videoId) {
+      player.playTrack(track, { title: track.title, type: 'other' });
+    }
+    navigate('/together');
+  };
+
   const handleShare = async () => {
-    const url = `https://music.youtube.com/watch?v=${track.videoId}`;
+    const base = `${window.location.origin}${window.location.pathname}`.replace(/\/$/, '');
+    const url = `${base}/#/watch?v=${track.videoId}`;
+    const artistText = track.artists.map((a) => a.name).join(', ');
+    const text = `Listen to ${track.title}${artistText ? ` by ${artistText}` : ''} on AURA`;
     if (navigator.share) {
       try {
         await navigator.share({
           title: track.title,
-          text: `Listen to ${track.title} by ${track.artists.map((a) => a.name).join(', ')} on AURA`,
+          text,
           url,
         });
         onClose();
@@ -287,7 +299,7 @@ function TrackMenuItems({ track, onClose }: { track: Track; onClose: () => void 
       <MenuItem icon={<MessageSquareQuote size={15} />} onSelect={handleViewLyrics}>
         View Lyrics
       </MenuItem>
-      <MenuItem icon={<Users size={15} />} onSelect={() => (onClose(), navigate('/together'))}>
+      <MenuItem icon={<Users size={15} />} onSelect={handleListenTogether}>
         Listen Together
       </MenuItem>
 
