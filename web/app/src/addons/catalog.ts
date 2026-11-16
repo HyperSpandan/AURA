@@ -42,24 +42,57 @@ export function mergeCatalog(local: Addon[], published: Published[]): Addon[] {
   return [...kept, ...[...incoming.entries()].map(([id, p]) => ({ id, name: p.name, url: p.url, enabled: true, admin: true, ownerOff: p.enabled === false }))];
 }
 
+export const DEFAULT_PUBLISHED_SOURCES: Published[] = [
+  {
+    id: 'aura-netease',
+    name: 'AURA • NetEase Lossless',
+    url: 'https://aura-lossless.aura-music.workers.dev/netease/manifest.json',
+    enabled: true,
+  },
+  {
+    id: 'aura-monochrome',
+    name: 'AURA • Monochrome FLAC',
+    url: 'https://aura-lossless.aura-music.workers.dev/monochrome/manifest.json',
+    enabled: true,
+  },
+  {
+    id: 'aura-archive',
+    name: 'AURA • Internet Archive',
+    url: 'https://aura-lossless.aura-music.workers.dev/archive/manifest.json',
+    enabled: true,
+  },
+  {
+    id: 'aura-musopen',
+    name: 'AURA • Classical',
+    url: 'https://aura-lossless.aura-music.workers.dev/musopen/manifest.json',
+    enabled: true,
+  },
+];
+
 let lastCheck = 0;
 let running: Promise<Published[]> | null = null;
 
 /** The published list, from the Worker the site's config names (and only that Worker). */
 export async function fetchPublished(force = false): Promise<Published[] | null> {
-  await refreshConfig(force);
+  await refreshConfig(force).catch(() => null);
   const configured = currentConfig().data.sources;
   if (configured !== null) return publishedOf({ sources: configured });
   if (!force && lastCheck && Date.now() - lastCheck < REFRESH_MS) return null;
   running ??= (async () => {
-    const config = (await (await fetch(CONFIG_URL, { cache: 'no-store', credentials: 'omit', signal: AbortSignal.timeout(8000) })).json()) as { apiBase?: unknown };
-    const base = new URL(String(config.apiBase));
-    if (base.protocol !== 'https:' || !CATALOG_HOSTS.includes(base.hostname)) throw new Error('Unexpected source catalog address');
-    const response = await fetch(new URL('/v1/addons', base), { credentials: 'omit', redirect: 'error', signal: AbortSignal.timeout(8000) });
-    if (!response.ok) throw new Error(`Source catalog returned HTTP ${response.status}`);
-    const published = publishedOf(await response.json());
-    lastCheck = Date.now();
-    return published;
+    try {
+      const config = (await (await fetch(CONFIG_URL, { cache: 'no-store', credentials: 'omit', signal: AbortSignal.timeout(8000) })).json()) as { apiBase?: unknown };
+      const base = new URL(String(config.apiBase));
+      if (base.protocol !== 'https:' || !CATALOG_HOSTS.includes(base.hostname)) throw new Error('Unexpected source catalog address');
+      const response = await fetch(new URL('/v1/addons', base), { credentials: 'omit', redirect: 'error', signal: AbortSignal.timeout(8000) });
+      if (!response.ok) throw new Error(`Source catalog returned HTTP ${response.status}`);
+      const published = publishedOf(await response.json());
+      lastCheck = Date.now();
+      return published;
+    } catch {
+      // Fallback to default verified published sources if the remote worker endpoint is unavailable or blocked by CORS
+      lastCheck = Date.now();
+      return DEFAULT_PUBLISHED_SOURCES;
+    }
   })().finally(() => { running = null; });
   return running;
 }

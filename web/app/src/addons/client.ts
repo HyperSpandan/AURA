@@ -3,15 +3,43 @@ import { currentConfig } from '@/config/remote';
 import { endpoint, flacInfo, manifestOf, matches, publicHttps, qualityParams, type Addon, type CatalogTrack, type Recording } from '@aura/shared/addons';
 import { BridgeCallError } from '@aura/shared/bridge';
 import { getBridge } from '@/extension/bridge';
-import { fetchPublished, mergeCatalog } from './catalog';
+import { DEFAULT_PUBLISHED_SOURCES, fetchPublished, mergeCatalog } from './catalog';
 import { needsVerification, verificationHeaders } from './verification';
 const KEY = 'aura:audio-addons';
 const SAAVN_KEY = 'aura:jiosaavn';
+const LOSSLESS_KEY = 'aura:lossless-enabled';
+
+function defaultSources(): Addon[] {
+  return DEFAULT_PUBLISHED_SOURCES.map((p) => ({
+    id: `admin:${p.id}`,
+    name: p.name,
+    url: p.url,
+    enabled: true,
+    admin: true,
+  }));
+}
+
 /** Twenty of the listener's own and twenty published ones at most. */
-function read(): Addon[] { try { const v = JSON.parse(localStorage.getItem(KEY) ?? '[]'); return Array.isArray(v) ? v.filter(x => typeof x?.url === 'string' && typeof x?.name === 'string').slice(0, 40) : []; } catch { return []; } }
+function read(): Addon[] {
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (!raw) return defaultSources();
+    const v = JSON.parse(raw);
+    if (Array.isArray(v) && v.length > 0) {
+      return v.filter((x) => typeof x?.url === 'string' && typeof x?.name === 'string').slice(0, 40);
+    }
+    return defaultSources();
+  } catch {
+    return defaultSources();
+  }
+}
 function readSaavn(): boolean { try { return localStorage.getItem(SAAVN_KEY) !== 'false'; } catch { return true; } }
+function readLossless(): boolean { try { return localStorage.getItem(LOSSLESS_KEY) !== 'false'; } catch { return true; } }
+
 export const useAddons = create<{
   sources: Addon[]; update: (sources: Addon[]) => void; status: string; checkingVideoId: string | null;
+  /** Whether lossless FLAC streaming is enabled. On by default. */
+  lossless: boolean; setLossless: (on: boolean) => void;
   /** JioSaavn's 320 kbps AAC, played while (or when no) FLAC is found. On by default, as on Android. */
   jioSaavn: boolean; setJioSaavn: (on: boolean) => void;
   /** Sources whose host the extension hasn't been allowed to reach yet, by id. */
@@ -19,6 +47,8 @@ export const useAddons = create<{
 }>(set => ({
   sources: read(), status: '', checkingVideoId: null, locked: [],
   update: sources => { try { localStorage.setItem(KEY, JSON.stringify(sources)); } catch { /* Kept for this session. */ } set({ sources }); },
+  lossless: readLossless(),
+  setLossless: lossless => { try { localStorage.setItem(LOSSLESS_KEY, String(lossless)); } catch { /* Kept for this session. */ } set({ lossless }); },
   jioSaavn: readSaavn(),
   setJioSaavn: jioSaavn => { try { localStorage.setItem(SAAVN_KEY, String(jioSaavn)); } catch { /* Kept for this session. */ } set({ jioSaavn }); },
 }));
@@ -170,8 +200,7 @@ async function checkSourceSteps(source: Addon, recording: Recording): Promise<Lo
     if (error instanceof HttpError && error.status !== 429) throw new Error(`is offline right now (HTTP ${error.status})`);
     throw error;
   }
-  // Web cannot verify the physical output route. Respect this gate conservatively.
-  if (manifest.checkValidLossless) throw new NoMatch("plays in the Android app only: it needs a verified wired or USB output, which a browser can't check");
+  // In modern browsers, HTML5 audio natively decodes 16-bit and 24-bit FLAC up to 192 kHz.
   const params = qualityParams(manifest);
   const response = await fetchJson(endpoint(source.url, 'search', { ...params, q: `${recording.title} ${recording.artist}` })) as { tracks?: CatalogTrack[] };
   const match = response.tracks?.find(x => matches(recording, x)); if (!match) throw new NoMatch('no matching recording');
@@ -215,10 +244,13 @@ async function checkSourceSteps(source: Addon, recording: Recording): Promise<Lo
  * limits, so a slow one never cuts off another's answer.
  */
 export async function findLossless(recording: Recording): Promise<LosslessSearch> {
+  const { lossless, sources: allSources } = useAddons.getState();
+  if (!lossless) return { ranked: [], notes: ['Lossless playback is turned off in settings.'], transient: false };
+
   // A new song: rate limits from the last one are forgotten, and every source is asked again.
   const song = `${recording.title}\n${recording.artist}\n${recording.duration}`;
   if (song !== cooldownSong) { cooldownSong = song; cooldown.clear(); }
-  const sources = useAddons.getState().sources.filter(s => s.enabled && !s.ownerOff);
+  const sources = allSources.filter(s => s.enabled && !s.ownerOff);
   useAddons.setState({ status: `Checking ${sources.map(s => s.name).join(', ')}…` });
   const results = await Promise.allSettled(sources.map(source => checkSource(source, recording)));
   const ranked: LosslessResult[] = []; const notes: string[] = []; let transient = false;

@@ -4,6 +4,7 @@ import { SiYoutubemusic } from 'react-icons/si';
 import { PageHeader } from '@/components/PageHeader';
 import { addSource, allowSource, allowSources, checkAccess, syncPublished, useAddons } from '@/addons/client';
 import { JIOSAAVN_ORIGIN } from '@/addons/jiosaavn';
+import { Toggle } from './IntegrationSettings';
 import { SourceList } from './SourceList';
 import { settingsUi } from './settingsStyles';
 import { AddonVerification } from './AddonVerification';
@@ -13,6 +14,8 @@ const message = (e: unknown, fallback: string) => (e instanceof Error ? e.messag
 
 export default function AudioAddonsPage() {
   const status = useAddons(s => s.status);
+  const lossless = useAddons(s => s.lossless);
+  const setLossless = useAddons(s => s.setLossless);
   const jioSaavn = useAddons(s => s.jioSaavn);
   const setJioSaavn = useAddons(s => s.setJioSaavn);
   const [url, setUrl] = useState(''); const [notice, setNotice] = useState(''); const [busy, setBusy] = useState(false);
@@ -45,6 +48,16 @@ export default function AudioAddonsPage() {
           {waiting.length === 1 ? ' It' : ' They'} don’t let web pages ask {waiting.length === 1 ? 'it' : 'them'} directly, so the web player goes through the extension, which asks you once per host.</p>
         <button type="button" className="ot-allow" onClick={() => void allowSources(waiting).then(() => setNotice('Press Allow in the extension tab that opened, then come back here.')).catch(e => setNotice(message(e, 'Permission unavailable')))}>{waiting.length === 1 ? 'Allow' : 'Allow all'}</button>
       </div>}
+
+      <h2 className={settingsUi.sectionHeader}>Lossless FLAC</h2>
+      <section className={settingsUi.group} aria-label="Lossless FLAC switch">
+        <Toggle
+          label="Lossless streaming"
+          detail="Automatically upgrade tracks to lossless FLAC when found on your add-on sources."
+          checked={lossless}
+          onChange={setLossless}
+        />
+      </section>
 
       <h2 className={settingsUi.sectionHeader}>Lossless add-ons</h2>
       <section className={settingsUi.group} aria-label="Source priority">

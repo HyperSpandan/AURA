@@ -255,7 +255,7 @@ export class YouTubeEngine {
   private async findAndUpgradeAddon(track: LoadedTrack, generation: number, hint?: { title: string; artist: string; album?: string | null }): Promise<void> {
     const recording = { title: hint?.title || track.title, artist: hint?.artist || track.author.replace(/ - Topic$/, ''), duration: track.durationSec };
     const addons = useAddons.getState();
-    const anyFlac = addons.sources.some(s => s.enabled);
+    const anyFlac = addons.lossless && addons.sources.some(s => s.enabled);
     const flac = anyFlac ? findLossless(recording).catch(() => null) : Promise.resolve(null);
     const saavnSearch: Promise<SaavnStream | null> = addons.jioSaavn
       ? findJioSaavn({ ...recording, album: hint?.album }, fetchJson).then(({ stream, note }) => {

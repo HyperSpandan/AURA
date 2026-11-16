@@ -196,6 +196,8 @@ export default function SettingsPage() {
   const setShareHistory = useHistorySettings((s) => s.setShare);
   const { setAutoplay, setCrossfade } = usePlayer.getState();
   const [lyrics, setLyrics] = useState(false);
+  const lossless = useAddons((st) => st.lossless);
+  const setLossless = useAddons((st) => st.setLossless);
   const sources = useAddons((st) => st.sources.filter((a) => a.enabled && !a.ownerOff).length);
   const jioSaavn = useAddons((st) => st.jioSaavn);
   const sourcesText = [sources ? `${sources} add-on${sources === 1 ? '' : 's'}` : 'No add-ons', jioSaavn ? 'JioSaavn' : null].filter(Boolean).join(' · ');
@@ -222,7 +224,13 @@ export default function SettingsPage() {
 
           <Section id="audio" title="Audio">
             <section className={settingsUi.group}>
-              <LinkRow to="/settings/addons" icon={<Glyph Icon={AudioLines} color="#e5483a" />} title="Audio sources" value={sourcesText} />
+              <Toggle
+                label="Lossless audio (FLAC)"
+                detail="Automatically upgrade playback to lossless FLAC from audio add-ons when available."
+                checked={lossless}
+                onChange={setLossless}
+              />
+              <LinkRow to="/settings/addons" icon={<Glyph Icon={AudioLines} color="#e5483a" />} title="Audio sources & priority" value={sourcesText} />
             </section>
             <p className={settingsUi.footer}>Lossless FLAC from add-ons and 320 kbps from JioSaavn, in the order you choose. YouTube Music is the fallback.</p>
           </Section>
