@@ -150,6 +150,8 @@ function TrackMenuItems({ track, onClose }: { track: Track; onClose: () => void 
   const remove = useDownloads((s) => s.remove);
   const navigate = useNavigate();
   const signedIn = useSignedIn();
+  const isPinned = usePinnedStore((s) => s.isPinned(track.videoId));
+  const togglePin = usePinnedStore((s) => s.togglePin);
 
   if (view === 'playlists') {
     return <PlaylistChoices videoId={track.videoId} onDone={onClose} onBack={() => setView('main')} />;
@@ -215,9 +217,6 @@ function TrackMenuItems({ track, onClose }: { track: Track; onClose: () => void 
       onClose();
     }
   };
-
-  const isPinned = usePinnedStore((s) => s.isPinned(track.videoId));
-  const togglePin = usePinnedStore((s) => s.togglePin);
 
   const handleTogglePin = () => {
     togglePin(track);

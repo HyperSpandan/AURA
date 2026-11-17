@@ -6,6 +6,7 @@ import { browseHref } from '@/components/music/links';
 import { playList } from '@/components/music/play';
 import { Shelves, TrackShelf } from '@/components/music/ShelfView';
 import { LoadError, NeedsExtension } from '@/components/music/States';
+import { useArtistSignature } from '@/data/artist/artistSignature';
 import { requestAppleAccess, useAppleArtistArt, useUngrantedAppleOrigins, type AppleArtistArt } from '@/data/apple/artistArt';
 import { useArtist, useYouTubeReady } from '@/data/music/queries';
 import type { ArtworkColor } from '@/lib/artworkColor';
@@ -18,33 +19,57 @@ function luminance(color: string): number {
 }
 
 /**
- * The name, or Apple's title logo in its place (AppleArtistArt.kt). Until the
- * logo has drawn, the name stands in, so the header is never left empty; a
- * logo that fails to load leaves the name.
+ * The artist's name, their handwritten signature with "Signed by", or Apple's title logo
+ * in its place (matching the Android app's ArtistNameOrSignature).
  */
 function ArtistName({ name, apple }: { name: string; apple: AppleArtistArt | null }) {
+  const { data: signature } = useArtistSignature(name);
   const logo = apple?.logoUrl ?? null;
-  const [shown, setShown] = useState<string | null>(null);
-  const logoShown = !!logo && shown === logo;
+  const [logoShown, setLogoShown] = useState<string | null>(null);
+  const [sigShown, setSigShown] = useState(false);
+
+  // If a signature is available, render the artist's handwritten signature with "Signed by"
+  if (signature) {
+    return (
+      <div className="flex flex-col items-center justify-center transition-all duration-300">
+        <img
+          key={signature}
+          src={signature}
+          alt={`${name}'s signature`}
+          className="mx-auto mt-0 mb-1 block h-auto max-h-[min(calc((100vw-var(--web-navigation-width))/1.93*0.35),140px)] w-auto max-w-[min(82%,460px)] object-contain [filter:brightness(0)_invert(1)_drop-shadow(0_2px_14px_rgba(0,0,0,0.85))]"
+          onLoad={() => setSigShown(true)}
+          style={{ display: sigShown ? 'block' : 'none' }}
+        />
+        {sigShown ? (
+          <div className="mt-1 text-sm font-normal text-white/85 tracking-wide [text-shadow:0_1px_8px_rgba(0,0,0,0.9)]">
+            Signed by <strong className="font-semibold text-white">{name}</strong>
+          </div>
+        ) : (
+          <h1 className="type-header-emphasized text-[clamp(34px,5vw,64px)] leading-[1.05] [text-shadow:0_2px_20px_#00000059]">
+            {name}
+          </h1>
+        )}
+      </div>
+    );
+  }
+
+  const isLogoVisible = !!logo && logoShown === logo;
   return (
     <h1
       className="type-header-emphasized text-[clamp(34px,5vw,64px)] leading-[1.05] [text-shadow:0_2px_20px_#00000059] data-logo:w-full data-logo:[text-shadow:none]"
-      data-logo={logoShown || undefined}
+      data-logo={isLogoVisible || undefined}
     >
-      {!logoShown && name}
+      {!isLogoVisible && name}
       {logo && (
         <img
           key={logo}
-          // Apple's title logo in place of the name: at most 82% of the page's width and 30% of the
-          // photo's height (the photo is the column's width over 1.93, and never taller than 70vh).
           className="mx-auto mt-0 mb-1.5 block h-auto max-h-[min(calc((100vw-var(--web-navigation-width))/1.93*0.3),21vh)] w-auto max-w-[min(82%,640px)] [filter:drop-shadow(0_2px_16px_#00000040)]"
           src={logo}
-          alt={logoShown ? name : ''}
-          hidden={!logoShown}
-          // Its proportions are known before it decodes; the CSS caps its size.
+          alt={isLogoVisible ? name : ''}
+          hidden={!isLogoVisible}
           style={{ aspectRatio: String(apple!.logoAspect) }}
           decoding="async"
-          onLoad={() => setShown(logo)}
+          onLoad={() => setLogoShown(logo)}
         />
       )}
     </h1>
