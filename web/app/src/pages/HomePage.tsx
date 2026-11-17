@@ -140,39 +140,58 @@ export default function HomePage() {
     .filter((shelf) => !(recent.length > 0 && shelf.title.trim().toLowerCase() === RECENT_TITLE.toLowerCase()));
   const arranged = homeSections(shelves);
 
+  // If items are pinned, prepend them to the existing "Listen again" shelf (or create one at the top)
+  if (pinnedItems.length > 0) {
+    const pinnedMusicItems: MusicItem[] = pinnedItems.map((p) => {
+      if ('kind' in p.item && (p.item.kind === 'playlist' || p.item.kind === 'album')) {
+        const item = p.item as MusicItem;
+        return {
+          ...item,
+          subtitle: item.subtitle || (item.kind === 'album' ? 'Album' : 'Playlist'),
+        };
+      }
+      const track = p.item as Track;
+      const artistNames = track.artists?.map((a) => a.name).join(', ') || '';
+      return {
+        kind: 'song',
+        id: track.videoId,
+        title: track.title,
+        subtitle: artistNames ? `Song • ${artistNames}` : 'Song',
+        artists: track.artists ?? [],
+        album: track.album ?? null,
+        thumbnail: track.thumbnail ?? null,
+        wide: false,
+        durationSec: track.durationSec ?? null,
+        explicit: track.explicit ?? false,
+      };
+    });
+
+    const pinnedIds = new Set(pinnedMusicItems.map((p) => p.id));
+    const shelfIndex = arranged.shelves.findIndex((s) => /listen again/i.test(s.title));
+
+    if (shelfIndex !== -1) {
+      const existing = arranged.shelves[shelfIndex]!;
+      arranged.shelves[shelfIndex] = {
+        ...existing,
+        items: [
+          ...pinnedMusicItems,
+          ...existing.items.filter((item) => !pinnedIds.has(item.id)),
+        ],
+      };
+    } else {
+      arranged.shelves.unshift({
+        title: 'Listen again',
+        strapline: null,
+        layout: 'square',
+        seeAll: null,
+        items: pinnedMusicItems,
+      });
+    }
+  }
+
   return (
     <>
       {heading}{banners}
-      {pinnedItems.length > 0 && (
-        <Shelves
-          shelves={[
-            {
-              title: 'Listen again',
-              strapline: 'Your pinned music',
-              layout: 'square',
-              seeAll: null,
-              items: pinnedItems.map((p) => {
-                if ('kind' in p.item && (p.item.kind === 'playlist' || p.item.kind === 'album')) {
-                  return p.item as MusicItem;
-                }
-                const track = p.item as Track;
-                return {
-                  kind: 'song',
-                  id: track.videoId,
-                  title: track.title,
-                  subtitle: track.artists?.map((a) => a.name).join(', ') || 'Song',
-                  artists: track.artists ?? [],
-                  album: track.album ?? null,
-                  thumbnail: track.thumbnail ?? null,
-                  wide: false,
-                  durationSec: track.durationSec ?? null,
-                  explicit: track.explicit ?? false,
-                };
-              }),
-            },
-          ]}
-        />
-      )}
       {runtime.sections.filter(s => s.enabled).map(section => {
         const title = (fallback: string) => section.title || fallback;
         switch (section.id) {

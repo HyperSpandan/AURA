@@ -23,8 +23,12 @@ const overlayLink = 'absolute inset-0 z-1 rounded-[inherit]';
 function Byline({ item }: { item: MusicItem }) {
   const linked = item.artists.some((a) => a.id);
   if (!linked || item.kind === 'album' || item.kind === 'playlist') return <>{item.subtitle}</>;
+  const prefixMatch = item.subtitle?.match(/^([^•]+•\s*)/);
+  const prefix = prefixMatch ? prefixMatch[1] : null;
+
   return (
     <>
+      {prefix}
       {item.artists.map((artist, i) => {
         const href = artistHref(artist.id);
         return (
@@ -67,7 +71,6 @@ function PlayPlatter({ item }: { item: MusicItem }) {
  */
 function LockupArtwork({ item, width, aspect }: { item: MusicItem; width: number; aspect: number }) {
   const href = hrefFor(item);
-  const isPinned = usePinnedStore((s) => s.isPinned(item.id));
 
   return (
     <div className="ot-lockup-art group/art relative rounded-artwork-md">
@@ -76,14 +79,6 @@ function LockupArtwork({ item, width, aspect }: { item: MusicItem; width: number
         <PrefetchLink to={href} className={overlayLink} aria-label={item.title} />
       ) : (
         <button className={overlayLink} aria-label={`Play ${item.title}`} onClick={() => void playItem(item)} />
-      )}
-      {isPinned && (
-        <div
-          className="pointer-events-none absolute top-2.5 left-2.5 z-3 grid size-6 place-items-center rounded-full bg-black/60 text-key shadow backdrop-blur-md"
-          title="Pinned to Listen again"
-        >
-          <Pin size={12} className="fill-key" />
-        </div>
       )}
       <div className="ot-lockup-shade pointer-events-none absolute inset-0 z-2 rounded-[inherit]">
         <PlayPlatter item={item} />
@@ -108,6 +103,7 @@ function LockupArtwork({ item, width, aspect }: { item: MusicItem; width: number
 /** Square lockup (report §2): artwork, hover scrim with play platter, title and subtitle. */
 export function SquareLockup({ item, width = 220 }: { item: MusicItem; width?: number }) {
   const href = hrefFor(item);
+  const isPinned = usePinnedStore((s) => s.isPinned(item.id));
   return (
     <div className={lockup}>
       <LockupArtwork item={item} width={width} aspect={1} />
@@ -123,6 +119,13 @@ export function SquareLockup({ item, width = 220 }: { item: MusicItem; width?: n
           {item.explicit && <ExplicitBadge />}
         </div>
         <div className={subtitle}>
+          {isPinned && (
+            <Pin
+              size={12}
+              className="inline-block -mt-0.5 mr-1 fill-current text-secondary align-middle shrink-0"
+              aria-label="Pinned"
+            />
+          )}
           <Byline item={item} />
         </div>
       </div>
@@ -132,6 +135,7 @@ export function SquareLockup({ item, width = 220 }: { item: MusicItem; width?: n
 
 /** 16:9 video lockup (report §2, type C). */
 export function VideoLockup({ item, width = 300 }: { item: MusicItem; width?: number }) {
+  const isPinned = usePinnedStore((s) => s.isPinned(item.id));
   return (
     <div className={lockup}>
       <LockupArtwork item={item} width={width} aspect={16 / 9} />
@@ -140,7 +144,16 @@ export function VideoLockup({ item, width = 300 }: { item: MusicItem; width?: nu
           <span>{item.title}</span>
           {item.explicit && <ExplicitBadge />}
         </div>
-        <div className={subtitle}>{item.subtitle}</div>
+        <div className={subtitle}>
+          {isPinned && (
+            <Pin
+              size={12}
+              className="inline-block -mt-0.5 mr-1 fill-current text-secondary align-middle shrink-0"
+              aria-label="Pinned"
+            />
+          )}
+          {item.subtitle}
+        </div>
       </div>
     </div>
   );
@@ -160,6 +173,7 @@ export function CircleLockup({ item, width = 160 }: { item: MusicItem; width?: n
 export function TrackLockup({ item, onPlay }: { item: MusicItem; onPlay?: () => void }) {
   const play = onPlay ?? (() => playTrack(item));
   const track = toTrack(item);
+  const isPinned = usePinnedStore((s) => s.isPinned(item.id));
   return (
     // 52px art column (40 + 12 gap), content, options; 55px tall.
     <div className="ot-track-lockup group/track relative grid h-[55px] grid-cols-[40px_minmax(0,1fr)] items-center gap-x-3 py-[7.5px] pr-9 pl-0">
@@ -180,6 +194,13 @@ export function TrackLockup({ item, onPlay }: { item: MusicItem; onPlay?: () => 
           {item.explicit && <ExplicitBadge />}
         </div>
         <div className="truncate type-callout text-secondary">
+          {isPinned && (
+            <Pin
+              size={12}
+              className="inline-block -mt-0.5 mr-1 fill-current text-secondary align-middle shrink-0"
+              aria-label="Pinned"
+            />
+          )}
           <Byline item={item} />
         </div>
       </div>
