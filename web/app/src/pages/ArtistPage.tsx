@@ -102,15 +102,21 @@ export default function ArtistPage() {
   const topSongs = { title: `${data.name}: Top Songs`, type: 'artist' as const, id: data.id };
   return (
     <>
-      {/* The hero (report §4): full-bleed, ~1.93:1 of the content column, the name and actions centred near the bottom. */}
-      <header className="relative max-h-[70vh] overflow-hidden">
+      {/* The hero (report §4): full-bleed, framed from the top so artist portraits are never cropped or zoomed in */}
+      <header className="relative max-h-[min(70vh,580px)] min-h-[380px] overflow-hidden">
         <div className="ot-parallax relative w-full">
-          <Artwork src={data.heroImage} displayWidth={1200} aspect={1165 / 604} eager />
-          {/* Apple's photograph fades in over YouTube's once it arrives. */}
+          <Artwork
+            src={data.heroImage}
+            displayWidth={1200}
+            aspect={apple ? Math.max(apple.heroAspect, 1.45) : 1165 / 604}
+            className="[&_img]:object-top [&_img]:object-cover"
+            eager
+          />
+          {/* Apple's photograph fades in over YouTube's once it arrives, anchored to top to preserve faces */}
           {apple && (
             <img
               key={apple.heroUrl}
-              className="absolute inset-0 size-full object-cover opacity-0 transition-opacity duration-400 ease-in data-loaded:opacity-100"
+              className="absolute inset-0 size-full object-cover object-top opacity-0 transition-opacity duration-400 ease-in data-loaded:opacity-100"
               src={apple.heroUrl}
               alt=""
               decoding="async"
