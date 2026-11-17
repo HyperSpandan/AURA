@@ -1,15 +1,12 @@
-import { ArrowDownToLine, ChevronLeft, ChevronRight, WifiOff } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router';
-import { PrefetchLink } from '@/components/PrefetchLink';
 import { SearchField } from '@/components/music/SearchField';
-import { useIsOnline } from '@/lib/useIsOnline';
 
 export function DesktopTopBar() {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
-  const isOnline = useIsOnline();
   const [scrolled, setScrolled] = useState(false);
 
   const query = location.pathname === '/search' ? (searchParams.get('q') ?? '') : '';
@@ -32,7 +29,7 @@ export function DesktopTopBar() {
   };
 
   const navButton =
-    'grid size-8 place-items-center rounded-full bg-white/[0.06] hover:bg-white/[0.12] text-secondary hover:text-primary active:scale-95 transition-all';
+    'grid size-8 place-items-center rounded-[8px] bg-white/[0.06] hover:bg-white/[0.12] text-secondary hover:text-primary active:scale-95 transition-all';
 
   return (
     <header
@@ -72,27 +69,8 @@ export function DesktopTopBar() {
         />
       </div>
 
-      {/* Right: Offline status or Downloads shortcut */}
-      <div className="flex items-center gap-3">
-        {!isOnline && (
-          <PrefetchLink
-            to="/downloads"
-            className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/15 border border-amber-500/30 px-3 py-1 text-xs font-medium text-amber-300 hover:bg-amber-500/25 transition-all shadow-sm"
-            title="You are offline. Click to view downloads"
-          >
-            <WifiOff size={13} strokeWidth={2.2} />
-            <span>Offline</span>
-          </PrefetchLink>
-        )}
-        <PrefetchLink
-          to="/downloads"
-          className="grid size-8 place-items-center rounded-full bg-white/[0.06] hover:bg-white/[0.12] text-secondary hover:text-primary active:scale-95 transition-all"
-          aria-label="Downloads"
-          title="Downloads"
-        >
-          <ArrowDownToLine size={17} strokeWidth={2} />
-        </PrefetchLink>
-      </div>
+      {/* Right spacer to keep search centered */}
+      <div className="w-[72px]" aria-hidden="true" />
     </header>
   );
 }

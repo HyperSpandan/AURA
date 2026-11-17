@@ -1,4 +1,4 @@
-const CACHE_NAME = 'aura-web-v11';
+const CACHE_NAME = 'aura-web-v12';
 const PRECACHE_URLS = [
   './',
   './index.html',

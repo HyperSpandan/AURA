@@ -1,4 +1,4 @@
-import { Trash2, WifiOff } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 import { useMemo } from 'react';
 import { Artwork } from '@/components/music/Artwork';
 import { DetailHeader, detailButton } from '@/components/music/DetailHeader';
@@ -8,7 +8,6 @@ import { playList, shuffleList } from '@/components/music/play';
 import { useDownloads } from '@/data/download/useDownloads';
 import type { HeaderInfo } from '@/data/music/types';
 import { useArtworkColor } from '@/lib/artworkColor';
-import { useIsOnline } from '@/lib/useIsOnline';
 import { usePageTint } from '@/lib/usePageTint';
 import { detailFooter } from './pageStyles';
 
@@ -125,18 +124,8 @@ export default function DownloadsPage() {
     library: null,
   };
 
-  const isOnline = useIsOnline();
-
   return (
     <>
-      {!isOnline && (
-        <div className="mx-(--body-gutter) mb-6 flex items-center gap-2.5 rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-2.5 text-xs text-amber-200 backdrop-blur-md">
-          <WifiOff size={15} className="text-amber-400 shrink-0" />
-          <span>
-            <strong>You’re offline.</strong> All downloaded songs and playlists below are available to play offline.
-          </span>
-        </div>
-      )}
       <DetailHeader
         info={header}
         canPlay={tracks.length > 0}
