@@ -23,24 +23,43 @@ export function Menu({ anchor, placement = 'below-end', onClose, label, children
   const [position, setPosition] = useState<React.CSSProperties>({ visibility: 'hidden' });
 
   useLayoutEffect(() => {
+    if (!anchor) return;
     const rect = anchor.getBoundingClientRect();
+    const menuEl = panel.current;
+    const menuWidth = menuEl && menuEl.offsetWidth > 0 ? menuEl.offsetWidth : 260;
     const gap = 6;
     const spaceBelow = window.innerHeight - rect.bottom;
     const spaceAbove = rect.top;
-    const goAbove = placement === 'above-start' || (spaceBelow < 320 && spaceAbove > spaceBelow);
-    setPosition(
-      goAbove
-        ? {
-            right: Math.max(8, window.innerWidth - rect.right),
-            bottom: window.innerHeight - rect.top + gap,
-            maxHeight: Math.min(480, rect.top - 2 * gap),
-          }
-        : {
-            right: Math.max(8, window.innerWidth - rect.right),
-            top: rect.bottom + gap,
-            maxHeight: Math.min(480, window.innerHeight - rect.bottom - 2 * gap),
-          },
-    );
+    const goAbove = placement.startsWith('above') || (spaceBelow < 320 && spaceAbove > spaceBelow);
+
+    const pos: React.CSSProperties = {
+      maxHeight: Math.min(480, goAbove ? rect.top - 2 * gap : window.innerHeight - rect.bottom - 2 * gap),
+    };
+
+    if (goAbove) {
+      pos.bottom = window.innerHeight - rect.top + gap;
+    } else {
+      pos.top = rect.bottom + gap;
+    }
+
+    const alignStart = placement.endsWith('-start');
+
+    if (alignStart) {
+      // If anchor is in a collapsed sidebar rail, open to the right of the rail icon
+      const isRail = rect.left < 80 && rect.width <= 48;
+      const idealLeft = isRail ? rect.right + 8 : rect.left;
+      pos.left = Math.max(12, Math.min(idealLeft, window.innerWidth - menuWidth - 12));
+    } else {
+      // Align right edge of menu with right edge of anchor, clamped within screen
+      const idealRight = window.innerWidth - rect.right;
+      if (rect.right < menuWidth + 12) {
+        pos.left = 12;
+      } else {
+        pos.right = Math.max(12, Math.min(idealRight, window.innerWidth - menuWidth - 12));
+      }
+    }
+
+    setPosition(pos);
   }, [anchor, placement]);
 
   useEffect(() => {
@@ -77,7 +96,7 @@ export function Menu({ anchor, placement = 'below-end', onClose, label, children
       <div
         ref={panel}
         // Apple's amp-contextual-menu (report §8).
-        className="fixed z-(--z-contextual-menus) max-w-[300px] min-w-[185px] animate-menu-in overflow-y-auto rounded-[10px] bg-thick-material p-[5px] shadow-[0_0_0_0.5px_var(--vibrantDivider),0_10px_40px_var(--glassMaterialShadowColor)] [backdrop-filter:saturate(2.2)_blur(32px)]"
+        className="fixed z-(--z-contextual-menus) max-w-[320px] min-w-[200px] animate-menu-in overflow-y-auto rounded-[10px] bg-thick-material p-[5px] shadow-[0_0_0_0.5px_var(--vibrantDivider),0_10px_40px_var(--glassMaterialShadowColor)] [backdrop-filter:saturate(2.2)_blur(32px)]"
         style={position}
         role="menu"
         aria-label={label}
@@ -125,5 +144,5 @@ export function MenuSeparator() {
 
 /** A non-interactive heading inside a menu. */
 export function MenuHeader({ children }: { children: ReactNode }) {
-  return <div className="px-2 pt-1.5 pb-1 type-subhead-emphasized text-secondary">{children}</div>;
+  return <div className="px-2 pt-1.5 pb-1 type-subhead-emphasized text-secondary truncate">{children}</div>;
 }
