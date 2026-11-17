@@ -37,6 +37,7 @@ export default function HomePage() {
   const home = useHome();
   const recent = useRecentlyPlayed();
   const sentinel = useRef<HTMLDivElement>(null);
+  const pinnedItems = usePinnedStore((s) => s.items);
 
   // Loads the next shelves before the bottom comes into view; after a failed
   // page it waits for Try Again rather than retrying on every scroll.
@@ -138,7 +139,6 @@ export default function HomePage() {
     .flatMap((page) => page.data)
     .filter((shelf) => !(recent.length > 0 && shelf.title.trim().toLowerCase() === RECENT_TITLE.toLowerCase()));
   const arranged = homeSections(shelves);
-  const pinnedItems = usePinnedStore((s) => s.items);
 
   return (
     <>
