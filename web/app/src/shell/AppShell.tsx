@@ -14,6 +14,7 @@ import { useKeyboardShortcuts } from './useKeyboardShortcuts';
 import { Banner, bannerButtonClass } from './Banner';
 import { answered, due, usedToday, type Invitation } from './invitations';
 import { MobileTopBar } from './MobileTopBar';
+import { DesktopTopBar } from './DesktopTopBar';
 import { PlayerBar } from './PlayerBar';
 import { SidePanel } from './SidePanel';
 import { Appearance } from './Appearance';
@@ -22,6 +23,8 @@ import { RoomNotice } from './RoomNotice';
 import { Sidebar } from './Sidebar';
 import { SupportModal } from '@/components/SupportModal';
 import { FullScreenPlayer } from './FullScreenPlayer';
+import { OfflinePage } from '@/components/music/OfflinePage';
+import { useIsOnline } from '@/lib/useIsOnline';
 
 const mobile = isMobileBrowser();
 
@@ -133,6 +136,7 @@ export function AppShell() {
     if (fullScreen) setPlayerUp(true);
   }, [fullScreen]);
   const { pathname } = useLocation();
+  const isOnline = useIsOnline();
   // Once a month each, after some days of use, a GitHub star or Discord invitation;
   // never over the install banners, and not straight after opening.
   const [invitation, setInvitation] = useState<Invitation | null>(null);
@@ -207,16 +211,21 @@ export function AppShell() {
         <Appearance />
         <Sidebar />
         <MobileTopBar />
+        <DesktopTopBar />
         {/* The page scrolls under the fixed sidebar and the floating player. */}
         <main
           id="scrollable-page"
-          className="absolute inset-0 overflow-x-hidden overflow-y-auto pl-(--web-navigation-width) [scrollbar-gutter:stable] data-tint:bg-(--page-tint) data-tint:transition-[background-color] data-tint:duration-300 data-tint:ease-in max-sm:pt-(--mobile-top-bar-height) max-sm:pl-0"
+          className="absolute inset-0 overflow-x-hidden overflow-y-auto pl-(--web-navigation-width) pt-16 [scrollbar-gutter:stable] data-tint:bg-(--page-tint) data-tint:transition-[background-color] data-tint:duration-300 data-tint:ease-in max-sm:pt-(--mobile-top-bar-height) max-sm:pl-0"
         >
           {/* Clears the floating pill: its height, its offset, and some air. */}
           <div className="min-h-full pb-[calc(var(--player-pill-height)+var(--player-bottom-offset)+40px)]">
             {/* Each page rises in as it arrives. */}
             <div key={pathname} className="ot-page">
-              <Outlet />
+              {!isOnline && pathname !== '/downloads' && pathname !== '/settings' ? (
+                <OfflinePage />
+              ) : (
+                <Outlet />
+              )}
             </div>
           </div>
         </main>

@@ -26,7 +26,6 @@ interface NavItem {
 }
 
 const PRIMARY: NavItem[] = [
-  { to: '/search', label: 'Search', Icon: SearchIcon },
   { to: '/home', label: 'Home', Icon: HomeIcon },
   { to: '/new', label: 'New', Icon: NewIcon },
   {

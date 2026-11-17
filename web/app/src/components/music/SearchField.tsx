@@ -14,7 +14,17 @@ type Option = { kind: 'query'; text: string; typed: string; rest: string } | { k
  * a glass dropdown of completions, then artist, album and song suggestions.
  * Arrow keys move through it; Enter picks; Escape closes.
  */
-export function SearchField({ initial, onSearch }: { initial: string; onSearch: (query: string) => void }) {
+export function SearchField({
+  initial,
+  onSearch,
+  className = 'w-[min(492px,100%)]',
+  placeholder = 'Artists, Songs, Lyrics, and More',
+}: {
+  initial: string;
+  onSearch: (query: string) => void;
+  className?: string;
+  placeholder?: string;
+}) {
   const [value, setValue] = useState(initial);
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(-1);
@@ -45,7 +55,7 @@ export function SearchField({ initial, onSearch }: { initial: string; onSearch: 
   };
 
   return (
-    <div className="relative w-[min(492px,100%)]">
+    <div className={`relative ${className}`}>
       <form
         className="relative flex items-center"
         role="search"
@@ -60,7 +70,7 @@ export function SearchField({ initial, onSearch }: { initial: string; onSearch: 
           className="h-[38px] w-full rounded-pill border border-search-border bg-page pt-1.5 pr-[30px] pb-[5px] pl-7 type-body text-primary placeholder:text-tertiary [&::-webkit-search-cancel-button]:hidden"
           type="search"
           value={value}
-          placeholder="Artists, Songs, Lyrics, and More"
+          placeholder={placeholder}
           aria-label="Search"
           role="combobox"
           aria-expanded={showList}
