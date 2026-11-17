@@ -29,7 +29,7 @@ export function DesktopTopBar() {
   };
 
   const navButton =
-    'grid size-8 place-items-center rounded-[8px] bg-white/[0.06] hover:bg-white/[0.12] text-secondary hover:text-primary active:scale-95 transition-all';
+    'grid size-8 place-items-center rounded-full bg-white/[0.06] hover:bg-white/[0.12] text-secondary hover:text-primary active:scale-95 transition-all';
 
   return (
     <header
