@@ -21,13 +21,19 @@ export function toTrack(item: Track | MusicItem, fallbackArtwork?: string | null
 /** One song on its own (Search, Home, a shelf): the queue is that song, then AutoPlay. */
 export function playTrack(item: Track | MusicItem, fallbackArtwork?: string | null, source?: QueueSource) {
   const track = toTrack(item, fallbackArtwork);
-  usePlayer.getState().playTrack(track, source ?? { title: track.title, type: 'other' });
+  const defaultSource: QueueSource = track.album?.name
+    ? { title: track.album.name, type: 'album', id: track.album.id }
+    : { title: track.title, type: 'other' };
+  usePlayer.getState().playTrack(track, source ?? defaultSource);
 }
 
 /** Plays any item: a single song/video, or loads and plays an album or playlist. */
 export async function playItem(item: Track | MusicItem): Promise<void> {
   if ('videoId' in item || item.kind === 'song' || item.kind === 'video') {
-    playTrack(item);
+    const source: QueueSource | undefined = item.album?.name
+      ? { title: item.album.name, type: 'album', id: item.album.id }
+      : undefined;
+    playTrack(item, null, source);
     return;
   }
   if (item.kind === 'playlist') {

@@ -41,7 +41,7 @@ export function SearchField({ initial, onSearch }: { initial: string; onSearch: 
     }
     const href = hrefFor(option.item);
     if (href) navigate(href);
-    else playTrack(option.item);
+    else playTrack(option.item, null, { title: option.item.title ? `"${option.item.title}"` : 'Search', type: 'search' });
   };
 
   return (

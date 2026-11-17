@@ -7,16 +7,19 @@ import type { QueueSource } from '@/playback/queue/timeline';
 import { useLiquidGlass } from '@/lib/liquidGlass';
 import { browseHref } from './links';
 import { CircleLockup, SquareLockup, TrackLockup, VideoLockup } from './Lockups';
-import { playList } from './play';
+import { playList, playTrack } from './play';
 
 // Arrow buttons: round frosted discs at each end, only ≥1000px, rising in on shelf hover (.ot-arrow).
 const arrow =
   'ot-arrow absolute top-1/2 z-3 hidden size-10 place-items-center rounded-full text-primary disabled:pointer-events-none lg:grid';
 
 function renderItem(shelf: Shelf, item: MusicItem): ReactNode {
+  const onPlay = () => {
+    playTrack(item, null, { title: shelf.title, type: 'home' });
+  };
   switch (shelf.layout) {
     case 'tracks':
-      return <TrackLockup item={item} />;
+      return <TrackLockup item={item} onPlay={onPlay} />;
     case 'video':
       return <VideoLockup item={item} />;
     case 'circle':

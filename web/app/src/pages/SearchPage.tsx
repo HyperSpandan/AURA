@@ -45,7 +45,7 @@ const top =
   'grid min-h-[118px] grid-cols-[90px_minmax(0,1fr)] items-center gap-x-3.5 rounded-[8px] bg-quinary px-3 py-3.5 text-left hover:bg-quaternary';
 const topText = 'flex min-w-0 flex-col gap-0.5';
 
-function TopResult({ item }: { item: MusicItem }) {
+function TopResult({ item, query }: { item: MusicItem; query?: string }) {
   const href = hrefFor(item);
   const body = (
     <>
@@ -65,7 +65,7 @@ function TopResult({ item }: { item: MusicItem }) {
       {body}
     </PrefetchLink>
   ) : (
-    <button className={top} onClick={() => playTrack(item)}>
+    <button className={top} onClick={() => playTrack(item, null, { title: query ? `"${query}"` : 'Search', type: 'search' })}>
       {body}
     </button>
   );
@@ -110,7 +110,7 @@ function Results({ query }: { query: string }) {
           <h2 className={sectionTitle}>Top Results</h2>
           <div className={topGrid}>
             {results.top.map((item) => (
-              <TopResult key={item.id} item={item} />
+              <TopResult key={item.id} item={item} query={query} />
             ))}
           </div>
         </section>

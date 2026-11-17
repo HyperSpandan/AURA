@@ -5,6 +5,7 @@ import { Artwork } from '@/components/music/Artwork';
 import { formatDuration } from '@/components/music/links';
 import { autoplaySectionStart, upcomingUserQueueIndices, type QueueEntry } from '@/playback/queue/timeline';
 import { CROSSFADE_CHOICES, usePlayer } from '@/state/player';
+import { getPlayingFrom } from '@/playback/queue/playingFrom';
 
 // The panel's square buttons: AutoPlay (the key colour when on) and the options menu.
 const square = 'grid size-7 place-items-center rounded-[6px] text-secondary hover:bg-quinary aria-pressed:text-key';
@@ -119,7 +120,9 @@ export function UpNext() {
   const upcoming = queue.map((entry, at) => ({ entry, at })).filter(({ at }) => at > index);
   const beforeAutoplay = upcoming.filter(({ at }) => at < autoplayAt);
   const afterAutoplay = upcoming.filter(({ at }) => at >= autoplayAt);
-  const playingFrom = queue[index]?.source?.title;
+  const nowPlaying = usePlayer((s) => s.nowPlaying);
+  const currentTrack = queue[index]?.track ?? null;
+  const playingFrom = getPlayingFrom(queue[index], currentTrack, nowPlaying);
 
   const rows = (items: typeof upcoming) =>
     items.map(({ entry, at }) => (
@@ -168,7 +171,11 @@ export function UpNext() {
           </Menu>
         )}
       </div>
-      {playingFrom && <p className="truncate px-5 pb-2 type-callout text-secondary">Playing from {playingFrom}</p>}
+      {playingFrom.title && (
+        <p className="truncate px-5 pb-2 type-callout text-secondary">
+          {playingFrom.label} <strong className="font-semibold text-primary">{playingFrom.title}</strong>
+        </p>
+      )}
 
       {upcoming.length === 0 ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 pb-20 text-center type-callout text-secondary">

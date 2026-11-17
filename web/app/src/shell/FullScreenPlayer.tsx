@@ -35,6 +35,7 @@ import { QualityLabel } from './QualityLabel';
 import { useScrubber } from './useScrubber';
 import { MorphPlayButton } from './MorphPlayButton';
 import { morphPlayer } from './playerMorph';
+import { getPlayingFrom } from '@/playback/queue/playingFrom';
 
 function useBrowserFullScreen(): boolean {
   return useSyncExternalStore(
@@ -179,6 +180,8 @@ function FullScreenPlayerContent({ closing = false, onClosed }: { closing?: bool
     index: null,
     plays: null,
   } : null);
+  const entry = usePlayer((s) => s.queue[s.index] ?? null);
+  const playingFrom = getPlayingFrom(entry, currentTrack, nowPlaying);
   // Apple's animated sleeve over the cover, as the phone's now-playing shows it.
   const motion = useTrackMotion(nowPlaying?.title, nowPlaying?.artist, track?.album?.name);
   const { pathname } = useLocation();
@@ -342,7 +345,11 @@ function FullScreenPlayerContent({ closing = false, onClosed }: { closing?: bool
       {appearance.playerBackground === 'mesh'
         ? <MeshBackdrop artworkUrl={nowPlaying.artworkUrl} playing={playing && appearance.motion} />
         : <div className={`ot-player-backdrop ot-${appearance.playerBackground}`} style={{ '--cover-color': coverColor?.background ?? '#463231' } as React.CSSProperties} aria-hidden="true" />}
-      <div className="ot-playing-from" data-morph-fade>Playing from<br /><strong>AURA</strong></div>
+      <div className="ot-playing-from pointer-events-none select-none" data-morph-fade>
+        {playingFrom.label}
+        <br />
+        <strong className="block max-w-[420px] mx-auto truncate">{playingFrom.title}</strong>
+      </div>
       {theater && (
         <div className="absolute inset-0 animate-fade-in bg-black">
           <VideoSurface fit="contain" className="size-full" />
