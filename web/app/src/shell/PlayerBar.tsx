@@ -113,9 +113,10 @@ export function PlayerBar() {
   return (
     // The side panel overlays the page; the pill re-centres in what's left. It slides there
     // (translate, on the compositor) rather than the row's padding growing under it.
+    // Kept at opacity: 1 and constant scale so the liquid glass backdrop filter and refraction stay active during animation.
     <div
-      className={`group/bar pointer-events-none absolute right-0 bottom-(--player-bottom-offset) left-(--web-navigation-width) z-[calc(var(--z-web-chrome)-1)] flex justify-center px-5 max-sm:hidden transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
-        hasTrack ? 'translate-y-0 opacity-100 scale-100' : 'translate-y-24 opacity-0 scale-95 pointer-events-none'
+      className={`group/bar pointer-events-none absolute right-0 bottom-(--player-bottom-offset) left-(--web-navigation-width) z-[calc(var(--z-web-chrome)-1)] flex justify-center px-5 max-sm:hidden will-change-transform transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+        hasTrack ? 'translate-y-0' : 'translate-y-[calc(100%+var(--player-bottom-offset)+32px)]'
       }`}
       data-panel-open={sidePanel !== null}
     >
