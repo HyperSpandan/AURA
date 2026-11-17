@@ -24,6 +24,33 @@ export function playTrack(item: Track | MusicItem, fallbackArtwork?: string | nu
   usePlayer.getState().playTrack(track, source ?? { title: track.title, type: 'other' });
 }
 
+/** Plays any item: a single song/video, or loads and plays an album or playlist. */
+export async function playItem(item: Track | MusicItem): Promise<void> {
+  if ('videoId' in item || item.kind === 'song' || item.kind === 'video') {
+    playTrack(item);
+    return;
+  }
+  if (item.kind === 'playlist') {
+    const { fetchPlaylist } = await import('@/data/music/api');
+    const { page } = await fetchPlaylist(item.id);
+    if (page.tracks.length > 0) {
+      playList(page.tracks, 0, { source: { title: item.title, type: 'playlist', id: item.id } });
+    }
+    return;
+  }
+  if (item.kind === 'album') {
+    const { fetchAlbum } = await import('@/data/music/api');
+    const album = await fetchAlbum(item.id);
+    if (album.tracks.length > 0) {
+      playList(album.tracks, 0, {
+        source: { title: album.title, type: 'album', id: item.id },
+        fallbackArtwork: album.thumbnail,
+        fallbackArtists: album.artists,
+      });
+    }
+  }
+}
+
 export interface ListContext {
   source: QueueSource;
   /** Album artwork, for tracks that have none of their own. */

@@ -4,7 +4,7 @@ import { PageHeader } from '@/components/PageHeader';
 import { CircleLockup, SquareLockup, VideoLockup } from '@/components/music/Lockups';
 import { EmptyState, LoadError, LoadMoreError, NeedsExtension } from '@/components/music/States';
 import { TrackList } from '@/components/music/TrackList';
-import { isLibrarySection, LIBRARY_SECTIONS } from '@/data/music/library';
+import { isLibrarySection, LIBRARY_SECTIONS, LIKED_MUSIC_PLAYLIST } from '@/data/music/library';
 import { useLibrary, useSignedIn, useYouTubeReady } from '@/data/music/queries';
 import { useYtAuth } from '@/extension/useYtAuth';
 import { PlainSkeleton } from '@/skeletons/PageSkeletons';
@@ -39,6 +39,7 @@ export default function LibraryPage() {
   );
 
   if (!isLibrarySection(section)) return <Navigate to="/home" replace />;
+  if (section === 'songs') return <Navigate to={`/playlist/${LIKED_MUSIC_PLAYLIST}`} replace />;
   const title = LIBRARY_SECTIONS[section].title;
   if (missing) return <NeedsExtension what="your library" />;
   if (auth.state === 'ready' && !signedIn) {

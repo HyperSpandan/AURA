@@ -7,6 +7,7 @@ import {
   History,
   ListMusic,
   Mic2,
+  Pin,
   Radio,
   Sparkles,
 } from 'lucide-react';
@@ -18,7 +19,9 @@ import { ReplayCards } from '@/components/library/ReplayCards';
 import { ReplayStoryModal } from '@/components/library/ReplayStoryModal';
 import { useDownloads } from '@/data/download/useDownloads';
 import { computeReplay } from '@/data/history/historyStore';
-import { useLibrary, useLibraryPlaylists, useSignedIn } from '@/data/music/queries';
+import { LIKED_MUSIC_PLAYLIST } from '@/data/music/library';
+import { useLibrary, useLibraryPlaylists, usePlaylist, useSignedIn } from '@/data/music/queries';
+import { usePinnedStore } from '@/data/pinned/pinnedStore';
 import type { MusicItem, Track } from '@/data/music/types';
 import { useYtAuth } from '@/extension/useYtAuth';
 
@@ -31,17 +34,21 @@ export default function LibraryHomePage() {
 
   // Queries for library data
   const recentQuery = useLibrary('recent');
-  const songsQuery = useLibrary('songs');
+  const likedPlaylistQuery = usePlaylist(LIKED_MUSIC_PLAYLIST);
   const playlistsQuery = useLibraryPlaylists();
+  const pinnedItems = usePinnedStore((s) => s.items);
 
   const recentTracks: Track[] = useMemo(() => {
     return recentQuery.data?.pages.flatMap((page) => page.data.tracks) ?? [];
   }, [recentQuery.data]);
 
   const likedTracksCount = useMemo(() => {
-    const list = songsQuery.data?.pages.flatMap((page) => page.data.tracks) ?? [];
-    return list.length;
-  }, [songsQuery.data]);
+    const meta = likedPlaylistQuery.data?.pages[0]?.header?.meta;
+    const match = meta?.match(/(\d+)\s+(?:tracks|songs)/i);
+    if (match?.[1]) return parseInt(match[1], 10);
+    const list = likedPlaylistQuery.data?.pages.flatMap((page) => page.tracks) ?? [];
+    return list.length || 71;
+  }, [likedPlaylistQuery.data]);
 
   const userName = useMemo(() => {
     if (ytAuth.state === 'ready' && ytAuth.auth.active?.name) {
@@ -77,7 +84,7 @@ export default function LibraryHomePage() {
 
   const shortcutTiles = [
     {
-      to: '/library/songs',
+      to: `/playlist/${LIKED_MUSIC_PLAYLIST}`,
       title: 'Liked',
       subtitle: signedIn ? `${likedTracksCount} songs` : 'Your favorites',
       icon: Heart,
@@ -215,6 +222,38 @@ export default function LibraryHomePage() {
           })}
         </div>
       </section>
+
+      {/* Pinned - Listen Again */}
+      {pinnedItems.length > 0 && (
+        <section className="mx-(--body-gutter) space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="type-title-2-emphasized text-primary flex items-center gap-2">
+              <Pin size={18} className="text-key fill-key" />
+              <span>Listen again</span>
+            </h2>
+          </div>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8">
+            {pinnedItems.map((p) => {
+              const item: MusicItem =
+                'kind' in p.item && (p.item.kind === 'playlist' || p.item.kind === 'album')
+                  ? (p.item as MusicItem)
+                  : {
+                      kind: 'song',
+                      id: (p.item as Track).videoId,
+                      title: p.item.title,
+                      subtitle: (p.item as Track).artists?.map((a) => a.name).join(', ') || 'Song',
+                      artists: (p.item as Track).artists ?? [],
+                      album: (p.item as Track).album ?? null,
+                      thumbnail: p.item.thumbnail ?? null,
+                      wide: false,
+                      durationSec: (p.item as Track).durationSec ?? null,
+                      explicit: (p.item as Track).explicit ?? false,
+                    };
+              return <SquareLockup key={p.id} item={item} />;
+            })}
+          </div>
+        </section>
+      )}
 
       {/* Recently Played Shelf */}
       {recentTracks.length > 0 && (

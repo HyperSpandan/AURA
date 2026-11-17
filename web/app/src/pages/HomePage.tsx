@@ -9,7 +9,8 @@ import { Fragment, useEffect, useRef } from 'react';
 import { Shelves, TrackShelf } from '@/components/music/ShelfView';
 import { LoadError, LoadMoreError, NeedsExtension } from '@/components/music/States';
 import { useHome, useLibrary, useYouTubeReady } from '@/data/music/queries';
-import type { Track } from '@/data/music/types';
+import type { MusicItem, Track } from '@/data/music/types';
+import { usePinnedStore } from '@/data/pinned/pinnedStore';
 import { HomeSkeleton } from '@/skeletons/PageSkeletons';
 import { ShelfSkeleton } from '@/skeletons/ShelfSkeleton';
 
@@ -137,9 +138,41 @@ export default function HomePage() {
     .flatMap((page) => page.data)
     .filter((shelf) => !(recent.length > 0 && shelf.title.trim().toLowerCase() === RECENT_TITLE.toLowerCase()));
   const arranged = homeSections(shelves);
+  const pinnedItems = usePinnedStore((s) => s.items);
+
   return (
     <>
       {heading}{banners}
+      {pinnedItems.length > 0 && (
+        <Shelves
+          shelves={[
+            {
+              title: 'Listen again',
+              strapline: 'Your pinned music',
+              layout: 'square',
+              seeAll: null,
+              items: pinnedItems.map((p) => {
+                if ('kind' in p.item && (p.item.kind === 'playlist' || p.item.kind === 'album')) {
+                  return p.item as MusicItem;
+                }
+                const track = p.item as Track;
+                return {
+                  kind: 'song',
+                  id: track.videoId,
+                  title: track.title,
+                  subtitle: track.artists?.map((a) => a.name).join(', ') || 'Song',
+                  artists: track.artists ?? [],
+                  album: track.album ?? null,
+                  thumbnail: track.thumbnail ?? null,
+                  wide: false,
+                  durationSec: track.durationSec ?? null,
+                  explicit: track.explicit ?? false,
+                };
+              }),
+            },
+          ]}
+        />
+      )}
       {runtime.sections.filter(s => s.enabled).map(section => {
         const title = (fallback: string) => section.title || fallback;
         switch (section.id) {

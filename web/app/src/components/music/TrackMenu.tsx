@@ -14,6 +14,7 @@ import {
   Loader2,
   MessageSquareQuote,
   MoreHorizontal,
+  Pin,
   Radio,
   Share2,
   Trash2,
@@ -32,6 +33,7 @@ import {
 } from '@/data/music/queries';
 import type { Track } from '@/data/music/types';
 import { useDownloads } from '@/data/download/useDownloads';
+import { usePinnedStore } from '@/data/pinned/pinnedStore';
 import { exportTrackFile } from '@/playback/download';
 import { usePlayer } from '@/state/player';
 import { useUi } from '@/state/ui';
@@ -214,6 +216,14 @@ function TrackMenuItems({ track, onClose }: { track: Track; onClose: () => void 
     }
   };
 
+  const isPinned = usePinnedStore((s) => s.isPinned(track.videoId));
+  const togglePin = usePinnedStore((s) => s.togglePin);
+
+  const handleTogglePin = () => {
+    togglePin(track);
+    onClose();
+  };
+
   const handleToggleDownload = async () => {
     if (isDownloading) return;
     if (isDownloaded) {
@@ -343,6 +353,12 @@ function TrackMenuItems({ track, onClose }: { track: Track; onClose: () => void 
       </MenuItem>
       <MenuItem icon={<FileDown size={15} />} onSelect={handleExportAudio}>
         Export Audio File
+      </MenuItem>
+      <MenuItem
+        icon={<Pin size={15} className={isPinned ? 'text-key fill-key' : ''} />}
+        onSelect={handleTogglePin}
+      >
+        {isPinned ? 'Unpin from Listen again' : 'Pin to Listen again'}
       </MenuItem>
       <MenuItem icon={<Share2 size={15} />} onSelect={handleShare}>
         {copied ? 'Link Copied!' : 'Share Song'}

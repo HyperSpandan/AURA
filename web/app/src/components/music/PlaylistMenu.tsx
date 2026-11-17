@@ -6,6 +6,7 @@ import {
   ListStart,
   Loader2,
   MoreHorizontal,
+  Pin,
   Plus,
   Share2,
   Shuffle,
@@ -16,6 +17,7 @@ import { Menu, MenuItem, type MenuPlacement, MenuSeparator } from '@/components/
 import { useDownloads } from '@/data/download/useDownloads';
 import { useSetListSaved, useSignedIn } from '@/data/music/queries';
 import type { Track } from '@/data/music/types';
+import { usePinnedStore } from '@/data/pinned/pinnedStore';
 import { usePlayer } from '@/state/player';
 import { shuffleList } from './play';
 
@@ -50,6 +52,25 @@ export function PlaylistMenu({
   const playlistProgress = useDownloads((s) => s.playlistProgress[id]);
   const downloadPlaylist = useDownloads((s) => s.downloadPlaylist);
   const removePlaylist = useDownloads((s) => s.removePlaylist);
+
+  const isPinned = usePinnedStore((s) => s.isPinned(id));
+  const togglePin = usePinnedStore((s) => s.togglePin);
+
+  const handleTogglePin = () => {
+    togglePin({
+      id,
+      kind: 'playlist',
+      title,
+      subtitle: `${tracks.length} songs`,
+      thumbnail: thumbnail ?? null,
+      artists: [],
+      album: null,
+      wide: false,
+      durationSec: null,
+      explicit: false,
+    });
+    close();
+  };
 
   const isDownloading = Boolean(playlistProgress);
   const downloadedCount = tracks.filter((t) => t.videoId && downloadedIds.has(t.videoId)).length;
@@ -228,6 +249,14 @@ export function PlaylistMenu({
               {library.saved ? 'Remove from Library' : 'Add to Library'}
             </MenuItem>
           )}
+
+          {/* Pin to Listen again */}
+          <MenuItem
+            icon={<Pin size={15} className={isPinned ? 'text-key fill-key' : ''} />}
+            onSelect={handleTogglePin}
+          >
+            {isPinned ? 'Unpin from Listen again' : 'Pin to Listen again'}
+          </MenuItem>
 
           {/* Share */}
           <MenuItem icon={<Share2 size={15} />} onSelect={handleShare}>

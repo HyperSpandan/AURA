@@ -1,10 +1,13 @@
+import { Pin } from 'lucide-react';
 import { PrefetchLink } from '@/components/PrefetchLink';
 import { PlayIcon } from '@/components/icons/Transport';
 import type { MusicItem } from '@/data/music/types';
+import { usePinnedStore } from '@/data/pinned/pinnedStore';
 import { Artwork } from './Artwork';
 import { ExplicitBadge } from './ExplicitBadge';
 import { artistHref, hrefFor } from './links';
-import { playTrack, toTrack } from './play';
+import { LockupMenu } from './LockupMenu';
+import { playItem, playTrack, toTrack } from './play';
 import { TrackMenu } from './TrackMenu';
 
 const isPlayable = (item: MusicItem) => item.kind === 'song' || item.kind === 'video';
@@ -44,12 +47,12 @@ function Byline({ item }: { item: MusicItem }) {
 function PlayPlatter({ item }: { item: MusicItem }) {
   return (
     <button
-      className="ot-platter pointer-events-auto absolute right-2.5 bottom-2.5 grid size-10 place-items-center rounded-full bg-key-bg text-white shadow-[0_6px_18px_rgb(0_0_0/0.35)]"
+      className="ot-platter pointer-events-auto absolute right-2.5 bottom-2.5 grid size-10 place-items-center rounded-full bg-key-bg text-white shadow-[0_6px_18px_rgb(0_0_0/0.35)] hover:scale-105 active:scale-95 transition-transform"
       aria-label={`Play ${item.title}`}
       onClick={(e) => {
         e.preventDefault();
         e.stopPropagation();
-        playTrack(item);
+        void playItem(item);
       }}
     >
       <PlayIcon size={18} />
@@ -64,24 +67,39 @@ function PlayPlatter({ item }: { item: MusicItem }) {
  */
 function LockupArtwork({ item, width, aspect }: { item: MusicItem; width: number; aspect: number }) {
   const href = hrefFor(item);
+  const isPinned = usePinnedStore((s) => s.isPinned(item.id));
+
   return (
     <div className="ot-lockup-art group/art relative rounded-artwork-md">
       <Artwork src={item.thumbnail} displayWidth={width} aspect={aspect} radius="var(--radius-artwork-medium)" />
       {href ? (
         <PrefetchLink to={href} className={overlayLink} aria-label={item.title} />
       ) : (
-        <button className={overlayLink} aria-label={`Play ${item.title}`} onClick={() => playTrack(item)} />
+        <button className={overlayLink} aria-label={`Play ${item.title}`} onClick={() => void playItem(item)} />
+      )}
+      {isPinned && (
+        <div
+          className="pointer-events-none absolute top-2.5 left-2.5 z-3 grid size-6 place-items-center rounded-full bg-black/60 text-key shadow backdrop-blur-md"
+          title="Pinned to Listen again"
+        >
+          <Pin size={12} className="fill-key" />
+        </div>
       )}
       <div className="ot-lockup-shade pointer-events-none absolute inset-0 z-2 rounded-[inherit]">
-        {isPlayable(item) && <PlayPlatter item={item} />}
-        {isPlayable(item) && (
-          <div className="pointer-events-auto absolute top-2.5 right-2.5">
+        <PlayPlatter item={item} />
+        <div className="pointer-events-auto absolute top-2.5 right-2.5">
+          {isPlayable(item) ? (
             <TrackMenu
               track={toTrack(item)}
               className="ot-platter grid size-8 place-items-center rounded-full bg-black/60 text-white opacity-0 hover:bg-black/80 hover:scale-105 transition-all group-hover/art:opacity-100 data-open:opacity-100 shadow-[0_4px_12px_rgb(0_0_0/0.3)]"
             />
-          </div>
-        )}
+          ) : (
+            <LockupMenu
+              item={item}
+              className="ot-platter grid size-8 place-items-center rounded-full bg-black/60 text-white opacity-0 hover:bg-black/80 hover:scale-105 transition-all group-hover/art:opacity-100 data-open:opacity-100 shadow-[0_4px_12px_rgb(0_0_0/0.3)]"
+            />
+          )}
+        </div>
       </div>
     </div>
   );
