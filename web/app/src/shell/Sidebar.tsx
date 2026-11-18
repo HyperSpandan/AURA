@@ -148,7 +148,7 @@ export function Sidebar() {
         data-folded={folded}
         aria-label="Main"
       >
-        <div className="ot-side-top mt-2 flex h-18 items-center justify-between pr-3 pl-7">
+        <div className="ot-side-top flex h-16 items-center justify-between pr-3 pl-7">
           <PrefetchLink to="/home" className="ot-side-wordmark inline-flex items-center gap-2 rounded-[6px]" aria-label="AURA, Home" onClick={close}>
             {/* White on dark, as Apple's own wordmark; it follows the label colour so it stays visible in light. */}
             <LogoMark size={22} className="text-primary" />
@@ -178,13 +178,23 @@ export function Sidebar() {
             <AccountButton compact />
           </div>
           <div className="ot-side-foot flex flex-col gap-1.5 pt-1">
-            <div className="flex items-center justify-between">
-              <a className="ot-side-android inline-flex items-center gap-1 ps-1 type-callout text-primary hover:underline" href={config.androidAppUrl} target="_blank" rel="noreferrer">
-                <span>Get the Android app</span>
-                <ArrowUpRight size={14} strokeWidth={2} />
-              </a>
-              <PrefetchNavLink to="/settings" className="grid size-7 place-items-center rounded-nav text-secondary hover:bg-quinary hover:text-primary aria-[current=page]:bg-quinary aria-[current=page]:text-primary" aria-label="Settings" title="Settings" onClick={close}>
-                <Settings size={17} strokeWidth={1.9} />
+            <div className={`flex items-center ${folded ? 'justify-center' : 'justify-between'}`}>
+              {!folded && (
+                <a className="ot-side-android inline-flex items-center gap-1 ps-1 type-callout text-primary hover:underline" href={config.androidAppUrl} target="_blank" rel="noreferrer">
+                  <span>Get the Android app</span>
+                  <ArrowUpRight size={14} strokeWidth={2} />
+                </a>
+              )}
+              <PrefetchNavLink
+                to="/settings"
+                className={`grid place-items-center rounded-nav text-secondary hover:bg-quinary hover:text-primary aria-[current=page]:bg-quinary aria-[current=page]:text-primary ${
+                  folded ? 'size-10 self-center' : 'size-7'
+                }`}
+                aria-label="Settings"
+                title="Settings"
+                onClick={close}
+              >
+                <Settings size={folded ? 20 : 17} strokeWidth={1.9} />
               </PrefetchNavLink>
             </div>
             <div className="ot-side-full px-1 text-[11px] text-tertiary">

@@ -3,6 +3,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useSuggestions } from '@/data/music/queries';
 import type { MusicItem } from '@/data/music/types';
+import { useLiquidGlass } from '@/lib/liquidGlass';
 import { Artwork } from './Artwork';
 import { hrefFor } from './links';
 import { playTrack } from './play';
@@ -32,6 +33,7 @@ export function SearchField({
   const listId = useId();
   const navigate = useNavigate();
   const suggestions = useSuggestions(open ? value : '');
+  const glass = useLiquidGlass<HTMLFormElement>(20, 20);
 
   useEffect(() => setValue(initial), [initial]);
 
@@ -57,17 +59,18 @@ export function SearchField({
   return (
     <div className={`relative ${className}`}>
       <form
-        className="relative flex items-center"
+        ref={glass}
+        className="glass-pill relative flex h-[38px] w-full items-center rounded-pill px-3 transition-all duration-200 focus-within:ring-1 focus-within:ring-white/25"
         role="search"
         onSubmit={(e) => {
           e.preventDefault();
           pick(active >= 0 ? options[active] : undefined);
         }}
       >
-        <Search size={15} strokeWidth={2.4} className="pointer-events-none absolute left-2.5 text-secondary" aria-hidden="true" />
+        <Search size={15} strokeWidth={2.4} className="pointer-events-none flex-none text-secondary mr-2" aria-hidden="true" />
         <input
           ref={input}
-          className="h-[38px] w-full rounded-pill border border-search-border bg-page pt-1.5 pr-[30px] pb-[5px] pl-7 type-body text-primary placeholder:text-tertiary [&::-webkit-search-cancel-button]:hidden"
+          className="h-full flex-1 min-w-0 bg-transparent type-body text-primary placeholder:text-tertiary outline-none [&::-webkit-search-cancel-button]:hidden"
           type="search"
           value={value}
           placeholder={placeholder}
@@ -100,14 +103,15 @@ export function SearchField({
         {value && (
           <button
             type="button"
-            className="absolute right-[9px] grid size-4 place-items-center rounded-full bg-tertiary text-page"
+            className="flex-none ml-1.5 grid size-4 place-items-center rounded-full bg-white/20 hover:bg-white/30 text-primary transition-colors"
             aria-label="Clear"
             onClick={() => {
               setValue('');
+              onSearch('');
               input.current?.focus();
             }}
           >
-            <X size={12} strokeWidth={3} />
+            <X size={12} strokeWidth={2.5} />
           </button>
         )}
       </form>

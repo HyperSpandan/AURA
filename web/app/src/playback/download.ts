@@ -29,7 +29,7 @@ export function triggerBrowserDownload(url: string, filename: string): void {
 async function fetchArtworkDataUrl(url?: string | null): Promise<string | undefined> {
   if (!url) return undefined;
   try {
-    const res = await fetch(url);
+    const res = await fetch(url, { signal: AbortSignal.timeout(6000) });
     if (!res.ok) return undefined;
     const blob = await res.blob();
     return await new Promise<string>((resolve) => {
@@ -67,20 +67,25 @@ async function fetchTrackAudio(track: Track): Promise<AudioPayload> {
 
   // 1. Try FLAC from lossless sources
   try {
-    const lossless = await findLossless(recording);
+    const lossless = await Promise.race([
+      findLossless(recording, true),
+      new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Lossless search timeout')), 12000)),
+    ]);
     const candidate = lossless.ranked[0];
     if (candidate?.url) {
       trackLog.i(`Fetching lossless FLAC from ${candidate.provider}`, track.videoId);
-      const res = await fetch(candidate.url);
+      const res = await fetch(candidate.url, { signal: AbortSignal.timeout(20000) });
       if (res.ok) {
         const blob = await res.blob();
-        return {
-          blob,
-          mime: 'audio/flac',
-          format: candidate.bits && candidate.rate ? `FLAC ${candidate.bits}-bit ${(candidate.rate / 1000).toFixed(1)} kHz` : 'FLAC Lossless',
-          source: candidate.provider,
-          ext: 'flac',
-        };
+        if (blob.size > 0) {
+          return {
+            blob,
+            mime: 'audio/flac',
+            format: candidate.bits && candidate.rate ? `FLAC ${candidate.bits}-bit ${(candidate.rate / 1000).toFixed(1)} kHz` : 'FLAC Lossless',
+            source: candidate.provider,
+            ext: 'flac',
+          };
+        }
       }
     }
   } catch (e) {
@@ -89,22 +94,27 @@ async function fetchTrackAudio(track: Track): Promise<AudioPayload> {
 
   // 2. Try JioSaavn 320 kbps
   try {
-    const saavn = await findJioSaavn(
-      { ...recording, album: track.album?.name },
-      fetchJson,
-    );
+    const saavn = await Promise.race([
+      findJioSaavn(
+        { ...recording, album: track.album?.name },
+        fetchJson,
+      ),
+      new Promise<null>((r) => setTimeout(() => r(null), 12000)),
+    ]);
     if (saavn?.stream?.url) {
       trackLog.i(`Fetching 320 kbps AAC from JioSaavn`, track.videoId);
-      const res = await fetch(saavn.stream.url);
+      const res = await fetch(saavn.stream.url, { signal: AbortSignal.timeout(20000) });
       if (res.ok) {
         const blob = await res.blob();
-        return {
-          blob,
-          mime: 'audio/mp4',
-          format: 'AAC 320kbps',
-          source: 'JioSaavn',
-          ext: 'm4a',
-        };
+        if (blob.size > 0) {
+          return {
+            blob,
+            mime: 'audio/mp4',
+            format: 'AAC 320kbps',
+            source: 'JioSaavn',
+            ext: 'm4a',
+          };
+        }
       }
     }
   } catch (e) {
@@ -115,22 +125,45 @@ async function fetchTrackAudio(track: Track): Promise<AudioPayload> {
   trackLog.i(`Resolving YouTube stream for track`, track.videoId);
   const yt = await getInnertube();
   const resolved = await resolvePlayer(yt, track.videoId);
-  const format = resolved.info.chooseFormat({ type: 'audio', quality: 'best' });
+  let format = resolved.info.chooseFormat({ type: 'audio', quality: 'best' });
+  if (!format) {
+    format = resolved.info.chooseFormat({ type: 'video+audio', quality: 'best' });
+  }
+  if (!format) {
+    throw new Error('No playable audio format found on YouTube');
+  }
 
   const mime = format.mime_type?.split(';')[0]?.toLowerCase() ?? 'audio/mp4';
   const ext = mime.includes('webm') ? 'webm' : mime.includes('opus') ? 'opus' : 'm4a';
   const formatName = format.quality_label || (ext === 'opus' ? 'Opus 160kbps' : 'AAC 128kbps');
 
   try {
-    const stream = await resolved.info.download({ type: 'audio', quality: 'best' });
+    const stream = await Promise.race([
+      resolved.info.download({ type: 'audio', quality: 'best' }),
+      new Promise<never>((_, reject) => setTimeout(() => reject(new Error('YouTube download request timeout')), 15000)),
+    ]);
     const reader = stream.getReader();
     const chunks: Uint8Array[] = [];
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      if (value) chunks.push(value);
+    try {
+      while (true) {
+        const chunkPromise = reader.read();
+        const timeoutPromise = new Promise<{ done: true; value: undefined }>((_, reject) =>
+          setTimeout(() => reject(new Error('Stream chunk timeout')), 15000),
+        );
+        const { done, value } = await Promise.race([chunkPromise, timeoutPromise]);
+        if (done) break;
+        if (value) chunks.push(value);
+      }
+    } catch (err) {
+      try {
+        await reader.cancel();
+      } catch {
+        // ignore
+      }
+      throw err;
     }
     const blob = new Blob(chunks as BlobPart[], { type: mime });
+    if (blob.size === 0) throw new Error('Empty audio stream received');
     return {
       blob,
       mime,
@@ -140,19 +173,28 @@ async function fetchTrackAudio(track: Track): Promise<AudioPayload> {
     };
   } catch (streamError) {
     trackLog.w(`Stream chunking failed, attempting decipher URL: ${String(streamError)}`, track.videoId);
-    const decipheredUrl = await format.decipher(yt.session.player);
-    if (decipheredUrl) {
-      const res = await fetch(decipheredUrl);
-      if (res.ok) {
-        const blob = await res.blob();
-        return {
-          blob,
-          mime,
-          format: formatName,
-          source: 'YouTube',
-          ext,
-        };
+    try {
+      const decipheredUrl = await Promise.race([
+        format.decipher(yt.session.player),
+        new Promise<string | undefined>((_, reject) => setTimeout(() => reject(new Error('Decipher timeout')), 10000)),
+      ]);
+      if (decipheredUrl) {
+        const res = await fetch(decipheredUrl, { signal: AbortSignal.timeout(25000) });
+        if (res.ok) {
+          const blob = await res.blob();
+          if (blob.size > 0) {
+            return {
+              blob,
+              mime,
+              format: formatName,
+              source: 'YouTube',
+              ext,
+            };
+          }
+        }
       }
+    } catch (decipherErr) {
+      trackLog.w(`Decipher fallback failed: ${String(decipherErr)}`, track.videoId);
     }
     throw streamError;
   }
@@ -167,19 +209,27 @@ export async function downloadTrack(track: Track): Promise<OfflineTrackRecord> {
 
   // Fetch artwork so offline playback shows album art even when disconnected
   const artUrl = track.thumbnail;
-  const artworkDataUrl = await fetchArtworkDataUrl(artUrl);
+  let artworkDataUrl: string | undefined;
+  try {
+    artworkDataUrl = await fetchArtworkDataUrl(artUrl);
+  } catch {
+    artworkDataUrl = undefined;
+  }
 
   // Fetch lyrics so offline full-screen player has synced lyrics
   let lyrics: LyricsResult | null = null;
   try {
     const artist = track.artists.map((a) => a.name).join(', ') || 'Unknown Artist';
-    lyrics = await lookupLyrics({
-      videoId: track.videoId,
-      title: track.title,
-      artist,
-      durationMs: Math.round((track.durationSec ?? 0) * 1000),
-      album: track.album?.name ?? null,
-    });
+    lyrics = await Promise.race([
+      lookupLyrics({
+        videoId: track.videoId,
+        title: track.title,
+        artist,
+        durationMs: Math.round((track.durationSec ?? 0) * 1000),
+        album: track.album?.name ?? null,
+      }),
+      new Promise<null>((r) => setTimeout(() => r(null), 6000)),
+    ]);
   } catch (e) {
     trackLog.d(`Lyrics lookup during download skipped: ${String(e)}`, track.videoId);
   }

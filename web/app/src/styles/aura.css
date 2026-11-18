@@ -329,7 +329,7 @@
   /* The names only fade: they stay readable to screen readers. The wordmark and the app link go out of
      reach as well, so the keyboard doesn't land on something that isn't there. */
   .ot-side[data-folded='true'] .ot-side-label { opacity: 0; transition: opacity .12s ease; }
-  .ot-side[data-folded='true'] :is(.ot-side-wordmark, .ot-side-android) { opacity: 0; visibility: hidden; transition: opacity .12s ease, visibility 0s linear .12s; }
+  .ot-side[data-folded='true'] :is(.ot-side-wordmark, .ot-side-android) { opacity: 0; visibility: hidden; display: none; transition: opacity .12s ease, visibility 0s linear .12s; }
   /* Section names become a hairline between the groups of icons. */
   .ot-side[data-folded='true'] .ot-side-header { height: 1px; margin: 12px 4px; padding: 0; color: transparent; background: var(--labelDivider); transition: height .38s var(--ot-ease-settle), margin .38s var(--ot-ease-settle), padding .38s var(--ot-ease-settle), color .1s ease, background-color .2s ease .15s; }
   .ot-side[data-folded='true'] :is(.ot-side-extra, .ot-side-full) { max-height: 0; opacity: 0; transition: max-height .38s var(--ot-ease-settle), opacity .12s ease; }

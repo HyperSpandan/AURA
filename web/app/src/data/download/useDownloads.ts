@@ -130,9 +130,24 @@ export const useDownloads = create<DownloadsState>()((set, get) => ({
 
     for (const track of toDownload) {
       try {
-        await get().download(track);
+        let timer: ReturnType<typeof setTimeout>;
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          timer = setTimeout(() => {
+            reject(new Error(`Download timed out after 60s for track "${track.title}" (${track.videoId})`));
+          }, 60_000);
+        });
+
+        await Promise.race([get().download(track), timeoutPromise]).finally(() => {
+          clearTimeout(timer!);
+        });
       } catch (err) {
         console.warn(`Failed to download ${track.title} in playlist ${playlistId}:`, err);
+        // Ensure downloadingIds cleans up so UI doesn't show perpetual spinner for failed track
+        set((state) => {
+          const next = new Set(state.downloadingIds);
+          next.delete(track.videoId);
+          return { downloadingIds: next };
+        });
       } finally {
         set((state) => {
           const current = state.playlistProgress[playlistId];
@@ -145,6 +160,8 @@ export const useDownloads = create<DownloadsState>()((set, get) => ({
           };
         });
       }
+      // Pacing delay (500ms) between downloads to prevent Google / CDN stream throttling
+      await new Promise((r) => setTimeout(r, 500));
     }
 
     setTimeout(() => {
