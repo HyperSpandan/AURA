@@ -2,15 +2,12 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router';
 import { SearchField } from '@/components/music/SearchField';
-import { useLiquidGlass } from '@/lib/liquidGlass';
 
 export function DesktopTopBar() {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const [scrolled, setScrolled] = useState(false);
-  const back = useLiquidGlass<HTMLButtonElement>(14, 12);
-  const forward = useLiquidGlass<HTMLButtonElement>(14, 12);
 
   const query = location.pathname === '/search' ? (searchParams.get('q') ?? '') : '';
 
@@ -32,20 +29,19 @@ export function DesktopTopBar() {
   };
 
   const navButton =
-    'glass-pill grid size-8 place-items-center rounded-full text-secondary hover:text-primary active:scale-95 transition-all';
+    'grid size-8 place-items-center rounded-full bg-white/[0.06] hover:bg-white/[0.12] text-secondary hover:text-primary active:scale-95 transition-all';
 
   return (
     <header
       className={`fixed top-0 right-0 left-(--web-navigation-width) z-[calc(var(--z-web-chrome)-2)] flex h-16 items-center justify-between px-6 max-sm:hidden transition-[background-color,border-color,backdrop-filter,box-shadow,left] duration-200 ease-out ${
         scrolled
-          ? 'bg-page/70 backdrop-blur-2xl border-b border-white/5 shadow-[0_4px_24px_rgba(0,0,0,0.25)]'
+          ? 'bg-page/80 backdrop-blur-2xl border-b border-white/5 shadow-[0_4px_24px_rgba(0,0,0,0.25)]'
           : 'bg-transparent border-b border-transparent'
       }`}
     >
       {/* Left: History navigation buttons */}
       <div className="flex items-center gap-2">
         <button
-          ref={back}
           className={navButton}
           onClick={() => navigate(-1)}
           aria-label="Back"
@@ -54,7 +50,6 @@ export function DesktopTopBar() {
           <ChevronLeft size={19} strokeWidth={2.4} />
         </button>
         <button
-          ref={forward}
           className={navButton}
           onClick={() => navigate(1)}
           aria-label="Forward"
