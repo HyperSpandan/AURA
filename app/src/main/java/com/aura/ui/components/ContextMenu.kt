@@ -76,6 +76,7 @@ import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
@@ -98,18 +99,28 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
- * Where a long-pressed item sits on the screen, in px, kept up to date as it
- * lays out, so its menu can open from right there.
+ * Where a long-pressed item sits on the screen, in px, computed on demand
+ * when a menu opens so that regular scrolling never incurs matrix math,
+ * rootView hierarchy queries, or Rect allocations.
  */
 class MenuAnchor {
-    internal var rect: Rect? = null
+    internal var coordinates: LayoutCoordinates? = null
+    internal var view: View? = null
+
+    val rect: Rect?
+        get() {
+            val c = coordinates?.takeIf { it.isAttached } ?: return null
+            val v = view ?: return null
+            val at = IntArray(2)
+            v.rootView.getLocationOnScreen(at)
+            return c.boundsInWindow().translate(at[0].toFloat(), at[1].toFloat())
+        }
 }
 
 /** Reports this element's place on the screen to [anchor]. */
 fun Modifier.menuAnchor(anchor: MenuAnchor, view: View): Modifier = onGloballyPositioned { c ->
-    val at = IntArray(2)
-    view.rootView.getLocationOnScreen(at)
-    anchor.rect = c.boundsInWindow().translate(at[0].toFloat(), at[1].toFloat())
+    anchor.coordinates = c
+    anchor.view = view
 }
 
 /** One row of a context menu. Rows in [group] 0 sit in the lighter top section. */

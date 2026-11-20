@@ -493,16 +493,18 @@ private fun BrowseRow(item: BrowseItem, onClick: () -> Unit) {
     val view = androidx.compose.ui.platform.LocalView.current
     val haptics = com.aura.ui.components.rememberHaptics()
     var menuOpen by remember { androidx.compose.runtime.mutableStateOf(false) }
-    val at = anchor.rect
     val round = item.type == BrowseType.ARTIST
-    if (menuOpen && list != null && at != null) {
-        com.aura.ui.components.CollectionContextMenu(list, at, onDismiss = { menuOpen = false }) {
-            Row(Modifier.fillMaxSize().padding(horizontal = 14.dp), verticalAlignment = Alignment.CenterVertically) {
-                Artwork(item.thumbnailUrl.artworkAt(ROW_ART_PX), Modifier.size(52.dp), shape = MaterialTheme.shapes.small)
-                Spacer(Modifier.width(14.dp))
-                Column(Modifier.weight(1f)) {
-                    Text(item.title, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodyLarge, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold)
-                    com.aura.ui.components.SubtitleLine(item.subtitle, explicit = item.explicit)
+    if (menuOpen && list != null) {
+        val at = anchor.rect
+        if (at != null) {
+            com.aura.ui.components.CollectionContextMenu(list, at, onDismiss = { menuOpen = false }) {
+                Row(Modifier.fillMaxSize().padding(horizontal = 14.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Artwork(item.thumbnailUrl.artworkAt(ROW_ART_PX), Modifier.size(52.dp), shape = MaterialTheme.shapes.small)
+                    Spacer(Modifier.width(14.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(item.title, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodyLarge, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold)
+                        com.aura.ui.components.SubtitleLine(item.subtitle, explicit = item.explicit)
+                    }
                 }
             }
         }

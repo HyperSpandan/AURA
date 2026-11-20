@@ -1231,13 +1231,24 @@ private fun Modifier.hiddenWhilePulled(): Modifier = graphicsLayer {
 @Composable
 private fun ProgressRing(progress: () -> Float, color: Color, track: Color, stroke: Dp, modifier: Modifier = Modifier) {
     // Its own layer: the ring redraws as the song plays, the glass under it needn't.
-    Canvas(modifier.graphicsLayer()) {
-        val w = stroke.toPx()
-        val inset = w / 2
-        val arcSize = Size(size.width - w, size.height - w)
-        drawArc(track, 0f, 360f, useCenter = false, topLeft = Offset(inset, inset), size = arcSize, style = Stroke(w))
-        drawArc(color, -90f, 360f * progress().coerceIn(0f, 1f), useCenter = false, topLeft = Offset(inset, inset), size = arcSize, style = Stroke(w, cap = StrokeCap.Round))
-    }
+    // drawWithCache remembers strokes and geometry so every playback frame runs with zero allocations.
+    val density = LocalDensity.current
+    val strokePx = with(density) { stroke.toPx() }
+    val trackStroke = remember(strokePx) { Stroke(strokePx) }
+    val progressStroke = remember(strokePx) { Stroke(strokePx, cap = StrokeCap.Round) }
+    Box(
+        modifier
+            .graphicsLayer()
+            .drawWithCache {
+                val inset = strokePx / 2f
+                val arcSize = Size(size.width - strokePx, size.height - strokePx)
+                val topLeft = Offset(inset, inset)
+                onDrawBehind {
+                    drawArc(track, 0f, 360f, useCenter = false, topLeft = topLeft, size = arcSize, style = trackStroke)
+                    drawArc(color, -90f, 360f * progress().coerceIn(0f, 1f), useCenter = false, topLeft = topLeft, size = arcSize, style = progressStroke)
+                }
+            }
+    )
 }
 
 /** One line naming where the song is playing from, as a plain label, or "Now playing" when there isn't one. */

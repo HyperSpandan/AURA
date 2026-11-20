@@ -305,7 +305,7 @@ fun SongListItem(
     val download by remember(song.videoId) { Downloads.entry(song.videoId) }
         .collectAsState(Downloads.entryNow(song.videoId))
     if (menuOpen) SongMenuSheet(song, onDismiss = { menuOpen = false })
-    val at = anchor.rect
+    val at = if (contextOpen) anchor.rect else null
     if (contextOpen && at != null) SongContextMenu(song, at, onDismiss = { contextOpen = false }, onRemoveFromPlaylist = onRemoveFromPlaylist) { SongPreview(song) }
     val playback by AppSettings.playback.collectAsState()
     // Toward the end of the line plays next, toward the start adds to the queue.
@@ -357,8 +357,17 @@ fun SongListItem(
                     fontWeight = FontWeight.Medium,
                     color = if (isCurrent) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                 )
+                val subtitle = remember(song.artist, song.durationText) {
+                    val hasArtist = song.artist.isNotBlank()
+                    val hasDuration = !song.durationText.isNullOrBlank()
+                    when {
+                        hasArtist && hasDuration -> "${song.artist} • ${song.durationText}"
+                        hasArtist -> song.artist
+                        else -> song.durationText.orEmpty()
+                    }
+                }
                 SubtitleLine(
-                    listOfNotNull(song.artist.takeIf { it.isNotBlank() }, song.durationText).joinToString(" • "),
+                    subtitle,
                     explicit = song.isExplicit == true,
                 )
             }
@@ -384,7 +393,16 @@ internal fun SongPreview(song: Song) {
         Artwork(song.thumbnailUrl.artworkAt(ROW_ART_PX), Modifier.size(52.dp))
         Column(Modifier.weight(1f)) {
             Text(song.title, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
-            SubtitleLine(listOfNotNull(song.artist.takeIf { it.isNotBlank() }, song.durationText).joinToString(" • "), explicit = song.isExplicit == true)
+            val subtitle = remember(song.artist, song.durationText) {
+                val hasArtist = song.artist.isNotBlank()
+                val hasDuration = !song.durationText.isNullOrBlank()
+                when {
+                    hasArtist && hasDuration -> "${song.artist} • ${song.durationText}"
+                    hasArtist -> song.artist
+                    else -> song.durationText.orEmpty()
+                }
+            }
+            SubtitleLine(subtitle, explicit = song.isExplicit == true)
         }
         Icon(Icons.Filled.MoreVert, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
     }
@@ -446,12 +464,14 @@ fun ItemCard(
     val view = androidx.compose.ui.platform.LocalView.current
     val haptics = rememberHaptics()
     var contextOpen by remember { mutableStateOf(false) }
-    val at = anchor.rect
-    if (contextOpen && at != null && menu != null) {
-        val preview: @Composable () -> Unit = { CardPreview(title, subtitle, thumbnailUrl, round) }
-        when (menu) {
-            is CardMenu.ForSong -> SongContextMenu(menu.song, at, onDismiss = { contextOpen = false }, preview = preview)
-            is CardMenu.ForList -> CollectionContextMenu(menu.list, at, onDismiss = { contextOpen = false }, preview = preview)
+    if (contextOpen && menu != null) {
+        val at = anchor.rect
+        if (at != null) {
+            val preview: @Composable () -> Unit = { CardPreview(title, subtitle, thumbnailUrl, round) }
+            when (menu) {
+                is CardMenu.ForSong -> SongContextMenu(menu.song, at, onDismiss = { contextOpen = false }, preview = preview)
+                is CardMenu.ForList -> CollectionContextMenu(menu.list, at, onDismiss = { contextOpen = false }, preview = preview)
+            }
         }
     }
     Column(

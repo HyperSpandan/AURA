@@ -148,24 +148,35 @@ class MovingCovers internal constructor(private val rtl: Boolean, private val sc
         loaded.remove(key)
     }
 
+    private var lastScrollTime = 0L
     private var quiet: Job? = null
 
     val scrollWatch = object : NestedScrollConnection {
         override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
             if (available == Offset.Zero) return Offset.Zero
+            lastScrollTime = android.os.SystemClock.uptimeMillis()
             if (!nestedScrolling) nestedScrolling = true
-            // Drags and flings report every frame. A fling stopped by a tap
-            // never reports its end, so a short quiet spell counts as one.
-            quiet?.cancel()
-            quiet = scope.launch {
-                delay(QUIET_MS)
-                nestedScrolling = false
+            // Drags and flings report every frame. A single debounced watcher job avoids
+            // spawning and canceling 120 coroutines/sec during scrolling flings.
+            if (quiet == null || quiet?.isActive == false) {
+                quiet = scope.launch {
+                    while (true) {
+                        val remaining = QUIET_MS - (android.os.SystemClock.uptimeMillis() - lastScrollTime)
+                        if (remaining <= 0) {
+                            nestedScrolling = false
+                            quiet = null
+                            break
+                        }
+                        delay(remaining)
+                    }
+                }
             }
             return Offset.Zero
         }
 
         override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
             quiet?.cancel()
+            quiet = null
             nestedScrolling = false
             return Velocity.Zero
         }
