@@ -579,13 +579,23 @@ fun HomeShelfView(shelf: HomeShelf, onItemClick: (ShelfItem) -> Unit, modifier: 
             QuickPicks(shelf, onItemClick)
         } else {
             if (covers == null) {
-                Shelf(title = shelf.title, subtitle = shelf.subtitle, items = shelf.items) { item ->
+                Shelf(
+                    title = shelf.title,
+                    subtitle = shelf.subtitle,
+                    items = shelf.items,
+                    key = { it.videoId ?: it.browseId ?: it.title },
+                ) { item ->
                     ItemCard(item.title, item.subtitle, item.thumbnailUrl, item.type(), onClick = { onItemClick(item) }, explicit = item.explicit, menu = item.cardMenu())
                 }
             } else {
                 // By place in the shelf, since a shelf can hold the same item twice.
                 val indexed = remember(shelf.items) { shelf.items.withIndex().toList() }
-                Shelf(title = shelf.title, subtitle = shelf.subtitle, items = indexed) { (i, item) ->
+                Shelf(
+                    title = shelf.title,
+                    subtitle = shelf.subtitle,
+                    items = indexed,
+                    key = { (i, item) -> "$coverKey:$i:${item.videoId ?: item.browseId ?: item.title}" },
+                ) { (i, item) ->
                     val type = item.type()
                     val motion = rememberCoverMotion(
                         covers,
@@ -622,10 +632,7 @@ private fun QuickPicks(shelf: HomeShelf, onItemClick: (ShelfItem) -> Unit, actio
             contentPadding = PaddingValues(end = 40.dp),
         ) { page ->
             Column(Modifier.fillMaxWidth()) {
-                val start = page * 4
-                val end = minOf(start + 4, shelf.items.size)
-                for (idx in start until end) {
-                    val item = shelf.items[idx]
+                for (item in shelf.items.drop(page * 4).take(4)) {
                     val song = item.toSong()
                     if (song != null) {
                         // The same row as Recents, so each gets the three-dot menu.
@@ -859,7 +866,7 @@ private fun TopPickCard(
     modifier: Modifier = Modifier,
 ) {
     val heroMorph = com.aura.ui.components.LocalHeroMorph.current
-    val cardCoords = remember { androidx.compose.ui.node.Ref<androidx.compose.ui.layout.LayoutCoordinates>() }
+    val cardBounds = remember { androidx.compose.ui.node.Ref<Rect>() }
     val menu = item.cardMenu()
     val shape = RoundedCornerShape(26.dp)
     val innerShape = RoundedCornerShape(20.dp)
@@ -867,22 +874,20 @@ private fun TopPickCard(
     val view = androidx.compose.ui.platform.LocalView.current
     val haptics = rememberHaptics()
     var contextOpen by remember { mutableStateOf(false) }
-    if (contextOpen && menu != null) {
-        val at = anchor.rect
-        if (at != null) {
-            val preview: @Composable () -> Unit = {
-                CardPreview(item.title, item.subtitle, item.thumbnailUrl, round = false)
-            }
-            when (menu) {
-                is CardMenu.ForSong -> SongContextMenu(menu.song, at, onDismiss = { contextOpen = false }, preview = preview)
-                is CardMenu.ForList -> CollectionContextMenu(menu.list, at, onDismiss = { contextOpen = false }, preview = preview)
-            }
+    val at = anchor.rect
+    if (contextOpen && at != null && menu != null) {
+        val preview: @Composable () -> Unit = {
+            CardPreview(item.title, item.subtitle, item.thumbnailUrl, round = false)
+        }
+        when (menu) {
+            is CardMenu.ForSong -> SongContextMenu(menu.song, at, onDismiss = { contextOpen = false }, preview = preview)
+            is CardMenu.ForList -> CollectionContextMenu(menu.list, at, onDismiss = { contextOpen = false }, preview = preview)
         }
     }
 
     val handleTap = {
         val bId = item.browseId
-        val bounds = cardCoords.value?.takeIf { it.isAttached }?.boundsInWindow()
+        val bounds = cardBounds.value
         if (heroMorph != null && bId != null && bounds != null && bounds != Rect.Zero && item.videoId == null) {
             heroMorph.launch(
                 browseId = bId,
@@ -900,7 +905,7 @@ private fun TopPickCard(
 
     Box(
         modifier = modifier
-            .onGloballyPositioned { coordinates -> cardCoords.value = coordinates }
+            .onGloballyPositioned { coordinates -> cardBounds.value = coordinates.boundsInWindow() }
             .menuAnchor(anchor, view)
             .clip(shape)
             .background(MaterialTheme.colorScheme.surfaceContainerHigh)

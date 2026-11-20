@@ -553,7 +553,11 @@ private fun ArtistShelf(shelf: HomeShelf, onItemClick: (ShelfItem) -> Unit, onSh
             contentPadding = PaddingValues(horizontal = 10.dp),
             horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            items(shelf.items) { item ->
+            items(
+                shelf.items,
+                key = { it.browseId ?: it.videoId ?: it.title },
+                contentType = { "card" },
+            ) { item ->
                 ItemCard(item.title, item.subtitle, item.thumbnailUrl, item.type(), onClick = { onItemClick(item) }, width = SHELF_CARD_WIDTH, explicit = item.explicit, menu = item.cardMenu())
             }
         }
@@ -654,7 +658,11 @@ fun ArtistItemsScreen(
                         cards.isEmpty() -> item(span = { GridItemSpan(maxLineSpan) }, key = "empty") {
                             MessageState(Icons.Rounded.LibraryMusic, "Nothing to show here")
                         }
-                        else -> items(cards) { item ->
+                        else -> items(
+                            cards,
+                            key = { it.browseId ?: it.videoId ?: it.title },
+                            contentType = { "card" },
+                        ) { item ->
                             ItemCard(
                                 item.title, item.subtitle, item.thumbnailUrl, item.type(),
                                 onClick = { onItemClick(item) },

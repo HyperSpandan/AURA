@@ -306,14 +306,14 @@ private fun androidx.compose.foundation.lazy.LazyListScope.songRows(songs: List<
 
 @Composable
 private fun AlbumShelf(title: String, albums: List<Subsonic.Album>, nav: ServerNav) {
-    Shelf(title = title, items = albums) { a ->
+    Shelf(title = title, items = albums, key = { it.id }) { a ->
         ItemCard(a.name, a.artist, a.cover, BrowseType.ALBUM, onClick = { nav.album(a.id) })
     }
 }
 
 @Composable
 private fun ArtistShelf(title: String, artists: List<Subsonic.Artist>, nav: ServerNav) {
-    Shelf(title = title, items = artists) { a ->
+    Shelf(title = title, items = artists, key = { it.id }) { a ->
         ItemCard(a.name, "${a.albumCount} albums", a.cover, BrowseType.ARTIST, onClick = { nav.artist(a.id) })
     }
 }
