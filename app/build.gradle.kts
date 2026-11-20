@@ -97,6 +97,10 @@ kotlin {
     }
 }
 
+composeCompiler {
+    stabilityConfigurationFiles.add(layout.projectDirectory.file("compose_compiler_config.conf"))
+}
+
 dependencies {
     // ---- Compose (Material 3) ----
     val composeBom = platform("androidx.compose:compose-bom:2026.03.01")

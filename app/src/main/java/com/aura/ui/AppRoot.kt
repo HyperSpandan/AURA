@@ -628,7 +628,7 @@ fun AppRoot(vm: PlayerViewModel) {
                     // Painted inside the recorded layer: a see-through backdrop would let
                     // the sharp page show through the glass instead of the blurred copy.
                     .background(MaterialTheme.colorScheme.background)
-                    .hazeSource(haze)
+                    .then(if (!sampled) Modifier.hazeSource(haze) else Modifier)
                     .nestedScroll(chromeScroll),
             ) {
                 // Glass inside the pages is part of the layer the chrome blurs, so it

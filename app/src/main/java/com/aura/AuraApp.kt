@@ -45,7 +45,7 @@ class AuraApp : Application(), SingletonImageLoader.Factory {
                     .maxSizeBytes(100L * 1024 * 1024)
                     .build()
             }
-            .crossfade(200)
+            .crossfade(150)
             .build()
     }
 

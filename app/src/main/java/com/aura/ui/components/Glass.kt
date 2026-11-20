@@ -18,6 +18,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.CompositionLocalProvider
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import com.kyant.backdrop.drawPlainBackdrop
+import androidx.compose.ui.graphics.RectangleShape
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
 import androidx.compose.foundation.layout.Column
@@ -153,7 +155,7 @@ fun Modifier.glass(shape: Shape, tint: Color = MaterialTheme.colorScheme.surface
                 // past the middle of a short pill, where the top and bottom bands
                 // would meet in a hard line across it.
                 val depth = lensDepth(30.dp.toPx(), size.minDimension)
-                lens(depth, 62.dp.toPx() * depth / 30.dp.toPx(), depthEffect = true, chromaticAberration = true)
+                lens(depth, 62.dp.toPx() * depth / 30.dp.toPx(), depthEffect = true, chromaticAberration = false)
             },
             highlight = { Highlight.Default },
             shadow = { Shadow.Default },
@@ -302,6 +304,7 @@ internal fun styleTint(style: GlassStyle, base: Color, accent: Color, dark: Bool
 fun TopEdgeFrost(modifier: Modifier = Modifier) {
     val ui by AppSettings.ui.collectAsState()
     if (!ui.frostedTopEdge) return
+    val backdrop = LocalBackdrop.current
     val haze = LocalHazeState.current
     val page = MaterialTheme.colorScheme.background
     val height = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 28.dp
@@ -310,14 +313,23 @@ fun TopEdgeFrost(modifier: Modifier = Modifier) {
             .fillMaxWidth()
             .height(height)
             .then(
-                if (haze == null || ui.reduceBlur) Modifier else Modifier.hazeEffect(haze) {
-                    backgroundColor = page
-                    tints = emptyList()
-                    blurRadius = 20.dp
-                    noiseFactor = 0f
-                    inputScale = HazeInputScale.Fixed(0.5f)
-                    progressive = HazeProgressive.verticalGradient(easing = EaseOutCubic, startIntensity = 1f, endIntensity = 0f)
-                },
+                when {
+                    ui.reduceBlur -> Modifier
+                    backdrop != null -> Modifier.drawPlainBackdrop(
+                        backdrop = backdrop,
+                        shape = { RectangleShape },
+                        effects = { blur(20.dp.toPx()) },
+                    )
+                    haze != null -> Modifier.hazeEffect(haze) {
+                        backgroundColor = page
+                        tints = emptyList()
+                        blurRadius = 20.dp
+                        noiseFactor = 0f
+                        inputScale = HazeInputScale.Fixed(0.5f)
+                        progressive = HazeProgressive.verticalGradient(easing = EaseOutCubic, startIntensity = 1f, endIntensity = 0f)
+                    }
+                    else -> Modifier
+                }
             )
             .background(Brush.verticalGradient(0f to page.copy(alpha = 0.6f), 0.55f to page.copy(alpha = 0.25f), 1f to page.copy(alpha = 0f))),
     )
