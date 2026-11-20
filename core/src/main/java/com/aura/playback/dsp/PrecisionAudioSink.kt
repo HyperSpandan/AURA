@@ -113,10 +113,14 @@ class PrecisionAudioSink(
             return super.handleBuffer(buffer, presentationTimeUs, encodedAccessUnitCount)
         }
         val made = process(buffer)
-        pending = made
         pendingTimeUs = presentationTimeUs
-        if (super.handleBuffer(made, presentationTimeUs, 1)) pending = null
-        return true
+        if (super.handleBuffer(made, presentationTimeUs, 1)) {
+            pending = null
+            return true
+        } else {
+            pending = made
+            return false
+        }
     }
 
     /** The effects are off and the output is the decoder's own format: nothing to do to the samples. */

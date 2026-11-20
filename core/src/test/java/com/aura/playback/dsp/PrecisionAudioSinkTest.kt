@@ -110,12 +110,14 @@ class PrecisionAudioSinkTest {
         sink.configure(config(C.ENCODING_PCM_16BIT))
         d.accepting = false
         val first = pcm(8) { repeat(4) { putShort(1000) } }
-        assertTrue(sink.handleBuffer(first, 0, 1))
+        assertFalse(sink.handleBuffer(first, 0, 1))
         assertTrue(sink.hasPendingData())
         val second = pcm(8) { repeat(4) { putShort(2000) } }
         assertFalse(sink.handleBuffer(second, 100, 1))
         assertEquals(8, second.remaining())
         d.accepting = true
+        assertTrue(sink.handleBuffer(first, 0, 1))
+        assertFalse(sink.hasPendingData())
         assertTrue(sink.handleBuffer(second, 100, 1))
         assertEquals(2, d.received.size)
         assertTrue(shorts(d.received[0]).all { it in 498..502 })
