@@ -13,9 +13,14 @@
 -dontobfuscate
 -keepattributes *Annotation*,Signature,InnerClasses,EnclosingMethod,SourceFile,LineNumberTable,Exceptions
 
-# The app itself is small next to its libraries; keeping all of it means no
-# setting, serializer, provider or JavaScript interface can go missing.
--keep class com.aura.** { *; }
+# Keep core data models, serialization, playback services and reflection.
+# Because -dontobfuscate is set above, no classes or methods are renamed.
+# Allowing R8 to optimize com.aura.ui enables Compose compiler inlining and dead code pruning.
+-keep class com.aura.data.** { *; }
+-keep class com.aura.playback.** { *; }
+-keep class com.aura.cast.** { *; }
+-keep class com.aura.MainActivity { *; }
+-keep class com.aura.AuraApp { *; }
 
 # Stream resolution.
 -keep class org.schabi.newpipe.** { *; }

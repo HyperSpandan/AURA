@@ -614,20 +614,19 @@ private fun ExploreSpotlightHero(
                         .height(138.dp),
                 ) { pageIdx ->
                     val release = releases.getOrNull(pageIdx) ?: return@HorizontalPager
-                    val pageOffset = ((pagerState.currentPage - pageIdx) + pagerState.currentPageOffsetFraction)
                     val isSelected = pagerState.currentPage == pageIdx
-
-                    val scale = (1f - pageOffset.absoluteValue * 0.16f).coerceIn(0.78f, 1f)
-                    val rotationZ = (pageOffset * 5.5f).coerceIn(-12f, 12f)
-                    val rotationY = (pageOffset * -14f).coerceIn(-28f, 28f)
-                    val alpha = (1f - pageOffset.absoluteValue * 0.22f).coerceIn(0.55f, 1f)
 
                     Box(
                         modifier = Modifier
                             .size(cardSize)
-                            .zIndex(1f - pageOffset.absoluteValue.coerceAtMost(1f))
                             .then(if (isSelected) Modifier.onGloballyPositioned { selectedCardBounds = it.boundsInWindow() } else Modifier)
                             .graphicsLayer {
+                                val pageOffset = ((pagerState.currentPage - pageIdx) + pagerState.currentPageOffsetFraction)
+                                val scale = (1f - pageOffset.absoluteValue * 0.16f).coerceIn(0.78f, 1f)
+                                val rotationZ = (pageOffset * 5.5f).coerceIn(-12f, 12f)
+                                val rotationY = (pageOffset * -14f).coerceIn(-28f, 28f)
+                                val alpha = (1f - pageOffset.absoluteValue * 0.22f).coerceIn(0.55f, 1f)
+
                                 scaleX = scale
                                 scaleY = scale
                                 this.rotationZ = rotationZ

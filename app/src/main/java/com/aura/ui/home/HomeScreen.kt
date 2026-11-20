@@ -808,21 +808,19 @@ private fun TopPicksSection(
                 verticalAlignment = Alignment.CenterVertically,
             ) { page ->
                 val item = items[page]
-                val pageOffset = (pagerState.currentPage - page) + pagerState.currentPageOffsetFraction
-                val absOffset = pageOffset.absoluteValue.coerceIn(0f, 2f)
-
-                // 3D transformations:
-                val scale = 1f - (absOffset.coerceAtMost(1f) * 0.14f)
-                val alpha = 1f - (absOffset.coerceAtMost(1f) * 0.35f)
-                val rotationY = (pageOffset.coerceIn(-1.5f, 1.5f) * -16f)
-                val zIndex = (10f - absOffset).coerceAtLeast(0f)
 
                 Box(
                     modifier = Modifier
                         .width(cardWidth)
                         .height(cardHeight)
-                        .zIndex(zIndex)
                         .graphicsLayer {
+                            val pageOffset = (pagerState.currentPage - page) + pagerState.currentPageOffsetFraction
+                            val absOffset = pageOffset.absoluteValue.coerceIn(0f, 2f)
+
+                            val scale = 1f - (absOffset.coerceAtMost(1f) * 0.14f)
+                            val alpha = 1f - (absOffset.coerceAtMost(1f) * 0.35f)
+                            val rotationY = (pageOffset.coerceIn(-1.5f, 1.5f) * -16f)
+
                             this.scaleX = scale
                             this.scaleY = scale
                             this.rotationY = rotationY
@@ -858,7 +856,7 @@ private fun TopPickCard(
     modifier: Modifier = Modifier,
 ) {
     val heroMorph = com.aura.ui.components.LocalHeroMorph.current
-    var cardBounds by remember { mutableStateOf(Rect.Zero) }
+    val cardBounds = remember { androidx.compose.ui.node.Ref<Rect>() }
     val menu = item.cardMenu()
     val shape = RoundedCornerShape(26.dp)
     val innerShape = RoundedCornerShape(20.dp)
@@ -879,13 +877,14 @@ private fun TopPickCard(
 
     val handleTap = {
         val bId = item.browseId
-        if (heroMorph != null && bId != null && cardBounds != Rect.Zero && item.videoId == null) {
+        val bounds = cardBounds.value
+        if (heroMorph != null && bId != null && bounds != null && bounds != Rect.Zero && item.videoId == null) {
             heroMorph.launch(
                 browseId = bId,
                 title = item.title,
                 subtitle = item.subtitle,
                 thumbnailUrl = item.thumbnailUrl,
-                bounds = cardBounds,
+                bounds = bounds,
                 initialCornerRadius = 26.dp,
                 onNavigate = onClick,
             )
@@ -896,7 +895,7 @@ private fun TopPickCard(
 
     Box(
         modifier = modifier
-            .onGloballyPositioned { coordinates -> cardBounds = coordinates.boundsInWindow() }
+            .onGloballyPositioned { coordinates -> cardBounds.value = coordinates.boundsInWindow() }
             .menuAnchor(anchor, view)
             .clip(shape)
             .background(MaterialTheme.colorScheme.surfaceContainerHigh)

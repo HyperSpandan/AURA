@@ -295,11 +295,19 @@ private fun LyricsPeek(lines: PeekLines, next: Boolean, animate: Boolean, onClic
 private fun TimeBar(position: () -> Long, durationMs: Long, onSeek: (Long) -> Unit) {
     val scheme = MaterialTheme.colorScheme
     var drag by remember { mutableStateOf<Float?>(null) }
-    val p = position()
-    val fraction = drag ?: if (durationMs > 0) (p.toFloat() / durationMs).coerceIn(0f, 1f) else 0f
-    val shownMs = (fraction * durationMs).toLong()
+    val elapsedSec by remember(position, durationMs) {
+        androidx.compose.runtime.derivedStateOf {
+            drag?.let { (it * durationMs / 1000).toLong() } ?: (position() / 1000)
+        }
+    }
+    val remainingSec by remember(position, durationMs) {
+        androidx.compose.runtime.derivedStateOf {
+            val currentMs = drag?.let { (it * durationMs).toLong() } ?: position()
+            ((durationMs - currentMs).coerceAtLeast(0) / 1000)
+        }
+    }
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Text(formatTime(shownMs), style = MaterialTheme.typography.labelLarge, color = scheme.primary)
+        Text(formatTime(elapsedSec * 1000), style = MaterialTheme.typography.labelLarge, color = scheme.primary)
         Box(
             Modifier
                 .weight(1f)
@@ -316,13 +324,14 @@ private fun TimeBar(position: () -> Long, durationMs: Long, onSeek: (Long) -> Un
                     ) { change, _ -> drag = (change.position.x / size.width).coerceIn(0f, 1f) }
                 }
                 .drawBehind {
+                    val currentFraction = drag ?: if (durationMs > 0) (position().toFloat() / durationMs).coerceIn(0f, 1f) else 0f
                     val h = (if (drag != null) 8 else 6).dp.toPx()
                     val top = (size.height - h) / 2f
                     drawRoundRect(scheme.onSurface.copy(alpha = 0.22f), Offset(0f, top), Size(size.width, h), CornerRadius(h / 2f))
-                    drawRoundRect(scheme.onSurface.copy(alpha = 0.85f), Offset(0f, top), Size(size.width * fraction, h), CornerRadius(h / 2f))
+                    drawRoundRect(scheme.onSurface.copy(alpha = 0.85f), Offset(0f, top), Size(size.width * currentFraction, h), CornerRadius(h / 2f))
                 },
         )
-        Text("-" + formatTime((durationMs - shownMs).coerceAtLeast(0)), style = MaterialTheme.typography.labelLarge, color = scheme.primary)
+        Text("-" + formatTime(remainingSec * 1000), style = MaterialTheme.typography.labelLarge, color = scheme.primary)
     }
 }
 

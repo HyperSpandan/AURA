@@ -784,6 +784,9 @@ fun CollectionScreen(
                 val c = (s as? UiState.Success)?.data
                 val tint = rememberCoverTint(c?.thumbnailUrl.artworkAt(CARD_ART_PX))
                 val band = com.aura.ui.components.rememberRubberBand()
+                val songTrackNumbers = remember(c?.songs) {
+                    c?.songs?.mapIndexed { idx, song -> song.videoId to (idx + 1) }?.toMap().orEmpty()
+                }
                 LazyColumn(state = listState, contentPadding = if (searching) PaddingValues(bottom = 16.dp) else contentPadding, modifier = Modifier.fillMaxSize().coverWash(tint).playlistSearchResults(search), overscrollEffect = band) {
                     if (!searching) item(key = "header") {
                         val showFullBleed = isAlbum && !isTv && !isLandscape && loaded != null
@@ -866,7 +869,8 @@ fun CollectionScreen(
                     if (c == null) {
                         items(8) { SongRowPlaceholder() }
                     } else {
-                        itemsIndexed(shown, key = { i, song -> "$i:${song.videoId}" }) { i, song ->
+                        itemsIndexed(shown, key = { i, song -> "$i:${song.videoId}" }, contentType = { _, _ -> "song" }) { i, song ->
+                            val trackNumber = songTrackNumbers[song.videoId] ?: (i + 1)
                             SongListItem(
                                 song = song,
                                 onClick = { actions.playAll(shown, i, false, c.title) },
@@ -876,7 +880,7 @@ fun CollectionScreen(
                                     {
                                         Box(Modifier.size(width = 28.dp, height = 52.dp), Alignment.Center) {
                                             Text(
-                                                "${c.songs.indexOf(song).takeIf { it >= 0 }?.plus(1) ?: (i + 1)}",
+                                                "$trackNumber",
                                                 style = MaterialTheme.typography.titleMedium,
                                                 color = if (song.videoId == actions.currentVideoId) MaterialTheme.colorScheme.primary
                                                 else MaterialTheme.colorScheme.onSurfaceVariant,

@@ -24,6 +24,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.core.content.res.ResourcesCompat
 import com.aura.R
 import kotlin.math.PI
@@ -71,11 +72,14 @@ fun RefractedBrandText(
     var startMillis by remember { mutableLongStateOf(0L) }
     var elapsedSec by remember { mutableFloatStateOf(0f) }
 
-    LaunchedEffect(Unit) {
-        while (true) {
-            withInfiniteAnimationFrameMillis { frameTime ->
-                if (startMillis == 0L) startMillis = frameTime
-                elapsedSec = (frameTime - startMillis) / 1000f
+    val lifecycle = androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle
+    LaunchedEffect(lifecycle) {
+        lifecycle.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.RESUMED) {
+            while (true) {
+                withInfiniteAnimationFrameMillis { frameTime ->
+                    if (startMillis == 0L) startMillis = frameTime
+                    elapsedSec = (frameTime - startMillis) / 1000f
+                }
             }
         }
     }
@@ -251,6 +255,23 @@ fun RefractedBrandText(
         )
     }
 
+    // Zero-allocation reusable LinearGradient with matrix translation
+    val unifiedBodyShader = remember(totalWordWidth, heightPx) {
+        LinearGradient(
+            -dx, -dy,
+            0f, heightPx,
+            gradientColors,
+            gradientStops,
+            Shader.TileMode.REPEAT
+        )
+    }
+    val shaderMatrix = remember { android.graphics.Matrix() }
+
+    LaunchedEffect(unifiedBodyShader) {
+        bodyPaint.shader = unifiedBodyShader
+        bloomPaint.shader = unifiedBodyShader
+    }
+
     Canvas(
         modifier = modifier
             .height(height)
@@ -259,17 +280,9 @@ fun RefractedBrandText(
         val currentElapsed = elapsedSec
         val offset = (currentElapsed * velocity) % wavelength
 
-        // Continuous, endlessly repeating LinearGradient across the entire canvas space
-        val unifiedBodyShader = LinearGradient(
-            offset - dx, -dy,
-            offset, heightPx,
-            gradientColors,
-            gradientStops,
-            Shader.TileMode.REPEAT
-        )
-
-        bodyPaint.shader = unifiedBodyShader
-        bloomPaint.shader = unifiedBodyShader
+        shaderMatrix.reset()
+        shaderMatrix.setTranslate(offset, 0f)
+        unifiedBodyShader.setLocalMatrix(shaderMatrix)
 
         drawIntoCanvas { composeCanvas ->
             val canvas = composeCanvas.nativeCanvas

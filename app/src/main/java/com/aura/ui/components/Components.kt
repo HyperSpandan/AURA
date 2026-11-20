@@ -1,6 +1,8 @@
 package com.aura.ui.components
 
 import androidx.compose.foundation.indication
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
@@ -243,15 +245,18 @@ fun ArtistLinks(
  */
 @Composable
 fun ListenedBar(videoId: String, modifier: Modifier = Modifier) {
-    val long by com.aura.data.library.ResumePoints.points.collectAsState()
-    val episodes by com.aura.data.podcasts.Podcasts.progress.collectAsState()
-    val fraction = remember(videoId, long, episodes) {
-        val episode = episodes[videoId]
-        when {
-            episode != null -> if (episode.finished || com.aura.data.podcasts.Podcasts.resumeAt(videoId) == null) 0f else episode.fraction
-            else -> long[videoId]?.fraction ?: 0f
-        }
-    }
+    val fraction by remember(videoId) {
+        combine(
+            com.aura.data.library.ResumePoints.points,
+            com.aura.data.podcasts.Podcasts.progress,
+        ) { long, episodes ->
+            val episode = episodes[videoId]
+            when {
+                episode != null -> if (episode.finished || com.aura.data.podcasts.Podcasts.resumeAt(videoId) == null) 0f else episode.fraction
+                else -> long[videoId]?.fraction ?: 0f
+            }
+        }.distinctUntilChanged()
+    }.collectAsState(initial = 0f)
     if (fraction <= 0.01f) return
     Box(
         modifier
