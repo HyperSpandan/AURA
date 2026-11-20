@@ -119,6 +119,9 @@ fun RefractedBrandText(
             isSubpixelText = true
             style = Paint.Style.FILL
             typeface = outfitTypeface
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                fontVariationSettings = "'wght' 900"
+            }
             textSize = fontSizePx
         }
     }
@@ -132,6 +135,9 @@ fun RefractedBrandText(
             strokeJoin = Paint.Join.ROUND
             strokeCap = Paint.Cap.ROUND
             typeface = outfitTypeface
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                fontVariationSettings = "'wght' 900"
+            }
             textSize = fontSizePx
             shader = strokeShader
         }
@@ -146,6 +152,9 @@ fun RefractedBrandText(
             strokeJoin = Paint.Join.ROUND
             strokeCap = Paint.Cap.ROUND
             typeface = outfitTypeface
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                fontVariationSettings = "'wght' 900"
+            }
             textSize = fontSizePx
             shader = crestShader
         }
@@ -157,6 +166,9 @@ fun RefractedBrandText(
             isSubpixelText = true
             style = Paint.Style.FILL
             typeface = outfitTypeface
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                fontVariationSettings = "'wght' 900"
+            }
             textSize = fontSizePx
             setShadowLayer(
                 with(density) { 14.dp.toPx() },
