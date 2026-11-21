@@ -265,10 +265,6 @@ function FullScreenPlayerContent({ closing = false, onClosed }: { closing?: bool
     setPanel((on) => (on === p ? null : p));
   };
 
-  useEffect(() => {
-    if (video && !picked.current) setPanel(null);
-  }, [video]);
-
   const wake = () => {
     setIdle(false);
     if (idleTimer.current) clearTimeout(idleTimer.current);
@@ -328,7 +324,7 @@ function FullScreenPlayerContent({ closing = false, onClosed }: { closing?: bool
       // Over everything but menus and dialogs, which portal above it. The on-dark colours come from tokens.css (data-full-screen).
       // --art, the artwork's side: Apple's 461px at 1440px wide, and never taller than the screen leaves room for.
       ref={root}
-      className={`fixed inset-0 z-[calc(var(--z-contextual-menus)-2)] isolate overflow-hidden text-primary [--art:min(32vw,calc(100dvh-330px),720px)] max-md:[--art:min(84vw,calc(100dvh-330px),420px)] ${closing ? 'pointer-events-none' : ''}`}
+      className={`fixed inset-0 z-[calc(var(--z-contextual-menus)-2)] isolate overflow-hidden bg-[#100d0c] text-primary [--art:min(32vw,calc(100dvh-330px),720px)] max-md:[--art:min(84vw,calc(100dvh-330px),420px)] ${closing ? 'pointer-events-none' : ''}`}
       role="dialog"
       aria-modal="true"
       aria-label="Now Playing"
@@ -351,7 +347,7 @@ function FullScreenPlayerContent({ closing = false, onClosed }: { closing?: bool
         <strong className="block max-w-[420px] mx-auto truncate">{playingFrom.title}</strong>
       </div>
       {theater && (
-        <div className="absolute inset-0 animate-fade-in bg-black">
+        <div key="theater-surface" className="absolute inset-0 animate-fade-in bg-black">
           <VideoSurface fit="contain" className="size-full" />
         </div>
       )}
@@ -372,6 +368,7 @@ function FullScreenPlayerContent({ closing = false, onClosed }: { closing?: bool
 
       {/* Apple's grid areas "controls lyrics": the artwork column, then the lyrics. */}
       <div
+        key={theater ? 'theater-controls' : 'grid-controls'}
         className={
           theater
             ? `absolute inset-x-0 bottom-0 flex justify-center bg-[linear-gradient(to_top,rgb(0_0_0/0.72),rgb(0_0_0/0.35)_55%,transparent)] px-6 pt-32 pb-16 transition-opacity duration-300${hidden}`
@@ -428,7 +425,7 @@ function FullScreenPlayerContent({ closing = false, onClosed }: { closing?: bool
                 playing={playing}
               />
             )}
-            {video && !theater && <VideoSurface className="absolute inset-0" />}
+            {video && !theater && <VideoSurface key="cover-surface" className="absolute inset-0" />}
           </div>
 
           <div key={videoId} data-morph-fade className={`ot-swap-in flex items-center gap-3${theater ? '' : ' mt-[clamp(20px,3.2vh,32px)]'}${column ? ' max-md:mt-0' : ''}`}>

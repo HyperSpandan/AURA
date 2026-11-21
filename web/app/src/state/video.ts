@@ -55,12 +55,12 @@ export function claimVideoSurface(host: HTMLElement, fit: VideoFit): () => void 
   const entry = { host, fit };
   stack.push(entry);
   place();
-  useVideo.setState((s) => ({ surfaces: s.surfaces + 1 }));
+  queueMicrotask(() => useVideo.setState((s) => ({ surfaces: s.surfaces + 1 })));
   return () => {
     const at = stack.indexOf(entry);
     if (at >= 0) stack.splice(at, 1);
     place();
-    useVideo.setState((s) => ({ surfaces: s.surfaces - 1 }));
+    queueMicrotask(() => useVideo.setState((s) => ({ surfaces: s.surfaces - 1 })));
   };
 }
 
