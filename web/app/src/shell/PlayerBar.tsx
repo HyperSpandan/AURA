@@ -82,6 +82,7 @@ function VolumeControl({ open, onOpen }: { open: boolean; onOpen: () => void }) 
 export function PlayerBar() {
   const sidePanel = useUi((s) => s.sidePanel);
   const toggleSidePanel = useUi((s) => s.toggleSidePanel);
+  const fullScreen = useUi((s) => s.fullScreen);
   const lyrics = useLyrics();
   const hasLyrics = !!lyrics.data || sidePanel === 'lyrics';
   const hasTrack = usePlayer((s) => s.nowPlaying !== null);
@@ -115,9 +116,9 @@ export function PlayerBar() {
     // (translate, on the compositor) rather than the row's padding growing under it.
     // Kept at opacity: 1 and constant scale so the liquid glass backdrop filter and refraction stay active during animation.
     <div
-      className={`group/bar pointer-events-none absolute right-0 bottom-(--player-bottom-offset) left-(--web-navigation-width) z-[calc(var(--z-web-chrome)-1)] flex justify-center px-5 max-sm:hidden will-change-transform transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+      className={`group/bar pointer-events-none absolute right-0 bottom-(--player-bottom-offset) left-(--web-navigation-width) z-[calc(var(--z-web-chrome)-1)] flex justify-center px-5 max-sm:hidden will-change-transform transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
         hasTrack ? 'translate-y-0' : 'translate-y-[calc(100%+var(--player-bottom-offset)+32px)]'
-      }`}
+      } ${fullScreen ? 'invisible pointer-events-none opacity-0' : ''}`}
       data-panel-open={sidePanel !== null}
     >
       <div

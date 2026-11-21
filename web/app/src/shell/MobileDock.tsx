@@ -8,6 +8,7 @@ import { useLiquidGlass } from '@/lib/liquidGlass';
 const TABS = [[Home, '/home', 'Home'], [Compass, '/new', 'Explore'], [Library, '/library', 'Library'], [Search, '/search', 'Search'], [Settings, '/settings', 'Settings']] as const;
 
 export function MobileDock() {
+  const fullScreen = useUi(s => s.fullScreen);
   const track = usePlayer(s => s.nowPlaying);
   const playing = usePlayer(s => s.status === 'playing' || s.status === 'buffering');
   const { togglePlay, next } = usePlayer.getState();
@@ -15,7 +16,7 @@ export function MobileDock() {
   const mini = useLiquidGlass<HTMLElement>(20, 20);
   const dock = useLiquidGlass<HTMLElement>(22, 22);
   const tab = TABS.findIndex(([, to]) => pathname === to || pathname.startsWith(to + '/'));
-  return <div className="ot-mobile-dock">
+  return <div className={`ot-mobile-dock ${fullScreen ? 'opacity-0 pointer-events-none invisible transition-opacity duration-300' : ''}`}>
     {track && <section ref={mini} className="ot-mini glass-pill" aria-label="Mini player" data-player-origin>
       <button className="ot-mini-track" onClick={() => useUi.getState().setFullScreen(true)} aria-label={`Open player: ${track.title}`}>
         {track.artworkUrl && <img src={sizedArtwork(track.artworkUrl, 96)} alt="" data-cover-origin />}
