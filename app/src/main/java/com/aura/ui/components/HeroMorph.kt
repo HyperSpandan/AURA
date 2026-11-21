@@ -191,7 +191,7 @@ fun HeroMorphOverlay(
     val currentElevation = lerp(26.dp, 0.dp, p)
 
     // Alpha fade out when completing handoff to live screen
-    val containerAlpha = if (progress > 0.95f) (1f - (progress - 0.95f) * 10f).coerceIn(0f, 1f) else 1f
+    val containerAlpha = if (progress > 0.92f) (1f - (progress - 0.92f) / 0.13f).coerceIn(0f, 1f) else 1f
 
     val currentWidthDp = with(density) { currentWidth.toDp() }
     val currentHeightDp = with(density) { currentHeight.toDp() }
@@ -281,6 +281,11 @@ fun HeroMorphOverlay(
                                             1f to Color.Black.copy(alpha = lerp(0.85f, 0f, p / 0.7f)),
                                         ),
                                     )
+                                    .border(
+                                        0.75.dp,
+                                        Color.White.copy(alpha = lerp(0.18f, 0f, p / 0.7f)),
+                                        RoundedCornerShape(lerp(20.dp, 0.dp, p / 0.7f)),
+                                    )
                                     .padding(vertical = lerp(12.dp, 4.dp, p / 0.7f), horizontal = lerp(10.dp, 0.dp, p / 0.7f))
                             } else Modifier,
                         ),
@@ -298,7 +303,15 @@ fun HeroMorphOverlay(
                         )
 
                         if (spec.subtitle.isNotBlank()) {
-                            val artist = spec.subtitle.split("•").firstOrNull()?.trim()?.ifBlank { spec.subtitle } ?: spec.subtitle
+                            val cleanSubtitle = spec.subtitle
+                                .removePrefix("Album • ")
+                                .removePrefix("Single • ")
+                                .removePrefix("EP • ")
+                                .removePrefix("album • ")
+                                .removePrefix("single • ")
+                                .removePrefix("ep • ")
+                                .trim()
+                            val artist = cleanSubtitle.split("•").lastOrNull()?.trim() ?: cleanSubtitle
                             Text(
                                 text = artist,
                                 style = if (isUnfolded) MaterialTheme.typography.titleMedium else MaterialTheme.typography.bodyMedium,

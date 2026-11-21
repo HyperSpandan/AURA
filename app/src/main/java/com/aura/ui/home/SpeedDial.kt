@@ -157,14 +157,12 @@ private fun SpeedDialTile(item: ShelfItem, onClick: () -> Unit, modifier: Modifi
     val view = LocalView.current
     val haptics = rememberHaptics()
     var menuOpen by remember { mutableStateOf(false) }
-    if (menuOpen && menu != null) {
-        val at = anchor.rect
-        if (at != null) {
-            val preview: @Composable () -> Unit = { CardPreview(item.title, item.subtitle, item.thumbnailUrl, round) }
-            when (menu) {
-                is CardMenu.ForSong -> SongContextMenu(menu.song, at, onDismiss = { menuOpen = false }, preview = preview)
-                is CardMenu.ForList -> CollectionContextMenu(menu.list, at, onDismiss = { menuOpen = false }, preview = preview)
-            }
+    val at = anchor.rect
+    if (menuOpen && at != null && menu != null) {
+        val preview: @Composable () -> Unit = { CardPreview(item.title, item.subtitle, item.thumbnailUrl, round) }
+        when (menu) {
+            is CardMenu.ForSong -> SongContextMenu(menu.song, at, onDismiss = { menuOpen = false }, preview = preview)
+            is CardMenu.ForList -> CollectionContextMenu(menu.list, at, onDismiss = { menuOpen = false }, preview = preview)
         }
     }
     Box(

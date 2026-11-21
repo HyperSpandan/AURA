@@ -82,6 +82,7 @@ import com.aura.data.account.AccountStore
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.background
@@ -800,6 +801,7 @@ private fun TopPicksSection(
         // 3D Carousel Pager
         val pagerState = rememberPagerState(initialPage = 0, pageCount = { items.size })
         val density = androidx.compose.ui.platform.LocalDensity.current
+        val coroutineScope = rememberCoroutineScope()
 
         BoxWithConstraints(Modifier.fillMaxWidth().padding(top = 8.dp)) {
             val screenWidth = maxWidth
@@ -818,6 +820,7 @@ private fun TopPicksSection(
                 verticalAlignment = Alignment.CenterVertically,
             ) { page ->
                 val item = items[page]
+                val isSelected = pagerState.currentPage == page
 
                 Box(
                     modifier = Modifier
@@ -845,6 +848,12 @@ private fun TopPicksSection(
                 ) {
                     TopPickCard(
                         item = item,
+                        isSelected = isSelected,
+                        onSelect = {
+                            coroutineScope.launch {
+                                pagerState.animateScrollToPage(page)
+                            }
+                        },
                         onClick = { onItemClick(item) },
                         modifier = Modifier.fillMaxSize(),
                     )
@@ -862,11 +871,11 @@ private fun TopPicksSection(
 @Composable
 private fun TopPickCard(
     item: ShelfItem,
+    isSelected: Boolean,
+    onSelect: () -> Unit,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val heroMorph = com.aura.ui.components.LocalHeroMorph.current
-    val cardBounds = remember { androidx.compose.ui.node.Ref<Rect>() }
     val menu = item.cardMenu()
     val shape = RoundedCornerShape(26.dp)
     val innerShape = RoundedCornerShape(20.dp)
@@ -886,33 +895,33 @@ private fun TopPickCard(
     }
 
     val handleTap = {
-        val bId = item.browseId
-        val bounds = cardBounds.value
-        if (heroMorph != null && bId != null && bounds != null && bounds != Rect.Zero && item.videoId == null) {
-            heroMorph.launch(
-                browseId = bId,
-                title = item.title,
-                subtitle = item.subtitle,
-                thumbnailUrl = item.thumbnailUrl,
-                bounds = bounds,
-                initialCornerRadius = 26.dp,
-                onNavigate = onClick,
-            )
+        if (!isSelected) {
+            onSelect()
         } else {
+            haptics.tick()
             onClick()
         }
     }
 
     Box(
         modifier = modifier
-            .onGloballyPositioned { coordinates -> cardBounds.value = coordinates.boundsInWindow() }
             .menuAnchor(anchor, view)
             .clip(shape)
             .background(MaterialTheme.colorScheme.surfaceContainerHigh)
             .border(1.dp, Color.White.copy(alpha = 0.15f), shape)
             .then(
                 if (menu == null) Modifier.clickable(onClick = handleTap)
-                else Modifier.menuClickable(onClick = handleTap, onLongClick = { haptics.press(); contextOpen = true }),
+                else Modifier.menuClickable(
+                    onClick = handleTap,
+                    onLongClick = {
+                        if (isSelected) {
+                            haptics.press()
+                            contextOpen = true
+                        } else {
+                            onSelect()
+                        }
+                    },
+                ),
             ),
     ) {
         Artwork(

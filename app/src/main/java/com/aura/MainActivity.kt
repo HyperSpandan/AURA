@@ -165,12 +165,8 @@ class MainActivity : ComponentActivity() {
             else -> offered.minByOrNull { kotlin.math.abs(it.refreshRate - hz) }
         }
         val id = best?.modeId ?: 0
-        val targetRate = best?.refreshRate ?: 0f
-        val attrs = window.attributes
-        if (attrs.preferredDisplayModeId != id || attrs.preferredRefreshRate != targetRate) {
-            attrs.preferredDisplayModeId = id
-            attrs.preferredRefreshRate = targetRate
-            window.attributes = attrs
+        if (window.attributes.preferredDisplayModeId != id) {
+            window.attributes = window.attributes.apply { preferredDisplayModeId = id }
         }
     }
 }
