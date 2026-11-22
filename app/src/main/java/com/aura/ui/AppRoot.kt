@@ -919,6 +919,8 @@ fun AppRoot(vm: PlayerViewModel) {
                         onCollapse = { paneCollapsed = true },
                         onTogether = { nav.navigate("together") },
                         onEqualizer = { nav.navigate("equalizer") },
+                        onDevices = { nav.navigate("devices") },
+                        onRemote = { nav.navigate("tv-remote") },
                         docked = true,
                     )
                 }
@@ -942,6 +944,8 @@ fun AppRoot(vm: PlayerViewModel) {
                     onCovering = { still = it },
                     onTogether = { fromPlayer { nav.navigate("together") } },
                     onEqualizer = { fromPlayer { nav.navigate("equalizer") } },
+                    onDevices = { fromPlayer { nav.navigate("devices") } },
+                    onRemote = { fromPlayer { nav.navigate("tv-remote") } },
                 )
             }
             if (sheetMorph) {

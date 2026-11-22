@@ -38,6 +38,7 @@ import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.MoreHoriz
 import androidx.compose.material.icons.rounded.SpeakerGroup
 import androidx.compose.material.icons.rounded.Cast
+import androidx.compose.material.icons.rounded.CastConnected
 import androidx.compose.material.icons.rounded.Smartphone
 import androidx.compose.material.icons.rounded.Lyrics
 import androidx.compose.material.icons.rounded.Shuffle
@@ -184,15 +185,17 @@ internal fun LandscapePlayer(
                     val context = LocalContext.current
                     RoundIcon(Icons.Rounded.SpeakerGroup, "Choose where it plays", { openOutputSwitcher(context) })
                     RoundIcon(
-                        outputRoute.icon,
-                        "Audio output",
+                        if (outputRoute == OutputRoute.CAST) Icons.Rounded.CastConnected else outputRoute.icon,
+                        "Devices",
                         { showOutput = true },
                         tint = if (outputRoute == OutputRoute.CAST) scheme.primary else scheme.onSurface,
                     )
-                    if (showOutput) com.aura.ui.cast.AudioOutputSheet(
+                    if (showOutput) com.aura.ui.cast.DevicesSheet(
                         onDismiss = { showOutput = false },
                         onCast = { showOutput = false; showCast = true },
-                        onPipeline = { showOutput = false; onSignal() },
+                        onLinkDevice = { showOutput = false; actions.openDevices() },
+                        onRemote = { showOutput = false; actions.openRemote() },
+                        onTogether = { showOutput = false; actions.openTogether() },
                     )
                     if (showCast) com.aura.ui.cast.CastSheet(onDismiss = { showCast = false })
                 }

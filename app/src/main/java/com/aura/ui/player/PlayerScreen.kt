@@ -55,6 +55,7 @@ import androidx.compose.material.icons.automirrored.rounded.QueueMusic
 import androidx.compose.material.icons.automirrored.rounded.FormatListBulleted
 import androidx.compose.material.icons.rounded.Bedtime
 import androidx.compose.material.icons.rounded.Cast
+import androidx.compose.material.icons.rounded.CastConnected
 import androidx.compose.material.icons.rounded.Headphones
 import androidx.compose.material.icons.rounded.Smartphone
 import androidx.compose.material.icons.rounded.BugReport
@@ -216,6 +217,8 @@ class PlayerActions(
     val moveIndex: (Int, Int) -> Unit = { _, _ -> },
     val openTogether: () -> Unit = {},
     val openEqualizer: () -> Unit = {},
+    val openDevices: () -> Unit = {},
+    val openRemote: () -> Unit = {},
 )
 
 @Composable
@@ -226,6 +229,8 @@ fun PlayerScreen(
     onCovering: (Boolean) -> Unit = {},
     onTogether: () -> Unit = {},
     onEqualizer: () -> Unit = {},
+    onDevices: () -> Unit = {},
+    onRemote: () -> Unit = {},
     /** Docked beside the page on a large screen; see [PlayerLayout]. */
     docked: Boolean = false,
 ) {
@@ -252,7 +257,7 @@ fun PlayerScreen(
     val audioFormat by vm.audioFormat.collectAsState()
     val coverVideo by vm.coverVideo.collectAsState()
     val canvasVideo by vm.canvasVideo.collectAsState()
-    val actions = remember(vm, onCollapse) {
+    val actions = remember(vm, onCollapse, onTogether, onEqualizer, onDevices, onRemote) {
         PlayerActions(
             togglePlay = vm::togglePlayPause,
             next = vm::skipNext,
@@ -266,6 +271,8 @@ fun PlayerScreen(
             moveIndex = vm::moveQueueItem,
             openTogether = onTogether,
             openEqualizer = onEqualizer,
+            openDevices = onDevices,
+            openRemote = onRemote,
         )
     }
     PlayerLayout(
@@ -1209,8 +1216,8 @@ fun PlayerLayout(
                                     Box(Modifier.width(1.dp).fillMaxHeight().background(Color.White.copy(alpha = 0.16f)))
                                 }
                                 PillButton(
-                                    outputRoute.icon,
-                                    "Audio output",
+                                    if (outputRoute == OutputRoute.CAST) Icons.Rounded.CastConnected else outputRoute.icon,
+                                    "Devices",
                                     // Headphones only change the icon; lit up is for casting, a session to notice.
                                     outputRoute == OutputRoute.CAST,
                                     { showOutput = true },
@@ -1287,10 +1294,12 @@ fun PlayerLayout(
             Box(Modifier.fillMaxSize().graphicsLayer { alpha = (windDown * 0.55f).coerceIn(0f, 0.55f) }.background(Color.Black))
         }
         if (showRemix) RemixSheet(onDismiss = { showRemix = false })
-        if (showOutput) com.aura.ui.cast.AudioOutputSheet(
+        if (showOutput) com.aura.ui.cast.DevicesSheet(
             onDismiss = { showOutput = false },
             onCast = { showOutput = false; showCast = true },
-            onPipeline = { showOutput = false; showSignal = true },
+            onLinkDevice = { showOutput = false; actions.openDevices() },
+            onRemote = { showOutput = false; actions.openRemote() },
+            onTogether = { showOutput = false; actions.openTogether() },
         )
         if (showCast) com.aura.ui.cast.CastSheet(onDismiss = { showCast = false })
         if (showSleep) SleepTimerDialog(onDismiss = { showSleep = false })
