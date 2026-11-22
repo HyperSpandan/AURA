@@ -181,7 +181,7 @@ const webPlayer: ConnectPlayer = {
   needsTap: () => navigator.userActivation ? !navigator.userActivation.hasBeenActive : false,
   load: (queue, index, pos, playing) => {
     if (!queue.length || index < 0 || index >= queue.length) return false;
-    void partyPlayer.load(queue.map(fromCTrack), queue.map(() => 'user'), index, pos / 1000, playing, SOURCE);
+    void partyPlayer.load(queue.map(fromCTrack), queue.map(() => 'user'), index, pos / 1000, playing);
     return true;
   },
 };

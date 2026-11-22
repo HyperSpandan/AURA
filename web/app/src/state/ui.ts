@@ -33,7 +33,15 @@ const SIDEBAR_KEY = 'aura:sidebar-collapsed';
 // Storage can throw (blocked site data); the sidebar then just starts open and isn't remembered.
 function remembered(key: string): boolean {
   try {
-    return localStorage.getItem(key) === '1';
+    return typeof localStorage !== 'undefined' && localStorage.getItem(key) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function sessionRemembered(key: string): boolean {
+  try {
+    return typeof sessionStorage !== 'undefined' && sessionStorage.getItem(key) === '1';
   } catch {
     return false;
   }
@@ -58,9 +66,13 @@ export const useUi = create<UiState>()((set) => ({
       }
       return { sidebarCollapsed };
     }),
-  installBannerDismissed: sessionStorage.getItem(BANNER_KEY) === '1',
+  installBannerDismissed: sessionRemembered(BANNER_KEY),
   dismissInstallBanner: () => {
-    sessionStorage.setItem(BANNER_KEY, '1');
+    try {
+      sessionStorage.setItem(BANNER_KEY, '1');
+    } catch {
+      // ignore
+    }
     set({ installBannerDismissed: true });
   },
   supportOpen: false,
@@ -70,8 +82,10 @@ export const useUi = create<UiState>()((set) => ({
 }));
 
 // For browser-driven tests, next to __bcPlayer.
-if (import.meta.env.DEV) Object.assign(window, { __bcUi: useUi });
+if (import.meta.env.DEV && typeof window !== 'undefined') Object.assign(window, { __bcUi: useUi });
 
 // A sidebar folded last time is folded before the first paint, so it doesn't ease shut on every load
 // (the width eases between the two; see tokens.css). Sidebar keeps the attribute in step after that.
-if (useUi.getState().sidebarCollapsed) document.documentElement.dataset.sidebar = 'collapsed';
+if (typeof document !== 'undefined' && useUi.getState().sidebarCollapsed) {
+  document.documentElement.dataset.sidebar = 'collapsed';
+}

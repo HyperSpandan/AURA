@@ -3,17 +3,17 @@ import { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useUi } from '@/state/ui';
 
-interface ShortcutItem {
+export interface ShortcutItem {
   keys: string[];
   desc: string;
 }
 
-interface ShortcutGroup {
+export interface ShortcutGroup {
   title: string;
   items: ShortcutItem[];
 }
 
-const GROUPS: ShortcutGroup[] = [
+export const SHORTCUT_GROUPS: ShortcutGroup[] = [
   {
     title: 'Playback',
     items: [
@@ -43,6 +43,7 @@ const GROUPS: ShortcutGroup[] = [
       { keys: ['R'], desc: 'Cycle repeat mode' },
       { keys: ['/', '⌘ F'], desc: 'Search' },
       { keys: ['⌘ \\'], desc: 'Toggle sidebar rail' },
+      { keys: ['?'], desc: 'Open shortcuts cheat sheet' },
       { keys: ['Esc'], desc: 'Close dialogs / full-screen' },
     ],
   },
@@ -97,7 +98,7 @@ export function KeyboardShortcutsModal() {
         </div>
 
         <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-1">
-          {GROUPS.map((group) => (
+          {SHORTCUT_GROUPS.map((group) => (
             <div key={group.title}>
               <h3 className="text-xs font-semibold uppercase tracking-wider text-white/40 mb-3">
                 {group.title}

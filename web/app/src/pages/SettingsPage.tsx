@@ -1,4 +1,4 @@
-import { ArrowUpRight, AudioLines, ChevronRight, Heart, Info, Mic2, MonitorSmartphone, Palette, Play, Plug, Smartphone, Tv, Users, Wrench, type LucideIcon } from 'lucide-react';
+import { ArrowUpRight, AudioLines, ChevronRight, Heart, Info, Keyboard, Mic2, MonitorSmartphone, Palette, Play, Plug, Smartphone, Tv, Users, Wrench, type LucideIcon } from 'lucide-react';
 import { lazy, Suspense, useEffect, useRef, useState, type ComponentType, type ReactNode } from 'react';
 import { MdOutlineExtension } from 'react-icons/md';
 import { SiApplemusic, SiDiscord, SiGithub, SiSpotify, SiYoutubemusic } from 'react-icons/si';
@@ -257,20 +257,12 @@ export default function SettingsPage() {
                   ))}
                 </select>
               </label>
-              <button
-                type="button"
-                className={`${settingsUi.integrationPlain} ${settingsUi.linkRow}`}
-                onClick={() => useUi.getState().setShortcutsOpen(true)}
-              >
-                <span className={settingsUi.rowText}>
-                  <span>Keyboard shortcuts</span>
-                  <span className={settingsUi.rowDetail}>Space to play/pause, arrows to seek, volume & navigation</span>
-                </span>
-                <span className={settingsUi.value}>
-                  <kbd className="px-1.5 py-0.5 rounded bg-white/10 text-white font-mono text-xs">?</kbd>
-                  <ChevronRight size={16} className="text-tertiary" />
-                </span>
-              </button>
+              <LinkRow
+                to="/settings/shortcuts"
+                icon={<Glyph Icon={Keyboard} color="#30b0c7" />}
+                title="Keyboard shortcuts"
+                value="Space, arrows, ?"
+              />
             </section>
           </Section>
 
