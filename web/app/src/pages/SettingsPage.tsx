@@ -254,6 +254,20 @@ export default function SettingsPage() {
                   ))}
                 </select>
               </label>
+              <button
+                type="button"
+                className={`${settingsUi.integrationPlain} ${settingsUi.linkRow}`}
+                onClick={() => useUi.getState().setShortcutsOpen(true)}
+              >
+                <span className={settingsUi.rowText}>
+                  <span>Keyboard shortcuts</span>
+                  <span className={settingsUi.rowDetail}>Space to play/pause, arrows to seek, volume & navigation</span>
+                </span>
+                <span className={settingsUi.value}>
+                  <kbd className="px-1.5 py-0.5 rounded bg-white/10 text-white font-mono text-xs">?</kbd>
+                  <ChevronRight size={16} className="text-tertiary" />
+                </span>
+              </button>
             </section>
           </Section>
 

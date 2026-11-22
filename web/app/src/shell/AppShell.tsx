@@ -22,6 +22,7 @@ import { MobileDock } from './MobileDock';
 import { RoomNotice } from './RoomNotice';
 import { Sidebar } from './Sidebar';
 import { SupportModal } from '@/components/SupportModal';
+import { KeyboardShortcutsModal } from '@/components/KeyboardShortcutsModal';
 import { FullScreenPlayer } from './FullScreenPlayer';
 import { OfflinePage } from '@/components/music/OfflinePage';
 import { useIsOnline } from '@/lib/useIsOnline';
@@ -236,6 +237,7 @@ export function AppShell() {
         <SidePanel />
         <RoomNotice />
         <SupportModal />
+        <KeyboardShortcutsModal />
       </div>
       {banner}
       {(fullScreen || playerUp) && (

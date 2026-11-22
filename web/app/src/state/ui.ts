@@ -22,6 +22,9 @@ interface UiState {
   /** Support AURA modal dialog */
   supportOpen: boolean;
   setSupportOpen: (open: boolean) => void;
+  /** Keyboard shortcuts cheat sheet dialog */
+  shortcutsOpen: boolean;
+  setShortcutsOpen: (open: boolean) => void;
 }
 
 const BANNER_KEY = 'aura:install-banner-dismissed';
@@ -62,6 +65,8 @@ export const useUi = create<UiState>()((set) => ({
   },
   supportOpen: false,
   setSupportOpen: (supportOpen) => set({ supportOpen }),
+  shortcutsOpen: false,
+  setShortcutsOpen: (shortcutsOpen) => set({ shortcutsOpen }),
 }));
 
 // For browser-driven tests, next to __bcPlayer.
