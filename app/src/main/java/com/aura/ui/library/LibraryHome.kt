@@ -40,6 +40,7 @@ import androidx.compose.material.icons.rounded.KeyboardArrowUp
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Album
+import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.ThumbUp
 import androidx.compose.material.icons.rounded.Close
@@ -848,10 +849,13 @@ fun DownloadedListScreen(id: String, contentPadding: PaddingValues, actions: Son
 @Composable
 fun DownloadsScreen(contentPadding: PaddingValues, actions: SongActions, onBack: () -> Unit, onOpenList: (String) -> Unit = {}) {
     val context = LocalContext.current
+    val libSettings by com.aura.data.settings.AppSettings.library.collectAsState()
     val entries by Downloads.entries.collectAsState()
     val downloadedLists by com.aura.data.download.DownloadedLists.lists.collectAsState()
     val list = remember(entries) { entries.values.sortedByDescending { it.addedAt } }
     val ready = remember(list) { list.filter { it.state == DownloadState.DONE }.map { it.song.toSong() } }
+    val smartList = remember(list) { list.filter { it.smartDownload } }
+    val smartReady = remember(smartList) { smartList.filter { it.state == DownloadState.DONE }.map { it.song.toSong() } }
     // Downloaded lists with something of theirs still downloaded, and how much.
     val lists = remember(downloadedLists, entries) {
         downloadedLists.mapNotNull { l ->
@@ -864,12 +868,33 @@ fun DownloadsScreen(contentPadding: PaddingValues, actions: SongActions, onBack:
         item { PageHeader(com.aura.ui.theme.tr("Downloads"), onBack = onBack) }
         if (list.isEmpty()) {
             item {
-                MessageState(Icons.Rounded.Download, "No downloads yet", Modifier.padding(top = 32.dp), message = "Pick Download from any song's menu to keep it for offline listening.")
+                MessageState(Icons.Rounded.Download, "No downloads yet", Modifier.padding(top = 32.dp), message = "Pick Download from any song's menu to keep it for offline listening, or turn on Smart Downloads to automatically save favorites.")
+            }
+            item {
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 12.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(MaterialTheme.colorScheme.surfaceContainer)
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Column(Modifier.weight(1f).padding(end = 12.dp)) {
+                        Text("Smart downloads", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                        Text("Automatically download your favorites when on Wi-Fi", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    com.aura.ui.components.AppSwitch(
+                        checked = libSettings.smartDownloads,
+                        onChange = { v -> com.aura.data.settings.AppSettings.updateLibrary { it.copy(smartDownloads = v) } },
+                    )
+                }
             }
             return@LazyColumn
         }
         item {
-            com.aura.ui.components.PillSegmented(DownloadsTab.entries, tab, { it.label(list.size, lists.size) }, { tab = it },
+            com.aura.ui.components.PillSegmented(DownloadsTab.entries, tab, { it.label(list.size, lists.size, smartList.size) }, { tab = it },
                 Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp))
         }
         if (tab == DownloadsTab.PLAYLISTS) {
@@ -879,6 +904,70 @@ fun DownloadsScreen(contentPadding: PaddingValues, actions: SongActions, onBack:
             }
             items(lists, key = { "list:${it.first.id}" }) { (l, have) ->
                 PlaylistRow(l.thumbnailUrl, l.title, "$have of ${l.songIds.size} downloaded · plays offline", { onOpenList(l.id) }, Modifier.animateItem())
+            }
+            return@LazyColumn
+        }
+        if (tab == DownloadsTab.SMART) {
+            item {
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(MaterialTheme.colorScheme.surfaceContainer)
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Column(Modifier.weight(1f).padding(end = 12.dp)) {
+                        Text("Smart downloads", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                        Text(
+                            if (libSettings.smartDownloads) "${smartReady.size} of ${libSettings.smartDownloadLimit} songs · Updates on Wi-Fi"
+                            else "Automatically download favorites & top songs",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    com.aura.ui.components.AppSwitch(
+                        checked = libSettings.smartDownloads,
+                        onChange = { v -> com.aura.data.settings.AppSettings.updateLibrary { it.copy(smartDownloads = v) } },
+                    )
+                }
+            }
+            if (smartList.isEmpty()) item {
+                MessageState(
+                    Icons.Rounded.AutoAwesome,
+                    if (libSettings.smartDownloads) "Preparing smart downloads" else "Smart downloads off",
+                    Modifier.padding(top = 24.dp),
+                    message = if (libSettings.smartDownloads) "Songs will download automatically when on unmetered Wi-Fi with at least ${libSettings.smartDownloadMinBattery}% battery."
+                    else "Turn on Smart downloads above to automatically keep your top songs and mixes offline.",
+                )
+            } else {
+                item {
+                    PlayButtons(
+                        onPlay = { actions.playAll(smartReady, 0, false, "Smart Downloads") },
+                        onShuffle = { actions.playAll(smartReady, 0, true, "Smart Downloads") },
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                    )
+                }
+                items(smartList, key = { "smart:${it.song.videoId}" }) { e ->
+                    val song = e.song.toSong()
+                    SongListItem(
+                        song = if (e.state == DownloadState.FAILED) song.copy(durationText = "Failed · tap to retry") else song,
+                        onClick = {
+                            when (e.state) {
+                                DownloadState.DONE -> actions.playAll(smartReady, smartReady.indexOfFirst { it.videoId == song.videoId }.coerceAtLeast(0), false, "Smart Downloads")
+                                DownloadState.FAILED -> Downloads.retry(context, song.videoId)
+                                else -> Unit
+                            }
+                        },
+                        modifier = Modifier.animateItem(),
+                        isCurrent = song.videoId == actions.currentVideoId,
+                        isPlaying = actions.isPlaying,
+                        onPlayNext = { actions.playNext(song) },
+                        onAddToQueue = { actions.addToQueue(song) },
+                    )
+                }
             }
             return@LazyColumn
         }
@@ -911,10 +1000,11 @@ fun DownloadsScreen(contentPadding: PaddingValues, actions: SongActions, onBack:
 }
 
 private enum class DownloadsTab {
-    SONGS, PLAYLISTS;
-    fun label(songs: Int, lists: Int) = when (this) {
+    SONGS, PLAYLISTS, SMART;
+    fun label(songs: Int, lists: Int, smart: Int) = when (this) {
         SONGS -> "Songs · $songs"
         PLAYLISTS -> "Playlists · $lists"
+        SMART -> "Smart · $smart"
     }
 }
 

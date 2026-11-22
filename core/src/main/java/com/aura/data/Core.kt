@@ -76,6 +76,7 @@ object Core {
         com.aura.data.library.LibraryArtwork.init(app)
         LibraryStore.init(app)
         Downloads.init(app)
+        if (phone) com.aura.data.download.SmartDownloads.init(app)
         com.aura.data.download.DownloadedLists.init(app)
         AccountStore.init(app)
         com.aura.data.library.LibraryCache.init(app)

@@ -85,6 +85,8 @@ data class DownloadEntry(
     /** Keep the requested quality across Wi-Fi waits and process restarts; never persist signed URLs. */
     val preferLossless: Boolean = false,
     val preferredRenditionKey: String? = null,
+    /** Owned by the smart-download budget until explicitly saved by the listener. */
+    val smartDownload: Boolean = false,
 )
 
 /**
@@ -163,27 +165,44 @@ object Downloads {
         return File(folder, "$videoId.lyrics.json")
     }
 
+    @Synchronized
     fun enqueue(context: Context, song: Song) {
         if (!com.aura.data.isYouTubeId(song.videoId)) return
         val existing = _entries.value[song.videoId]
-        if (existing?.state == DownloadState.DONE || existing?.state == DownloadState.DOWNLOADING || existing?.state == DownloadState.QUEUED) return
+        // An explicit download keeps this copy permanently, outside the smart budget.
+        if (existing?.smartDownload == true) put(song.videoId) { (it ?: existing).copy(smartDownload = false) }
+        if (existing?.state == DownloadState.DONE || existing?.state == DownloadState.DOWNLOADING ||
+            (existing?.state == DownloadState.QUEUED && !existing.smartDownload)) return
         val preferred = com.aura.data.lossless.ExternalStreams.downloadPreference(song.videoId)
         schedule(context, SongRef.of(song), preferred != null || existing?.preferLossless == true,
             preferred?.key ?: existing?.preferredRenditionKey)
     }
 
-    private fun schedule(context: Context, song: SongRef, preferLossless: Boolean = false, preferredKey: String? = null) {
-        val wifiOnly = AppSettings.library.value.downloadWifiOnly
+    @Synchronized
+    internal fun enqueueSmart(context: Context, song: Song) {
+        if (!com.aura.data.isYouTubeId(song.videoId)) return
+        val existing = _entries.value[song.videoId]
+        if (existing != null && (!existing.smartDownload || existing.state != DownloadState.FAILED)) return
+        if (!AppSettings.library.value.smartDownloads) return
+        if (existing == null && _entries.value.values.count { it.smartDownload } >= AppSettings.library.value.smartDownloadLimit.coerceIn(10, 500)) return
+        val preferred = com.aura.data.lossless.ExternalStreams.downloadPreference(song.videoId)
+        schedule(context, SongRef.of(song), preferred != null || existing?.preferLossless == true,
+            preferred?.key ?: existing?.preferredRenditionKey, smart = true)
+    }
+
+    private fun schedule(context: Context, song: SongRef, preferLossless: Boolean = false, preferredKey: String? = null, smart: Boolean = false) {
+        val wifiOnly = smart || AppSettings.library.value.downloadWifiOnly
         val request = OneTimeWorkRequestBuilder<DownloadWorker>()
             .setInputData(workDataOf(DownloadWorker.KEY_ID to song.videoId))
-            .setConstraints(Constraints.Builder().setRequiredNetworkType(if (wifiOnly) NetworkType.UNMETERED else NetworkType.CONNECTED).build())
+            .setConstraints(Constraints.Builder().setRequiredNetworkType(if (wifiOnly) NetworkType.UNMETERED else NetworkType.CONNECTED)
+                .setRequiresBatteryNotLow(smart).setRequiresStorageNotLow(true).build())
             // Started straight away rather than whenever Android next runs background work,
             // which on a phone saving battery could be a long while; past the quota it's ordinary work.
-            .setExpedited(androidx.work.OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+            .apply { if (smart) addTag(SmartDownloads.TAG) else setExpedited(androidx.work.OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST) }
             .setBackoffCriteria(androidx.work.BackoffPolicy.EXPONENTIAL, 15, java.util.concurrent.TimeUnit.SECONDS)
             .addTag(TAG)
             .build()
-        put(song.videoId) { DownloadEntry(song, workId = request.id.toString(), preferLossless = preferLossless, preferredRenditionKey = preferredKey) }
+        put(song.videoId) { DownloadEntry(song, workId = request.id.toString(), preferLossless = preferLossless, preferredRenditionKey = preferredKey, smartDownload = smart) }
         WorkManager.getInstance(context).enqueueUniqueWork(workName(song.videoId), ExistingWorkPolicy.REPLACE, request)
     }
 
@@ -192,8 +211,9 @@ object Downloads {
      * job keeps the network it was queued for, so turning "Wi-Fi only" off
      * left the songs already waiting still waiting for Wi-Fi.
      */
+    @Synchronized
     fun requeueWaiting(context: Context) {
-        _entries.value.values.filter { it.state == DownloadState.QUEUED }.forEach { schedule(context, it.song, it.preferLossless, it.preferredRenditionKey) }
+        _entries.value.values.filter { it.state == DownloadState.QUEUED }.forEach { schedule(context, it.song, it.preferLossless, it.preferredRenditionKey, it.smartDownload) }
     }
 
     /** Downloads wait because only Wi-Fi is allowed and the phone is on mobile data (or another metered network). */
@@ -205,10 +225,18 @@ object Downloads {
 
     fun remove(context: Context, videoId: String) = remove(context, videoId, onlyActive = false)
 
-    private fun remove(context: Context, videoId: String, onlyActive: Boolean) {
+    internal fun removeSmart(context: Context, videoId: String, onlyPending: Boolean = false) =
+        remove(context, videoId, onlyActive = false, onlySmart = true, onlyPending = onlyPending)
+
+    @Synchronized
+    private fun remove(context: Context, videoId: String, onlyActive: Boolean, onlySmart: Boolean = false, onlyPending: Boolean = false) {
         // Withdraw ownership first: progress, failure and completion callbacks can
         // never resurrect the row while WorkManager stops its coroutine.
-        fun eligible(entry: DownloadEntry?) = entry != null && (!onlyActive || entry.state == DownloadState.QUEUED || entry.state == DownloadState.DOWNLOADING)
+        // Recheck ownership in the atomic update: a manual save can promote an
+        // entry after the smart worker takes its snapshot of cleanup candidates.
+        fun eligible(entry: DownloadEntry?) = entry != null && (!onlySmart || entry.smartDownload) &&
+            (!onlyPending || entry.state != DownloadState.DONE) &&
+            (!onlyActive || entry.state == DownloadState.QUEUED || entry.state == DownloadState.DOWNLOADING)
         val entry = _entries.getAndUpdate { if (eligible(it[videoId])) it - videoId else it }[videoId]
             ?.takeIf { eligible(it) } ?: return
         val manager = WorkManager.getInstance(context)
@@ -262,7 +290,7 @@ object Downloads {
         val e = _entries.value[videoId]?.takeIf { it.state == DownloadState.FAILED } ?: return
         remove(context, videoId)
         val preferred = com.aura.data.lossless.ExternalStreams.downloadPreference(videoId)
-        schedule(context, e.song, e.preferLossless || preferred != null, preferred?.key ?: e.preferredRenditionKey)
+        schedule(context, e.song, e.preferLossless || preferred != null, preferred?.key ?: e.preferredRenditionKey, e.smartDownload)
     }
 
     /** Reject stale callbacks from removed/replaced workers atomically. */
@@ -303,6 +331,7 @@ class DownloadWorker(context: Context, params: WorkerParameters) : CoroutineWork
         val id = inputData.getString(KEY_ID) ?: return Result.failure()
         val entry = Downloads.entries.value[id] ?: return Result.failure()
         if (entry.workId != null && entry.workId != this.id.toString()) return Result.success()
+        if (entry.smartDownload && !SmartDownloads.allowed(applicationContext)) return Result.retry()
         runCatching { setForeground(foregroundInfo(entry.song.title, 0f)) }
         fun publish(transform: (DownloadEntry) -> DownloadEntry) {
             if (!Downloads.updateWorker(id, entry.workId, transform)) throw CancellationException("Download removed or replaced")
@@ -313,11 +342,12 @@ class DownloadWorker(context: Context, params: WorkerParameters) : CoroutineWork
         var fromSaavn = false
         return try {
             val maxKbps = AppSettings.library.value.downloadQuality.maxKbps
-            val exporting = AppSettings.library.value.exportDownloads && DownloadExport.supported
+            val exporting = !entry.smartDownload && AppSettings.library.value.exportDownloads && DownloadExport.supported
             val dir = jobDir.apply { mkdirs() }
             // A playlist queues every song at once; a few at a time each get the
             // bandwidth, and YouTube isn't asked for dozens of streams together.
             val target = songsAtOnce.withPermit {
+                checkSmartPolicy(force = true)
                 // Lossless: every add-on that allows downloads and has this recording verified,
                 // best file first; one that won't hand its file over is passed over for the
                 // next, and with none that works the song comes from the normal stream.
@@ -420,9 +450,19 @@ class DownloadWorker(context: Context, params: WorkerParameters) : CoroutineWork
         }
     }
 
+    private var smartCheckedAt = -1_000L
+    private fun checkSmartPolicy(force: Boolean = false) {
+        val now = android.os.SystemClock.elapsedRealtime()
+        if (!force && now - smartCheckedAt < 1_000L) return
+        smartCheckedAt = now
+        val entry = inputData.getString(KEY_ID)?.let(Downloads::entryNow)
+        if (entry?.smartDownload == true && !SmartDownloads.allowed(applicationContext)) throw SmartDownloadDeferred()
+    }
+
     /** The audio, in ranges (see [RangedFetch]), then moved into place. */
     private suspend fun fetch(url: String, part: File, target: File, title: String, addon: com.aura.data.addons.AddonStream? = null, onProgress: (Float) -> Unit) {
         fun permitted() {
+            checkSmartPolicy()
             if (addon != null) {
                 val current = com.aura.data.addons.AddonStore.addons.value.firstOrNull { it.key == addon.addonId }
                 check(current != null && current.manifest.downloads && com.aura.data.addons.AddonStore.usable(current)) { "Add-on disabled or download permission changed." }
