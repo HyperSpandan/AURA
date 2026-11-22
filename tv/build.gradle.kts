@@ -28,14 +28,14 @@ android {
         ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64") }
     }
 
-    val releaseKeystore = System.getenv("OPENTUNE_KEYSTORE")?.let(::file)?.takeIf { it.exists() }
+    val releaseKeystore = (System.getenv("AURA_KEYSTORE") ?: System.getenv("OPENTUNE_KEYSTORE"))?.let(::file)?.takeIf { it.exists() }
     signingConfigs {
         if (releaseKeystore != null) {
             create("release") {
                 storeFile = releaseKeystore
-                storePassword = System.getenv("OPENTUNE_KEYSTORE_PASSWORD")
-                keyAlias = System.getenv("OPENTUNE_KEY_ALIAS")
-                keyPassword = System.getenv("OPENTUNE_KEY_PASSWORD")
+                storePassword = System.getenv("AURA_KEYSTORE_PASSWORD") ?: System.getenv("OPENTUNE_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("AURA_KEY_ALIAS") ?: System.getenv("OPENTUNE_KEY_ALIAS")
+                keyPassword = System.getenv("AURA_KEY_PASSWORD") ?: System.getenv("OPENTUNE_KEY_PASSWORD")
             }
         }
     }

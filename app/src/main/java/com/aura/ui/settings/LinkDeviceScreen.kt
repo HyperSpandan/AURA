@@ -354,5 +354,5 @@ private fun Note(icon: ImageVector, text: String) {
 }
 
 private val WEB_PLAYER get() = com.aura.data.config.RemoteConfig.current.web
-private const val RELEASES = "https://github.com/justshivv/Opentune/releases/latest"
-private const val SOURCE = "https://github.com/justshivv/Opentune/tree/main/wear"
+private const val RELEASES = "https://github.com/HyperSpandan/AURA/releases/latest"
+private const val SOURCE = "https://github.com/HyperSpandan/AURA/tree/main/wear"
