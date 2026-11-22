@@ -129,7 +129,7 @@ fun HomeScreen(
     onOpenSpeedDial: () -> Unit = {},
     onMoodClick: ((com.aura.data.model.MoodGenre) -> Unit)? = null,
 ) {
-    val platform = if (com.aura.ui.tv.LocalIsTv.current) "tv" else "android"
+    val platform = "android"
     val runtime by com.aura.data.config.RemoteConfig.state.collectAsState()
     val playback by AppSettings.playback.collectAsState()
     val loader = rememberLoader("home:${playback.recommender.name}") { MusicRepository.home() }

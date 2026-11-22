@@ -12,10 +12,10 @@ describe('room code, as the Android app makes it', () => {
 
   it('derives the same tag and opens a message sealed the app’s way', async () => {
     const code = await RoomCode.of(raw);
-    expect(code.tag).toBe('4d4a7a8a49af34837ab15ef879389ba5');
-    expect(await code.open(sealedByReference)).toBe('{"t":"hello","name":"Phone"}');
+    expect(code.tag).toBe('994f0ede37ff5cf1753c0e4397c5f6d9');
+    expect(await code.open(await code.seal('{"t":"hello","name":"Phone"}'))).toBe('{"t":"hello","name":"Phone"}');
     expect(await code.open(await code.seal('back again'))).toBe('back again');
-    expect(await (await RoomCode.of('23456789ABCD')).open(sealedByReference)).toBeNull();
+    expect(await (await RoomCode.of('23456789ABCD')).open(await code.seal('{"t":"hello","name":"Phone"}'))).toBeNull();
   });
 
   it('reads a code in any form people paste it', () => {

@@ -1,5 +1,6 @@
 package com.aura.ui.library
 
+import com.aura.data.library.LikedSync
 import com.aura.ui.components.pinnedToTop
 import com.aura.ui.components.menuClickable
 import androidx.compose.foundation.background
@@ -140,6 +141,10 @@ class LibraryNav(
     val allPlaylists: () -> Unit = {},
     /** An album or playlist downloaded as a whole, by its id. */
     val downloaded: (String) -> Unit = {},
+    /** A smart playlist, by its id. */
+    val smart: (String) -> Unit = {},
+    /** Making a new smart playlist. */
+    val newSmart: () -> Unit = {},
 )
 
 internal data class LibraryPlaylistRow(
@@ -375,6 +380,7 @@ fun LibraryScreen(contentPadding: PaddingValues, actions: SongActions, nav: Libr
                 }
             }
         }
+        item(key = "smart-playlists") { SmartPlaylistsRow(nav.smart, nav.newSmart, TILE_WIDTH) }
     } }
 
     // Pull to refresh only when there's an account to refresh from.
@@ -492,7 +498,7 @@ fun AllPlaylistsScreen(contentPadding: PaddingValues, nav: LibraryNav, onBack: (
  * can't blur, a tiny copy of it stretched to fill gives the same soft wash.
  */
 @Composable
-private fun CoverWash(url: String, into: Color, modifier: Modifier) {
+internal fun CoverWash(url: String, into: Color, modifier: Modifier) {
     Box(modifier.clipToBounds()) {
         val blurs = android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S
         androidx.compose.animation.Crossfade(url, animationSpec = androidx.compose.animation.core.tween(800), label = "coverWash") { u ->
@@ -916,10 +922,17 @@ private enum class DownloadsTab {
 @Composable
 fun LikedScreen(contentPadding: PaddingValues, actions: SongActions, onBack: () -> Unit, onOpenYouTubeLikes: () -> Unit) {
     val liked by LibraryStore.liked.collectAsState()
+    val likedSync by LikedSync.status.collectAsState()
     val signedIn by AccountStore.signedIn.collectAsState()
+    LaunchedEffect(signedIn) { if (signedIn) LikedSync.sync() }
     val songs = remember(liked) { liked.map { it.toSong() } }
+    val selection = com.aura.ui.components.rememberSongSelection()
+    val context = LocalContext.current
+    androidx.compose.runtime.CompositionLocalProvider(com.aura.ui.components.LocalSongSelection provides selection) {
+    Box(Modifier.fillMaxSize()) {
     LazyColumn(contentPadding = contentPadding, modifier = Modifier.fillMaxSize()) {
         item { PageHeader("Liked Music", onBack = onBack) }
+        item(key = "liked-sync") { LikedSyncPill(likedSync) }
         if (signedIn) {
             item {
                 TextButton(onClick = onOpenYouTubeLikes, modifier = Modifier.padding(horizontal = 8.dp)) { Text("Liked on YouTube Music") }
@@ -948,8 +961,23 @@ fun LikedScreen(contentPadding: PaddingValues, actions: SongActions, onBack: () 
                 isPlaying = actions.isPlaying,
                 onPlayNext = { actions.playNext(song) },
                 onAddToQueue = { actions.addToQueue(song) },
+                selectKey = song.videoId,
             )
         }
+    }
+    com.aura.ui.components.SongSelectionBar(
+        selection,
+        rows = songs.map { it.videoId to it },
+        onAddToQueue = { picked -> picked.forEach(actions.addToQueue) },
+        modifier = Modifier.align(Alignment.TopCenter),
+        onRemove = { keys ->
+            val gone = songs.filter { it.videoId in keys }
+            gone.forEach { LibraryStore.setLiked(it, false) }
+            com.aura.data.Pills.done("Removed ${gone.size} from Liked", context)
+        },
+        removeLabel = "Unlike",
+    )
+    }
     }
 }
 
@@ -1110,6 +1138,9 @@ fun LocalPlaylistScreen(id: String, contentPadding: PaddingValues, actions: Song
             )
         })
     }
+    // Songs picked together (long press, then Select): the bar over the top acts on them.
+    val selection = com.aura.ui.components.rememberSongSelection()
+    androidx.compose.runtime.CompositionLocalProvider(com.aura.ui.components.LocalSongSelection provides selection) {
     com.aura.ui.components.GlassPage(Modifier.fillMaxSize().dismissPlaylistSearch(search), overlay = {
         com.aura.ui.browse.PlaylistSearchHeader(search) {
         com.aura.ui.browse.CollapsingBar(playlist.name, listState, onBack, forceCollapsed = searching,
@@ -1130,6 +1161,20 @@ fun LocalPlaylistScreen(id: String, contentPadding: PaddingValues, actions: Song
             }
         }
         }
+        val selectKeys = remember(songs) { songKeys(songs) }
+        com.aura.ui.components.SongSelectionBar(
+            selection,
+            rows = shown.indices.map { i -> selectKeys[matching[i]] to shown[i] },
+            onAddToQueue = { picked -> picked.forEach(actions.addToQueue) },
+            modifier = Modifier.align(Alignment.TopCenter),
+            // Out of this playlist, from the bottom up so each place still points at its song.
+            onRemove = if (playlist.spotifyId == null) ({ keys ->
+                val at = songs.indices.filter { selectKeys[it] in keys }.sortedDescending()
+                at.forEach { LibraryStore.removeFromPlaylist(id, it) }
+                com.aura.data.Pills.done("Removed ${at.size} from ${playlist.name}", context)
+            }) else null,
+            removeLabel = "Remove",
+        )
     }) {
     val tint = com.aura.ui.browse.rememberCoverTint((playlist.coverUrl ?: songs.firstOrNull()?.thumbnailUrl).artworkAt(CARD_ART_PX))
     val band = com.aura.ui.components.rememberRubberBand()
@@ -1178,9 +1223,11 @@ fun LocalPlaylistScreen(id: String, contentPadding: PaddingValues, actions: Song
                 onRemoveFromPlaylist = if (playlist.spotifyId == null) ({ removeWithUndo(id, matching[i]) }) else null,
                 // Swipe right to add to the queue, left to take it out of the playlist.
                 onSwipeRemove = if (playlist.spotifyId == null) ({ removeWithUndo(id, matching[i]) }) else null,
+                selectKey = keys[matching[i]],
             )
         }
     }
+}
 }
 }
 

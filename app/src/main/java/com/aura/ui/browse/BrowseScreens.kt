@@ -357,10 +357,103 @@ internal fun coverTone(seed: Color?, dark: Boolean): Color {
  * the plain background at the foot.
  */
 @Composable
-internal fun Modifier.coverWash(tint: Color): Modifier {
+internal fun Modifier.coverWash(tint: Color, artwork: String? = null): Modifier {
     val background = MaterialTheme.colorScheme.background
-    // Down to the foot it keeps most of the colour, rather than ending in the plain background.
-    return this.background(Brush.verticalGradient(0f to tint, 0.5f to tint, 1f to androidx.compose.ui.graphics.lerp(tint, background, 0.3f)))
+    val dark = background.luminance() < 0.5f
+    val palette = com.aura.ui.theme.rememberArtworkPalette(artwork)
+    val still = com.aura.data.settings.AppSettings.ui.collectAsState().value.reduceAnimation
+    val secondary by androidx.compose.animation.animateColorAsState(
+        palette.getOrNull(1)?.let { androidx.compose.ui.graphics.lerp(background, coverTone(it, dark), if (dark) 0.36f else 0.18f) } ?: tint,
+        animationSpec = if (still) androidx.compose.animation.core.snap() else androidx.compose.animation.core.tween(550),
+        label = "ambientSecondary",
+    )
+    return this.drawBehind {
+        drawRect(Brush.verticalGradient(0f to tint, 0.45f to androidx.compose.ui.graphics.lerp(tint, background, 0.18f),
+            1f to androidx.compose.ui.graphics.lerp(tint, background, 0.3f)))
+        drawRect(Brush.radialGradient(listOf(secondary.copy(alpha = 0.65f), Color.Transparent),
+            center = androidx.compose.ui.geometry.Offset(size.width * 0.9f, size.height * 0.3f),
+            radius = maxOf(size.width, size.height * 0.7f).coerceAtLeast(1f)))
+    }
+}
+
+/** The theme's own background outside a page tinted by [ListPageTint]; null on a plain page. */
+internal val LocalListBase = androidx.compose.runtime.compositionLocalOf<Color?> { null }
+/** The cover a tinted page is coloured from. */
+internal val LocalListCover = androidx.compose.runtime.compositionLocalOf<String?> { null }
+/** Which look a tinted page has behind its songs. */
+internal val LocalListLook = androidx.compose.runtime.compositionLocalOf { com.aura.data.settings.ListBackground.PLAIN }
+
+/**
+ * A playlist, album or Liked page with the background Settings ask for (Playlist page
+ * background). Plain leaves the theme alone. Cover colour makes the page's background the
+ * cover's own colour, so the hero fades into it and the bars and cards sit on it;
+ * [ListPageWash], drawn behind the songs, adds the blur of the cover and the fade down the
+ * page. [seed] colours a page whose cover is drawn, not loaded (Liked Music).
+ */
+@Composable
+internal fun ListPageTint(coverUrl: String?, seed: Color? = null, content: @Composable () -> Unit) {
+    val ui by com.aura.data.settings.AppSettings.ui.collectAsState()
+    val base = MaterialTheme.colorScheme
+    if (ui.listBackground == com.aura.data.settings.ListBackground.PLAIN) {
+        content()
+        return
+    }
+    val dark = base.background.luminance() < 0.5f
+    val fromCover = rememberCoverTint(coverUrl)
+    val fromSeed by androidx.compose.animation.animateColorAsState(
+        seed?.let { androidx.compose.ui.graphics.lerp(base.background, coverTone(it, dark), 0.32f) } ?: base.background,
+        animationSpec = if (ui.reduceAnimation) androidx.compose.animation.core.snap() else androidx.compose.animation.core.tween(550),
+        label = "listSeedTint",
+    )
+    val tint = if (coverUrl.isNullOrBlank()) fromSeed else fromCover
+    fun lift(f: Float) = androidx.compose.ui.graphics.lerp(tint, base.onSurface, f)
+    val scheme = base.copy(
+        background = tint,
+        surface = tint,
+        surfaceVariant = lift(0.14f),
+        surfaceContainerLowest = lift(0.02f),
+        surfaceContainerLow = lift(0.04f),
+        surfaceContainer = lift(0.07f),
+        surfaceContainerHigh = lift(0.10f),
+        surfaceContainerHighest = lift(0.14f),
+    )
+    MaterialTheme(colorScheme = scheme) {
+        androidx.compose.runtime.CompositionLocalProvider(
+            LocalListBase provides base.background, LocalListCover provides coverUrl, LocalListLook provides ui.listBackground,
+            content = content,
+        )
+    }
+}
+
+/**
+ * What a page tinted by [ListPageTint] has behind its songs: a soft blur of the cover across
+ * the top, which shows once the hero has scrolled away, and the cover's colour easing back
+ * toward the theme's own background at the foot. Draws nothing on a plain page.
+ */
+@Composable
+internal fun ListPageWash() {
+    val base = LocalListBase.current ?: return
+    val cover = LocalListCover.current
+    val tint = MaterialTheme.colorScheme.background
+    val ui by com.aura.data.settings.AppSettings.ui.collectAsState()
+    if (LocalListLook.current == com.aura.data.settings.ListBackground.AMBIENT) {
+        // The artist page's look: the cover's colours washed down the page, its second colour
+        // glowing in from the side, all fading back to the plain background at the very bottom.
+        Box(Modifier.fillMaxSize().coverWash(tint, cover)) {
+            Box(Modifier.matchParentSize().drawBehind {
+                drawRect(Brush.verticalGradient(0f to Color.Transparent, 0.72f to Color.Transparent, 1f to base))
+            })
+        }
+        return
+    }
+    Box(Modifier.fillMaxSize()) {
+        if (!cover.isNullOrBlank() && !ui.reduceBlur && !ui.liteMode) {
+            com.aura.ui.library.CoverWash(cover.artworkAt(com.aura.data.model.CARD_ART_PX) ?: cover, tint, Modifier.fillMaxWidth().height(380.dp))
+        }
+        Box(Modifier.matchParentSize().drawBehind {
+            drawRect(Brush.verticalGradient(0f to Color.Transparent, 0.6f to Color.Transparent, 1f to base.copy(alpha = 0.65f)))
+        })
+    }
 }
 
 /** The orders a list's songs can be shown in. */
@@ -549,7 +642,7 @@ private fun FullBleedAlbumHeader(
 @Composable
 internal fun PlaylistHeading(title: String, subtitle: String, thumbnail: String?, songs: List<com.aura.data.model.Song>,
     isAlbum: Boolean = false, cover: (@Composable () -> Unit)? = null) {
-    val coverSize = if (com.aura.ui.tv.LocalIsTv.current) Modifier.size(220.dp) else Modifier.fillMaxWidth(0.76f).aspectRatio(1f)
+    val coverSize = Modifier.fillMaxWidth(0.76f).aspectRatio(1f)
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         if (cover == null) Artwork(
             thumbnail.artworkAt(HEADER_ART_PX),
@@ -710,7 +803,6 @@ fun CollectionScreen(
     val title = (state as? UiState.Success)?.data?.title.orEmpty()
     val uiSettings by AppSettings.ui.collectAsState()
     val canAnimate = uiSettings.animatedCovers && !uiSettings.reduceAnimation && !(uiSettings.animatedCoversWifiOnly && AppSettings.onMeteredNetwork())
-    val isTv = com.aura.ui.tv.LocalIsTv.current
     val configuration = androidx.compose.ui.platform.LocalConfiguration.current
     val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
     var albumMotion by remember(loaded?.browseId) {
@@ -750,6 +842,9 @@ fun CollectionScreen(
     }
     if (moreOpen && loaded != null) ListMoreSheet(loaded, isAlbum, actions, onRefresh = { loader.reload() }, onDismiss = { moreOpen = false })
 
+    // Songs picked together (long press, then Select): the bar over the top acts on them.
+    val selection = com.aura.ui.components.rememberSongSelection()
+    androidx.compose.runtime.CompositionLocalProvider(com.aura.ui.components.LocalSongSelection provides selection) {
     GlassPage(Modifier.fillMaxSize().dismissPlaylistSearch(search), overlay = {
         PlaylistSearchHeader(search) {
         CollapsingBar(title, listState, onBack, forceCollapsed = searching, artworkBehind = loaded?.thumbnailUrl != null) {
@@ -777,6 +872,13 @@ fun CollectionScreen(
             }
         }
         }
+        val listed = (state as? UiState.Success)?.data?.songs.orEmpty()
+        com.aura.ui.components.SongSelectionBar(
+            selection,
+            rows = listed.mapIndexed { i, s -> "$i:${s.videoId}" to s },
+            onAddToQueue = { picked -> picked.forEach(actions.addToQueue) },
+            modifier = Modifier.align(Alignment.TopCenter),
+        )
     }) {
         when (val s = state) {
             is UiState.Error -> Box(Modifier.fillMaxSize(), Alignment.Center) { ErrorState(s.message, { loader.reload() }) }
@@ -789,7 +891,7 @@ fun CollectionScreen(
                 }
                 LazyColumn(state = listState, contentPadding = if (searching) PaddingValues(bottom = 16.dp) else contentPadding, modifier = Modifier.fillMaxSize().coverWash(tint).playlistSearchResults(search), overscrollEffect = band) {
                     if (!searching) item(key = "header") {
-                        val showFullBleed = isAlbum && !isTv && !isLandscape && loaded != null
+                        val showFullBleed = isAlbum && !isLandscape && loaded != null
                         val savedLists by com.aura.data.library.LibraryStore.savedLists.collectAsState()
                         val saved = c != null && savedLists.any { it.browseId == c.browseId }
                         val own = c?.let { rememberOwnPlaylist(it) }
@@ -892,6 +994,7 @@ fun CollectionScreen(
                                 },
                                 onPlayNext = { actions.playNext(song) },
                                 onAddToQueue = { actions.addToQueue(song) },
+                                selectKey = "${c.songs.indexOf(song).takeIf { it >= 0 } ?: i}:${song.videoId}",
                             )
                         }
                     }
@@ -899,5 +1002,6 @@ fun CollectionScreen(
                 }
             }
         }
+    }
     }
 }

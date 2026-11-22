@@ -577,4 +577,35 @@ class PlayerConnection(private val context: Context) {
     fun bufferedPositionMs(): Long = controller?.bufferedPosition ?: 0L
 }
 
-data class AudioFormatInfo(val codec: String?, val bitrateKbps: Int?, val sampleRateHz: Int?, val channels: Int?, val bitDepth: Int? = null)
+data class AudioFormatInfo(val codec: String?, val bitrateKbps: Int?, val sampleRateHz: Int?, val channels: Int?, val bitDepth: Int? = null, val mime: String? = null)
+
+/**
+ * The playing song's bitrate in kbps, best figure first: measured from the audio as it's
+ * decoded ([measured], see MeasuredBitrate), exact for uncompressed PCM (rate × depth ×
+ * channels), then what the stream or file says, then what the source said.
+ */
+fun bestKbps(info: AudioFormatInfo?, measured: Int?, sourceKbps: Int?): Int? {
+    val pcm = info?.mime == "audio/raw" || info?.codec?.equals("RAW", ignoreCase = true) == true
+    if (pcm) {
+        val bits = info?.bitDepth; val rate = info?.sampleRateHz; val ch = info?.channels
+        if (bits != null && rate != null && ch != null) return (bits.toLong() * rate * ch / 1000).toInt()
+    }
+    return measured?.takeIf { it > 0 } ?: info?.bitrateKbps?.takeIf { it > 0 } ?: sourceKbps?.takeIf { it > 0 }
+}
+
+/**
+ * What Dolby format [info] is, as the player names it, or null when it isn't Dolby:
+ * Atmos for E-AC-3 with objects (JOC) and for AC-4, Dolby Digital Plus for plain
+ * E-AC-3, Dolby Digital for AC-3.
+ */
+fun dolbyName(info: AudioFormatInfo?): String? {
+    val mime = info?.mime?.lowercase().orEmpty()
+    val codec = info?.codec?.lowercase().orEmpty()
+    return when {
+        mime == "audio/eac3-joc" || codec.startsWith("ec+3") || codec.contains("joc") -> "Dolby Atmos"
+        mime == "audio/ac4" || codec.startsWith("ac-4") -> "Dolby Atmos"
+        mime == "audio/eac3" || codec.startsWith("ec-3") || codec == "eac3" -> "Dolby Digital Plus"
+        mime == "audio/ac3" || codec.startsWith("ac-3") || codec == "ac3" -> "Dolby Digital"
+        else -> null
+    }
+}

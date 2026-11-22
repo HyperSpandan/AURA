@@ -236,16 +236,6 @@ fun SettingsScreen(
     val placed = remember(sections) { place(sections) }
     val open = SETTINGS_CATEGORIES.firstOrNull { it.key == openKey }
     androidx.activity.compose.BackHandler(enabled = open != null) { openKey = null }
-    // Back from a page on a TV: the remote's focus goes back to the row that opened it,
-    // not to wherever it fell when the page went (the rail's first button).
-    val tv = com.aura.ui.tv.LocalIsTv.current
-    var cameFrom by rememberSaveable { mutableStateOf<String?>(null) }
-    val returnTo = remember { androidx.compose.ui.focus.FocusRequester() }
-    LaunchedEffect(open) {
-        if (!tv || open != null || cameFrom == null) return@LaunchedEffect
-        repeat(3) { androidx.compose.runtime.withFrameNanos { } }
-        runCatching { returnTo.requestFocus() }
-    }
     val q = query.trim()
     val languageContext = LocalContext.current
     // Kept out here, so coming back from a page finds the main list where it was left.
@@ -342,16 +332,14 @@ fun SettingsScreen(
                                     }
                                     // The account row wears the signed-in Google photo in place of the icon.
                                     val avatar = account?.thumbnailUrl?.takeIf { c.key == "account" && signedIn }
-                                    androidx.compose.foundation.layout.Box(if (c.key == cameFrom) Modifier.focusRequester(returnTo) else Modifier) {
                                     NavRow(
                                         c.title,
-                                        { cameFrom = c.key; openKey = c.key },
+                                        { openKey = c.key },
                                         summary = summary,
                                         icon = if (avatar == null) c.icon else null,
                                         dot = c.key == "about" && updatePending,
                                         leading = avatar?.let { url -> { Artwork(url, Modifier.size(28.dp), CircleShape) } },
                                     )
-                                    }
                                 }
                             }
                         }
@@ -919,6 +907,12 @@ private fun settingsSections(
                     ToggleRow("Pause account sync", pb.pauseListeningHistory,
                         { v -> AppSettings.updatePlayback { it.copy(pauseListeningHistory = v) } },
                         summary = "Pause sending new listens to YouTube Music. Your local history, listening stats and personal recommendations keep updating. Paused listens are never sent later; likes and connected scrobblers keep their own settings.",
+                        icon = Icons.Rounded.History)
+                },
+                Entry("Listens from YouTube Music", "import sync history youtube music other apps outside recents") {
+                    ToggleRow("Listens from YouTube Music", pb.importAccountHistory,
+                        { v -> AppSettings.updatePlayback { it.copy(importAccountHistory = v) }; if (v) com.aura.data.history.AccountHistory.syncSoon(force = true) },
+                        summary = "What you play in YouTube Music or other apps on your account shows in your history, Recents and Replay here",
                         icon = Icons.Rounded.History)
                 },
                 Entry("Don't repeat songs in current session", "autoplay duplicates") {

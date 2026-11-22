@@ -169,6 +169,9 @@ object Cast {
             val hls = Radio.station(id)?.hls == true
             return@withContext media(url, if (hls) "application/x-mpegurl" else "audio/mpeg", live = true)
         }
+        if (com.aura.data.audiobooks.Audiobooks.isChapter(id)) {
+            return@withContext media(com.aura.data.audiobooks.Audiobooks.urlOf(id), "audio/mpeg")
+        }
         if (LocalMusic.isLocal(id)) {
             val uri = trackUri(id)
             val type = context.contentResolver.getType(uri) ?: "audio/mpeg"

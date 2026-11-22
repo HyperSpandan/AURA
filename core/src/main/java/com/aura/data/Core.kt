@@ -67,6 +67,7 @@ object Core {
         // The waveform seek bar is gone; drop the waveforms an earlier version saved.
         java.io.File(app.filesDir, "waveforms").takeIf { it.exists() }?.let { dir -> Thread { dir.deleteRecursively() }.start() }
         com.aura.data.podcasts.Podcasts.init(app)
+        com.aura.data.audiobooks.Audiobooks.init(app)
         com.aura.data.library.ResumePoints.init(app)
         AlbumCovers.init(app)
         com.aura.data.spotify.SpotifyWebPlayer.init(app)
@@ -80,6 +81,7 @@ object Core {
         com.aura.data.library.LibraryCache.init(app)
         // After library and account: it sends playlist changes still waiting, when signed in.
         com.aura.data.library.PlaylistSync.init(app)
+        com.aura.data.library.LikedSync.init()
         InnerTubeXResolver.init(app)
     }
 

@@ -43,13 +43,11 @@ import androidx.compose.material.icons.rounded.Lyrics
 import androidx.compose.material.icons.rounded.Shuffle
 import androidx.compose.material.icons.rounded.Repeat
 import androidx.compose.foundation.focusGroup
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.withFrameNanos
-import androidx.compose.material3.Icon
+import com.aura.ui.theme.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import com.aura.ui.theme.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -106,9 +104,6 @@ internal fun LandscapePlayer(
     /** Off while the full lyrics are on the left, so the lines aren't shown twice. */
     showLines: Boolean = true,
 ) {
-    val television = com.aura.ui.tv.LocalIsTv.current
-    val playFocus = remember { FocusRequester() }
-    LaunchedEffect(Unit) { if (television) { withFrameNanos { }; playFocus.requestFocus() } }
     val song = state.song
     val scheme = MaterialTheme.colorScheme
     val animate = !state.ui.reduceAnimation
@@ -131,7 +126,7 @@ internal fun LandscapePlayer(
             ArtworkSwipeArea(
                 onSwipeNext = actions.next,
                 onSwipePrevious = actions.previous,
-                modifier = if (television) Modifier.weight(0.9f).aspectRatio(1f) else Modifier.fillMaxHeight().aspectRatio(1f, matchHeightConstraintsFirst = true),
+                modifier = Modifier.fillMaxHeight().aspectRatio(1f, matchHeightConstraintsFirst = true),
             ) {
                 Artwork(
                     song.thumbnailUrl.artworkAt(1080),
@@ -141,10 +136,9 @@ internal fun LandscapePlayer(
             }
         }
         Spacer(Modifier.width(32.dp))
-        BoxWithConstraints(Modifier.weight(if (television) 1.3f else 1f).fillMaxHeight().focusGroup()) {
+        BoxWithConstraints(Modifier.weight(1f).fillMaxHeight().focusGroup()) {
             // Short screens drop the coming lines first, then the volume.
             val roomy = maxHeight >= 300.dp
-            val previewFits = !television || maxHeight >= 440.dp
             Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.SpaceBetween) {
                 Row(verticalAlignment = Alignment.Top) {
                     // Lyrics or the queue in the cover's place: the cover stays in sight, small, before the title.
@@ -173,24 +167,23 @@ internal fun LandscapePlayer(
                     RoundIcon(Icons.Rounded.MoreHoriz, "More", onMore)
                     RoundIcon(Icons.Rounded.KeyboardArrowDown, "Close player", actions.collapse)
                 }
-                if (television) SeekBar(position, { 0L }, state.durationMs, actions.seekTo)
-                else TimeBar(position, state.durationMs, actions.seekTo)
+                TimeBar(position, state.durationMs, actions.seekTo)
                 if (state.ui.sourcePill) SourceQualityBadge(song.videoId, state.audioFormat, onClick = onSignal, modifier = Modifier.align(Alignment.CenterHorizontally))
                 // The line being sung and the next, together above the controls, in the lyrics' own type.
                 val lines = if (showLines) rememberLyricLines(state.lyrics, lyricsPosition) else null
-                if (lines != null && previewFits) LyricsPeek(lines, next = roomy, animate = animate, onClick = onLyrics)
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = if (television) Arrangement.Center else Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    if (!television) RoundIcon(if (liked) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder, if (liked) "Unlike" else "Like", { haptics.pattern(if (liked) com.aura.ui.components.Haptics.Pattern.OFF else com.aura.ui.components.Haptics.Pattern.LIKE); onLike() }, tint = if (liked) scheme.primary else scheme.onSurface)
+                if (lines != null) LyricsPeek(lines, next = roomy, animate = animate, onClick = onLyrics)
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                    RoundIcon(if (liked) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder, if (liked) "Unlike" else "Like", { haptics.pattern(if (liked) com.aura.ui.components.Haptics.Pattern.OFF else com.aura.ui.components.Haptics.Pattern.LIKE); onLike() }, tint = if (liked) scheme.primary else scheme.onSurface)
                     Row(horizontalArrangement = Arrangement.spacedBy(18.dp), verticalAlignment = Alignment.CenterVertically) {
                         Tap("Previous", { haptics.pattern(com.aura.ui.components.Haptics.Pattern.PREVIOUS); previousRolls++; actions.previous() }) { SkipGlyph(false, previousRolls, scheme.onSurface, animate, Modifier.size(38.dp)) }
-                        Tap(if (state.isPlaying) "Pause" else "Play", { haptics.pattern(if (state.isPlaying) com.aura.ui.components.Haptics.Pattern.PAUSE else com.aura.ui.components.Haptics.Pattern.PLAY); actions.togglePlay() }, modifier = if (television) Modifier.focusRequester(playFocus) else Modifier) { PlayPauseGlyph(state.isPlaying, scheme.onSurface, animate, Modifier.size(54.dp)) }
+                        Tap(if (state.isPlaying) "Pause" else "Play", { haptics.pattern(if (state.isPlaying) com.aura.ui.components.Haptics.Pattern.PAUSE else com.aura.ui.components.Haptics.Pattern.PLAY); actions.togglePlay() }) { PlayPauseGlyph(state.isPlaying, scheme.onSurface, animate, Modifier.size(54.dp)) }
                         Tap("Next", { haptics.pattern(com.aura.ui.components.Haptics.Pattern.NEXT); nextRolls++; actions.next() }, enabled = state.hasNext) {
                             SkipGlyph(true, nextRolls, scheme.onSurface.copy(alpha = if (state.hasNext) 1f else 0.35f), animate, Modifier.size(38.dp))
                         }
                     }
                     val context = LocalContext.current
-                    if (!television) RoundIcon(Icons.Rounded.SpeakerGroup, "Choose where it plays", { openOutputSwitcher(context) })
-                    if (!television) RoundIcon(
+                    RoundIcon(Icons.Rounded.SpeakerGroup, "Choose where it plays", { openOutputSwitcher(context) })
+                    RoundIcon(
                         outputRoute.icon,
                         "Audio output",
                         { showOutput = true },
@@ -203,20 +196,12 @@ internal fun LandscapePlayer(
                     )
                     if (showCast) com.aura.ui.cast.CastSheet(onDismiss = { showCast = false })
                 }
-                if (television) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-                    RoundIcon(if (liked) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder, if (liked) "Unlike" else "Like", onLike)
-                    RoundIcon(outputRoute.icon, "Audio output", { showOutput = true })
-                    RoundIcon(Icons.Rounded.Lyrics, "Lyrics", onLyrics)
-                    RoundIcon(Icons.Rounded.Shuffle, "Shuffle", actions.toggleShuffle, tint = if (state.shuffle) scheme.primary else scheme.onSurface)
-                    RoundIcon(Icons.Rounded.Repeat, "Repeat", actions.cycleRepeat)
-                    RoundIcon(Icons.AutoMirrored.Rounded.QueueMusic, "Queue", onQueue)
-                }
                 if (roomy) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(Modifier.weight(1f)) { VolumeBar() }
-                        if (!television) RoundIcon(Icons.AutoMirrored.Rounded.QueueMusic, "Queue", onQueue)
+                        RoundIcon(Icons.AutoMirrored.Rounded.QueueMusic, "Queue", onQueue)
                     }
-                } else if (!television) {
+                } else {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) { RoundIcon(Icons.AutoMirrored.Rounded.QueueMusic, "Queue", onQueue) }
                 }
             }
@@ -295,19 +280,11 @@ private fun LyricsPeek(lines: PeekLines, next: Boolean, animate: Boolean, onClic
 private fun TimeBar(position: () -> Long, durationMs: Long, onSeek: (Long) -> Unit) {
     val scheme = MaterialTheme.colorScheme
     var drag by remember { mutableStateOf<Float?>(null) }
-    val elapsedSec by remember(position, durationMs) {
-        androidx.compose.runtime.derivedStateOf {
-            drag?.let { (it * durationMs / 1000).toLong() } ?: (position() / 1000)
-        }
-    }
-    val remainingSec by remember(position, durationMs) {
-        androidx.compose.runtime.derivedStateOf {
-            val currentMs = drag?.let { (it * durationMs).toLong() } ?: position()
-            ((durationMs - currentMs).coerceAtLeast(0) / 1000)
-        }
-    }
+    val p = position()
+    val fraction = drag ?: if (durationMs > 0) (p.toFloat() / durationMs).coerceIn(0f, 1f) else 0f
+    val shownMs = (fraction * durationMs).toLong()
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Text(formatTime(elapsedSec * 1000), style = MaterialTheme.typography.labelLarge, color = scheme.primary)
+        Text(formatTime(shownMs), style = MaterialTheme.typography.labelLarge, color = scheme.primary)
         Box(
             Modifier
                 .weight(1f)
@@ -324,20 +301,19 @@ private fun TimeBar(position: () -> Long, durationMs: Long, onSeek: (Long) -> Un
                     ) { change, _ -> drag = (change.position.x / size.width).coerceIn(0f, 1f) }
                 }
                 .drawBehind {
-                    val currentFraction = drag ?: if (durationMs > 0) (position().toFloat() / durationMs).coerceIn(0f, 1f) else 0f
                     val h = (if (drag != null) 8 else 6).dp.toPx()
                     val top = (size.height - h) / 2f
                     drawRoundRect(scheme.onSurface.copy(alpha = 0.22f), Offset(0f, top), Size(size.width, h), CornerRadius(h / 2f))
-                    drawRoundRect(scheme.onSurface.copy(alpha = 0.85f), Offset(0f, top), Size(size.width * currentFraction, h), CornerRadius(h / 2f))
+                    drawRoundRect(scheme.onSurface.copy(alpha = 0.85f), Offset(0f, top), Size(size.width * fraction, h), CornerRadius(h / 2f))
                 },
         )
-        Text("-" + formatTime(remainingSec * 1000), style = MaterialTheme.typography.labelLarge, color = scheme.primary)
+        Text("-" + formatTime((durationMs - shownMs).coerceAtLeast(0)), style = MaterialTheme.typography.labelLarge, color = scheme.primary)
     }
 }
 
 @Composable
 private fun RoundIcon(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, onClick: () -> Unit, tint: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSurface) {
-    Box(Modifier.size(if (com.aura.ui.tv.LocalIsTv.current) 48.dp else 44.dp).clip(CircleShape).clickable(interactionSource = remember { MutableInteractionSource() }, indication = com.aura.ui.components.FocusRing(CircleShape), onClick = onClick), contentAlignment = Alignment.Center) {
+    Box(Modifier.size(44.dp).clip(CircleShape).clickable(interactionSource = remember { MutableInteractionSource() }, indication = com.aura.ui.components.FocusRing(CircleShape), onClick = onClick), contentAlignment = Alignment.Center) {
         Icon(icon, label, Modifier.size(24.dp), tint = tint)
     }
 }

@@ -1082,6 +1082,13 @@ object InnertubeParser {
             ?: panel.o("title").runs().takeIf { it.isNotBlank() }
     }
 
+    /** The account's listening history page (`FEmusic_history`), by its sections: "Today", "Yesterday"... */
+    fun parseHistory(root: JsonElement): List<Pair<String, List<Song>>> =
+        collectRenderers(root, "musicShelfRenderer").mapNotNull { shelf ->
+            val title = shelf.o("title").runs().takeIf { it.isNotBlank() } ?: return@mapNotNull null
+            title to collectRenderers(shelf, "musicResponsiveListItemRenderer").mapNotNull { parseResponsiveListItem(it) }.distinctBy { it.videoId }
+        }
+
     /** Tracks of a watch queue (`next` response) — the AutoPlay radio mix. */
     fun parseWatchQueue(root: JsonElement): List<Song> {
         val out = LinkedHashMap<String, Song>()

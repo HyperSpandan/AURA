@@ -343,31 +343,6 @@ fun MenuRow(icon: ImageVector, label: String, onClick: () -> Unit) {
     }
 }
 
-/** One playlist to pick in [AddToPlaylistDialog]: its cover, its name, how many songs, and a tick if the song is in it. */
-@Composable
-private fun PlaylistPickRow(
-    title: String,
-    subtitle: String,
-    art: @Composable () -> Unit,
-    added: Boolean = false,
-    onClick: () -> Unit,
-) {
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(18.dp))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 10.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Box(Modifier.size(52.dp).clip(RoundedCornerShape(12.dp))) { art() }
-        Column(Modifier.weight(1f).padding(horizontal = 14.dp)) {
-            Text(title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        }
-        if (added) Icon(Icons.Rounded.CheckCircle, "Already in this playlist", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(22.dp))
-    }
-}
 
 /**
  * Picks one of the playlists made in the app, or makes a new one with [song]
@@ -404,95 +379,36 @@ fun AddToPlaylistDialog(song: Song, onDone: () -> Unit, onDismiss: () -> Unit) {
             }
         }
     }
-    var naming by remember { mutableStateOf(playlists.isEmpty() && accountPlaylists.isEmpty()) }
-    var name by remember { mutableStateOf("") }
-    var saveOnline by remember { mutableStateOf(true) }
-    var privacy by remember { mutableStateOf(PlaylistPrivacy.PRIVATE) }
-    FloatingDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(if (naming) "New playlist" else "Add to playlist") },
-        text = {
-            if (naming) {
-                Column {
-                    OutlinedTextField(name, { name = it }, singleLine = true, placeholder = { Text("Name") })
-                    if (online) AccountCopyOptions(saveOnline, { saveOnline = it }, privacy, { privacy = it }, Modifier.padding(top = 12.dp))
-                }
-            } else {
-                LazyColumn(Modifier.heightIn(max = 420.dp)) {
-                    item {
-                        PlaylistPickRow(
-                            title = "New playlist",
-                            subtitle = "With this song in it",
-                            art = {
-                                Box(
-                                    Modifier.fillMaxSize().background(MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)),
-                                    contentAlignment = Alignment.Center,
-                                ) { Icon(Icons.Rounded.Add, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(26.dp)) }
-                            },
-                            onClick = { naming = true },
-                        )
-                    }
-                    items(playlists, key = { it.id }) { p ->
-                        val has = p.songs.any { it.videoId == song.videoId }
-                        PlaylistPickRow(
-                            title = p.name,
-                            subtitle = if (has) "Already in it" else if (p.songs.size == 1) "1 song" else "${p.songs.size} songs",
-                            art = { PlaylistCover(p.name, p.songs.map { it.thumbnailUrl }, Modifier.fillMaxSize(), RectangleShape) },
-                            added = has,
-                            onClick = {
-                                if (has) {
-                                    com.aura.data.Pills.info("Already in ${p.name}", context)
-                                } else {
-                                    LibraryStore.addToPlaylist(p.id, song)
-                                    com.aura.data.Pills.done("Added to ${p.name}", context)
-                                }
-                                onDone()
-                            },
-                        )
-                    }
-                    if (accountPlaylists.isNotEmpty()) {
-                        item {
-                            Text(
-                                "On YouTube Music",
-                                style = MaterialTheme.typography.labelLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(start = 24.dp, top = 12.dp, bottom = 4.dp),
-                            )
-                        }
-                        items(accountPlaylists, key = { "yt:${it.playlistId}" }) { p ->
-                            val has = inAccount[p.playlistId] == true
-                            PlaylistPickRow(
-                                title = p.title,
-                                subtitle = if (has) "Already in it" else p.subtitle.ifBlank { "YouTube Music" },
-                                art = { Artwork(p.thumbnailUrl, Modifier.fillMaxSize(), RectangleShape, placeholder = Icons.AutoMirrored.Rounded.QueueMusic) },
-                                added = has,
-                            ) {
-                                if (has) {
-                                    com.aura.data.Pills.info("Already in ${p.title}", context)
-                                    onDone()
-                                    return@PlaylistPickRow
-                                }
-                                PlaylistSync.addToAccountPlaylist(p.playlistId, song) { ok ->
-                                    if (ok) com.aura.data.Pills.done("Added to ${p.title}", context)
-                                    else com.aura.data.Pills.error("Couldn't add it to ${p.title}", context)
-                                }
-                                onDone()
-                            }
-                        }
-                    }
-                }
-            }
+    PlaylistPicker(
+        songs = listOf(song),
+        local = playlists.map { p ->
+            localTarget(p, if (p.songs.any { it.videoId == song.videoId }) 1 else 0,
+                add = { LibraryStore.addToPlaylist(p.id, song) },
+                remove = { LibraryStore.removeSongsFromPlaylist(p.id, listOf(song.videoId)) })
         },
-        confirmButton = {
-            if (naming) {
-                SheetButton("Create", onClick = {
-                    LibraryStore.createPlaylist(name, song, privacy.takeIf { online && saveOnline })
-                    com.aura.data.Pills.done("Added to ${name.trim().ifEmpty { "New playlist" }}", context)
-                    onDone()
+        account = accountPlaylists.map { p ->
+            accountTarget(p, inAccount[p.playlistId]?.let { if (it) 1 else 0 },
+                add = {
+                    inAccount[p.playlistId] = true
+                    PlaylistSync.addToAccountPlaylist(p.playlistId, song) { ok ->
+                        if (!ok) { inAccount[p.playlistId] = false; com.aura.data.Pills.error("Couldn't add it to ${p.title}", context) }
+                    }
+                },
+                remove = {
+                    inAccount[p.playlistId] = false
+                    PlaylistSync.removeFromAccountPlaylist(p.playlistId, listOf(song)) { ok ->
+                        if (!ok) { inAccount[p.playlistId] = true; com.aura.data.Pills.error("Couldn't take it out of ${p.title}", context) }
+                    }
                 })
-            }
         },
-        dismissButton = { SheetButton("Cancel", onClick = onDismiss, closes = true) },
+        online = online,
+        onCreate = { name, privacy ->
+            LibraryStore.createPlaylist(name, song, privacy)
+            com.aura.data.Pills.done("Added to $name", context)
+            onDone()
+        },
+        onDone = onDone,
+        onDismiss = onDismiss,
     )
 }
 
