@@ -4,7 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router';
 import { renderSVG } from 'uqr';
 import { PageHeader } from '@/components/PageHeader';
 import { disconnectAll, ensureGroup, joinGroup, setAccountSync, setDeviceName, setEnabled, transferTo, useConnect } from '@/connect/connect';
-import { WEB_PLAYER } from '@/connect/group';
+import { WEB_PLAYER, getWebPlayerBaseUrl } from '@/connect/group';
 import { DeviceIcon, doing } from '@/connect/parts';
 import { Toggle } from './IntegrationSettings';
 import { settingsUi } from './settingsStyles';
@@ -103,7 +103,7 @@ export default function ConnectSettingsPage() {
         <h3 className={settingsUi.sectionHeader}>Or paste a link from your phone</h3>
         <section className={`${settingsUi.group} p-4`}>
           <div className="flex gap-2">
-            <input className={field} value={paste} placeholder={`${WEB_PLAYER}#/settings/devices?join=…`} onChange={(e) => setPaste(e.currentTarget.value)} onKeyDown={(e) => { if (e.key === 'Enter') add(); }} />
+            <input className={field} value={paste} placeholder={`${getWebPlayerBaseUrl()}#/settings/devices?join=…`} onChange={(e) => setPaste(e.currentTarget.value)} onKeyDown={(e) => { if (e.key === 'Enter') add(); }} />
             <button className={primary} onClick={add} disabled={!paste.trim()}>Add</button>
           </div>
           {error && <p className="mt-2 type-callout text-[var(--systemRed)]">{error}</p>}

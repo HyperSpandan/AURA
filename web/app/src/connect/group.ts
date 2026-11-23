@@ -4,6 +4,15 @@ const enc = new TextEncoder();
 export const WEB_PLAYER = 'https://hyperspandan.github.io/AURA/player/';
 const ENCODED = /^[A-Za-z0-9_-]{43}$/;
 
+export function getWebPlayerBaseUrl(): string {
+  if (typeof window !== 'undefined' && window.location) {
+    const origin = window.location.origin;
+    const path = window.location.pathname.replace(/\/settings.*$/, '').replace(/\/$/, '');
+    return `${origin}${path}/`;
+  }
+  return WEB_PLAYER;
+}
+
 export const toBase64Url = (b: Uint8Array) => btoa(String.fromCharCode(...b)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 export function fromBase64Url(s: string): Uint8Array {
   const padded = s.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - (s.length % 4)) % 4);
@@ -43,10 +52,17 @@ export class ConnectGroup {
     const value = text?.trim();
     if (!value) return null;
     let raw: string;
-    if (value.startsWith('aura://connect/#')) raw = value.slice('aura://connect/#'.length);
-    else if (value.startsWith(WEB_PLAYER)) raw = /[?&#](?:join|connect)=([A-Za-z0-9_-]{43})/.exec(value)?.[1] ?? '';
-    else if (value.includes('://')) return null;
-    else raw = value;
+    if (value.startsWith('aura://connect/#')) {
+      raw = value.slice('aura://connect/#'.length);
+    } else if (value.startsWith(WEB_PLAYER)) {
+      raw = /[?&#](?:join|connect)=([A-Za-z0-9_-]{43})/.exec(value)?.[1] ?? '';
+    } else if (typeof window !== 'undefined' && window.location && value.startsWith(`${window.location.origin}/`)) {
+      raw = /[?&#](?:join|connect)=([A-Za-z0-9_-]{43})/.exec(value)?.[1] ?? '';
+    } else if (value.includes('://')) {
+      return null;
+    } else {
+      raw = value;
+    }
     return ENCODED.test(raw) ? raw : null;
   }
 
@@ -62,7 +78,9 @@ export class ConnectGroup {
     return `aura://connect/#${this.encoded}`;
   }
   get webLink(): string {
-    return `${WEB_PLAYER}#/settings/devices?join=${this.encoded}`;
+    const base = getWebPlayerBaseUrl();
+    const cleanBase = base.endsWith('/') ? base : `${base}/`;
+    return `${cleanBase}#/settings/devices?join=${this.encoded}`;
   }
 
   seal(plain: string): Promise<string> {
