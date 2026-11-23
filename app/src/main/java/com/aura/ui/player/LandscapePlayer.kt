@@ -193,7 +193,7 @@ internal fun LandscapePlayer(
                     if (showOutput) com.aura.ui.cast.DevicesSheet(
                         onDismiss = { showOutput = false },
                         onCast = { showOutput = false; showCast = true },
-                        onLinkDevice = { showOutput = false; actions.openDevices() },
+                        onLinkDevice = { target -> showOutput = false; actions.openDevicesTarget(target) },
                         onRemote = { showOutput = false; actions.openRemote() },
                         onTogether = { showOutput = false; actions.openTogether() },
                     )

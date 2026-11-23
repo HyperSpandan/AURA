@@ -218,6 +218,7 @@ class PlayerActions(
     val openTogether: () -> Unit = {},
     val openEqualizer: () -> Unit = {},
     val openDevices: () -> Unit = {},
+    val openDevicesTarget: (String?) -> Unit = { openDevices() },
     val openRemote: () -> Unit = {},
 )
 
@@ -230,6 +231,7 @@ fun PlayerScreen(
     onTogether: () -> Unit = {},
     onEqualizer: () -> Unit = {},
     onDevices: () -> Unit = {},
+    onDevicesTarget: (String?) -> Unit = { onDevices() },
     onRemote: () -> Unit = {},
     /** Docked beside the page on a large screen; see [PlayerLayout]. */
     docked: Boolean = false,
@@ -272,6 +274,7 @@ fun PlayerScreen(
             openTogether = onTogether,
             openEqualizer = onEqualizer,
             openDevices = onDevices,
+            openDevicesTarget = onDevicesTarget,
             openRemote = onRemote,
         )
     }
@@ -1297,7 +1300,7 @@ fun PlayerLayout(
         if (showOutput) com.aura.ui.cast.DevicesSheet(
             onDismiss = { showOutput = false },
             onCast = { showOutput = false; showCast = true },
-            onLinkDevice = { showOutput = false; actions.openDevices() },
+            onLinkDevice = { target -> showOutput = false; actions.openDevicesTarget(target) },
             onRemote = { showOutput = false; actions.openRemote() },
             onTogether = { showOutput = false; actions.openTogether() },
         )

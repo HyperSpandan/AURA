@@ -703,6 +703,33 @@ fun AppRoot(vm: PlayerViewModel) {
                             onOpenDevices = { nav.navigate("devices") },
                         )
                     }
+                    page(
+                        route = "devices?target={target}",
+                        arguments = listOf(
+                            androidx.navigation.navArgument("target") {
+                                type = androidx.navigation.NavType.StringType
+                                nullable = true
+                                defaultValue = null
+                            }
+                        ),
+                    ) { entry ->
+                        val targetArg = entry.arguments?.getString("target")?.lowercase()
+                        val initialTarget = when (targetArg) {
+                            "computer", "web", "laptop" -> com.aura.ui.settings.LinkTarget.COMPUTER
+                            "tv" -> com.aura.ui.settings.LinkTarget.TV
+                            "speaker", "cast" -> com.aura.ui.settings.LinkTarget.SPEAKER
+                            "friend", "together" -> com.aura.ui.settings.LinkTarget.FRIEND
+                            else -> com.aura.ui.settings.LinkTarget.TV
+                        }
+                        com.aura.ui.settings.LinkDeviceScreen(
+                            content,
+                            onBack = { nav.popBackStack() },
+                            onSignIn = { nav.navigate("login") },
+                            onTogether = { nav.navigate("together") },
+                            onRemote = { nav.navigate("tv-remote") },
+                            initialTarget = initialTarget,
+                        )
+                    }
                     page("devices") {
                         com.aura.ui.settings.LinkDeviceScreen(
                             content,
@@ -710,6 +737,7 @@ fun AppRoot(vm: PlayerViewModel) {
                             onSignIn = { nav.navigate("login") },
                             onTogether = { nav.navigate("together") },
                             onRemote = { nav.navigate("tv-remote") },
+                            initialTarget = com.aura.ui.settings.LinkTarget.TV,
                         )
                     }
                     page("tv-remote") {
@@ -920,6 +948,9 @@ fun AppRoot(vm: PlayerViewModel) {
                         onTogether = { nav.navigate("together") },
                         onEqualizer = { nav.navigate("equalizer") },
                         onDevices = { nav.navigate("devices") },
+                        onDevicesTarget = { target ->
+                            if (target != null) nav.navigate("devices?target=$target") else nav.navigate("devices")
+                        },
                         onRemote = { nav.navigate("tv-remote") },
                         docked = true,
                     )
@@ -945,6 +976,11 @@ fun AppRoot(vm: PlayerViewModel) {
                     onTogether = { fromPlayer { nav.navigate("together") } },
                     onEqualizer = { fromPlayer { nav.navigate("equalizer") } },
                     onDevices = { fromPlayer { nav.navigate("devices") } },
+                    onDevicesTarget = { target ->
+                        fromPlayer {
+                            if (target != null) nav.navigate("devices?target=$target") else nav.navigate("devices")
+                        }
+                    },
                     onRemote = { fromPlayer { nav.navigate("tv-remote") } },
                 )
             }

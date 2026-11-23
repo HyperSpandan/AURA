@@ -84,6 +84,9 @@ class ConnectGroup private constructor(
             }.getOrNull()
         }
 
+        fun fromSecret(secret: String): ConnectGroup =
+            fromText(secret) ?: throw IllegalArgumentException("Invalid connect group secret: $secret")
+
         /** HKDF-SHA256 RFC 5869 with zero salt. */
         private fun hkdf(ikm: ByteArray, info: String, length: Int): ByteArray {
             val salt = ByteArray(32)

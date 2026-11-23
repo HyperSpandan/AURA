@@ -75,6 +75,7 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
 
     init {
         Together.attach(player)
+        com.aura.data.connect.ConnectManager.bind(application, player)
         viewModelScope.launch { player.connect() }
         viewModelScope.launch { watchLyrics() }
         viewModelScope.launch {

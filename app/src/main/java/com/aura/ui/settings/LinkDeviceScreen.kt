@@ -92,7 +92,7 @@ import com.aura.ui.theme.Text
 import com.aura.ui.together.QrCode
 
 /** The other screens AURA can reach from this one. */
-internal enum class LinkTarget(val label: String, val icon: ImageVector) {
+enum class LinkTarget(val label: String, val icon: ImageVector) {
     TV("TV", Icons.Rounded.Tv),
     COMPUTER("Computer", Icons.Rounded.Laptop),
     SPEAKER("Speaker", Icons.Rounded.Speaker),
@@ -112,9 +112,10 @@ fun LinkDeviceScreen(
     onSignIn: () -> Unit,
     onTogether: () -> Unit,
     onRemote: () -> Unit = {},
+    initialTarget: LinkTarget = LinkTarget.TV,
 ) {
     val context = LocalContext.current
-    var target by rememberSaveable { mutableStateOf(LinkTarget.TV) }
+    var target by rememberSaveable { mutableStateOf(initialTarget) }
     var casting by remember { mutableStateOf(false) }
     var scanning by remember { mutableStateOf(false) }
 
@@ -138,6 +139,7 @@ fun LinkDeviceScreen(
                 secret = computerSecret,
             )
             pairedComputers.add(computer)
+            com.aura.data.connect.ConnectManager.start(context, computerSecret)
             Pills.info("Connected to AURA Web Player", context)
             return@QrScannerDialog
         }
@@ -453,6 +455,7 @@ private fun ComputerSteps(
                                 secret = parsed,
                             )
                         )
+                        com.aura.data.connect.ConnectManager.start(context, parsed)
                         manualCode = ""
                         Pills.info("Connected to AURA Web Player", context)
                     } else {

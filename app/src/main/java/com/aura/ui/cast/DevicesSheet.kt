@@ -83,7 +83,7 @@ import com.aura.ui.player.rememberOutputRoute
 fun DevicesSheet(
     onDismiss: () -> Unit,
     onCast: () -> Unit = {},
-    onLinkDevice: () -> Unit = {},
+    onLinkDevice: (target: String?) -> Unit = {},
     onRemote: () -> Unit = {},
     onTogether: () -> Unit = {},
 ) {
@@ -110,6 +110,10 @@ fun DevicesSheet(
         tvDiscovery.start()
         onDispose { tvDiscovery.stop() }
     }
+
+    // Live Web Player & Connect Session state
+    val connectView by com.aura.data.connect.ConnectManager.view.collectAsState()
+    val webDevices = connectView.devices.filter { it.form == "web" }
 
     FloatingCard(onDismiss = onDismiss, title = "Connect to a device", icon = Icons.Rounded.Devices) {
         Column(
@@ -231,23 +235,68 @@ fun DevicesSheet(
                     chevron = true,
                     onClick = {
                         haptics.tick()
-                        onRemote()
+                        onLinkDevice("tv")
                         onDismiss()
                     },
                 )
             }
 
-            // AURA Web Player (Computer)
-            if (pairedComputers.isNotEmpty()) {
+            // Live AURA Web Players connected via Nostr Connect
+            if (webDevices.isNotEmpty()) {
+                webDevices.forEach { web ->
+                    val isPlaying = web.state?.playing == true
+                    val songTitle = web.state?.track?.title
+                    val subtitle = when {
+                        isPlaying && !songTitle.isNullOrBlank() -> "Playing: $songTitle · Tap to bring to phone"
+                        isPlaying -> "Playing on browser · Tap to bring to phone"
+                        else -> "Connected · Tap to play music on computer"
+                    }
+                    DeviceItemRow(
+                        icon = Icons.Rounded.Laptop,
+                        title = web.name.ifBlank { "AURA Web Player" },
+                        subtitle = subtitle,
+                        chevron = !isPlaying,
+                        trailing = if (isPlaying) {
+                            {
+                                FilledTonalButton(
+                                    onClick = {
+                                        haptics.tick()
+                                        com.aura.data.connect.ConnectManager.sendCommand(web.id, "toggle")
+                                    },
+                                    shape = RoundedCornerShape(12.dp),
+                                ) {
+                                    Text("Pause")
+                                }
+                            }
+                        } else null,
+                        onClick = {
+                            haptics.press()
+                            if (isPlaying) {
+                                com.aura.data.connect.ConnectManager.sendCommand(web.id, "pause")
+                            } else {
+                                val ok = com.aura.data.connect.ConnectManager.transferTo(web.id)
+                                if (ok) {
+                                    com.aura.data.Pills.info("Music moved to ${web.name}", context)
+                                }
+                            }
+                            onDismiss()
+                        },
+                    )
+                }
+            } else if (pairedComputers.isNotEmpty()) {
                 pairedComputers.forEach { pc ->
                     DeviceItemRow(
                         icon = Icons.Rounded.Laptop,
                         title = pc.name,
-                        subtitle = "AURA Web Player · Linked",
+                        subtitle = "AURA Web Player · Tap to connect & play",
                         chevron = true,
                         onClick = {
                             haptics.tick()
-                            onLinkDevice()
+                            com.aura.data.connect.ConnectManager.start(context, pc.secret)
+                            val ok = com.aura.data.connect.ConnectManager.transferTo(pc.id)
+                            if (!ok) {
+                                onLinkDevice("computer")
+                            }
                             onDismiss()
                         },
                     )
@@ -256,11 +305,11 @@ fun DevicesSheet(
                 DeviceItemRow(
                     icon = Icons.Rounded.Laptop,
                     title = "AURA Web Player",
-                    subtitle = "Play on computer or share player link",
+                    subtitle = "Play on computer or scan code",
                     chevron = true,
                     onClick = {
                         haptics.tick()
-                        onLinkDevice()
+                        onLinkDevice("computer")
                         onDismiss()
                     },
                 )
@@ -291,7 +340,7 @@ fun DevicesSheet(
                 subtitle = "Scan TV QR code, web player, or friend code",
                 onClick = {
                     haptics.tick()
-                    onLinkDevice()
+                    onLinkDevice(null)
                     onDismiss()
                 },
             )
@@ -400,6 +449,7 @@ private fun DeviceItemRow(
     title: String,
     subtitle: String,
     chevron: Boolean = false,
+    trailing: (@Composable () -> Unit)? = null,
     onClick: () -> Unit,
 ) {
     val scheme = MaterialTheme.colorScheme
@@ -443,7 +493,9 @@ private fun DeviceItemRow(
                 overflow = TextOverflow.Ellipsis,
             )
         }
-        if (chevron) {
+        if (trailing != null) {
+            trailing()
+        } else if (chevron) {
             Icon(
                 Icons.Rounded.ChevronRight,
                 contentDescription = null,
@@ -466,6 +518,7 @@ private fun TvDeviceRow(
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
             .background(scheme.surfaceContainerHigh)
+            .clickable(onClick = onRemoteClick)
             .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
