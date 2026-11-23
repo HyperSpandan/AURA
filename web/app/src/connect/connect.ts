@@ -83,7 +83,7 @@ export const useControlling = (): Device | null => useConnect((s) => controlling
 
 const toCTrack = (t: Track | undefined | null): CTrack | null => toRoomTrack(t);
 
-function fromCTrack(t: CTrack): Track {
+export function fromCTrack(t: CTrack): Track {
   const parts = t.length?.split(':').map(Number) ?? [];
   const seconds = parts.length && parts.every(Number.isFinite) ? parts.reduce((a, b) => a * 60 + b, 0) : null;
   return {
@@ -134,7 +134,7 @@ const webPlayer: ConnectPlayer = {
       private: !track,
       // Moving, not just meant to: other devices run this one's clock on from its last report
       // while it says it's playing, so a stall said as playing ran their timestamp ahead of it.
-      playing: !!audio && !audio.paused && !audio.seeking && audio.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA,
+      playing: !!audio && !audio.paused && (audio.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA || status === 'playing'),
       wants: !!audio && !audio.paused,
       pos: Math.max(0, (audio?.currentTime ?? 0) * 1000),
       queue: queue.slice(index + 1).map((e) => toCTrack(e.track)).filter((t): t is CTrack => !!t),
@@ -151,7 +151,18 @@ const webPlayer: ConnectPlayer = {
   pause: () => partyPlayer.pause(),
   next: () => usePlayer.getState().next(),
   previous: () => usePlayer.getState().previous(),
-  seekTo: (ms) => partyPlayer.seekTo(ms / 1000),
+  seekTo: (ms) => {
+    partyPlayer.seekTo(ms / 1000);
+    const audio = getAudio();
+    if (audio) {
+      const onSeeked = () => {
+        audio.removeEventListener('seeked', onSeeked);
+        session?.localChanged();
+      };
+      audio.addEventListener('seeked', onSeeked, { once: true });
+      setTimeout(() => session?.localChanged(), 150);
+    }
+  },
   setVolume: (v) => usePlayer.getState().setVolume(v),
   setShuffle: (on) => here(() => {
     if (usePlayer.getState().shuffle !== on) usePlayer.getState().toggleShuffle();

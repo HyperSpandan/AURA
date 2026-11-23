@@ -36,6 +36,10 @@ import { useScrubber } from './useScrubber';
 import { MorphPlayButton } from './MorphPlayButton';
 import { morphPlayer } from './playerMorph';
 import { getPlayingFrom } from '@/playback/queue/playingFrom';
+import { useControlling, fromCTrack } from '@/connect/connect';
+import { useShownNowPlaying } from '@/connect/shown';
+import { RemoteUpNext } from '@/connect/RemoteUpNext';
+import { DeviceIcon } from '@/connect/parts';
 
 function useBrowserFullScreen(): boolean {
   return useSyncExternalStore(
@@ -54,7 +58,9 @@ function useBrowserFullScreen(): boolean {
  */
 function Scrubber() {
   const { bar, elapsed, remaining, dragging, handlers } = useScrubber();
-  const playing = usePlayer((s) => s.status === 'playing');
+  const remote = useControlling();
+  const localPlaying = usePlayer((s) => s.status === 'playing');
+  const playing = remote ? !!remote.state?.playing : localPlaying;
   return (
     <div className="group/scrub mt-3.5" data-dragging={dragging || undefined} data-no-swipe data-morph-fade>
       {/* A taller hit area than the line it carries. */}
@@ -82,12 +88,21 @@ const skip = `${transportButton} size-12 text-primary`;
 
 /** Shuffle, previous, play/pause, next, repeat. No volume: the pill keeps that. */
 function Transport() {
-  const hasTrack = usePlayer((s) => s.nowPlaying !== null);
-  const playing = usePlayer((s) => s.status === 'playing' || s.status === 'buffering');
-  const buffering = usePlayer((s) => s.status === 'buffering' || s.status === 'loading');
-  const hasNext = usePlayer((s) => s.index + 1 < s.queue.length || s.repeat !== 'off' || (s.autoplay && s.index >= 0));
-  const shuffle = usePlayer((s) => s.shuffle);
-  const repeat = usePlayer((s) => s.repeat);
+  const remote = useControlling();
+  const localHasTrack = usePlayer((s) => s.nowPlaying !== null);
+  const localPlaying = usePlayer((s) => s.status === 'playing' || s.status === 'buffering');
+  const localBuffering = usePlayer((s) => s.status === 'buffering' || s.status === 'loading');
+  const localHasNext = usePlayer((s) => s.index + 1 < s.queue.length || s.repeat !== 'off' || (s.autoplay && s.index >= 0));
+  const localShuffle = usePlayer((s) => s.shuffle);
+  const localRepeat = usePlayer((s) => s.repeat);
+
+  const hasTrack = remote ? !!remote.state?.track : localHasTrack;
+  const playing = remote ? !!remote.state?.playing : localPlaying;
+  const buffering = remote ? false : localBuffering;
+  const hasNext = remote ? ((remote.state?.queue?.length ?? 0) > 0) : localHasNext;
+  const shuffle = remote ? !!remote.state?.shuffle : localShuffle;
+  const repeat = remote ? (remote.state?.repeat ?? 'off') : localRepeat;
+
   const { togglePlay, next, previous, toggleShuffle, cycleRepeat } = usePlayer.getState();
 
   return (
@@ -161,15 +176,17 @@ class FullScreenErrorBoundary extends Component<{ children: ReactNode; onClose: 
  * beside the lyrics or Up Next, it takes the artwork's place at 16:9.
  */
 function FullScreenPlayerContent({ closing = false, onClosed }: { closing?: boolean; onClosed?: () => void }) {
-  const nowPlaying = usePlayer((s) => s.nowPlaying);
+  const remote = useControlling();
+  const nowPlaying = useShownNowPlaying();
   const appearance = useAppearance();
   const coverColor = useArtworkColor(nowPlaying?.artworkUrl);
   // The queue's row for what's playing: it carries the album and each artist's channel.
-  const track = usePlayer((s) => {
+  const localTrack = usePlayer((s) => {
     const entry = s.queue[s.index]?.track;
     return entry && entry.videoId === s.nowPlaying?.videoId ? entry : null;
   });
-  const currentTrack: Track | null = track ?? (nowPlaying ? {
+  const remoteTrack = remote?.state?.track ? fromCTrack(remote.state.track) : null;
+  const currentTrack: Track | null = remoteTrack ?? localTrack ?? (nowPlaying ? {
     videoId: nowPlaying.videoId,
     title: nowPlaying.title,
     artists: nowPlaying.artist ? [{ name: nowPlaying.artist, id: null }] : [],
@@ -181,12 +198,15 @@ function FullScreenPlayerContent({ closing = false, onClosed }: { closing?: bool
     plays: null,
   } : null);
   const entry = usePlayer((s) => s.queue[s.index] ?? null);
-  const playingFrom = getPlayingFrom(entry, currentTrack, nowPlaying);
+  const playingFrom = remote
+    ? { label: 'PLAYING ON', title: remote.name || 'Connected device' }
+    : getPlayingFrom(entry, currentTrack, nowPlaying);
   // Apple's animated sleeve over the cover, as the phone's now-playing shows it.
-  const motion = useTrackMotion(nowPlaying?.title, nowPlaying?.artist, track?.album?.name);
+  const motion = useTrackMotion(nowPlaying?.title, nowPlaying?.artist, currentTrack?.album?.name);
   const { pathname } = useLocation();
   const openedAt = useRef(pathname);
-  const playing = usePlayer((s) => s.status === 'playing' || s.status === 'buffering');
+  const localPlaying = usePlayer((s) => s.status === 'playing' || s.status === 'buffering');
+  const playing = remote ? !!remote.state?.playing : localPlaying;
   const setFullScreen = useUi((s) => s.setFullScreen);
   const lyrics = useLyrics();
   const video = useHasVideo(nowPlaying?.videoId);
@@ -431,6 +451,20 @@ function FullScreenPlayerContent({ closing = false, onClosed }: { closing?: bool
           <div key={videoId} data-morph-fade className={`ot-swap-in flex items-center gap-3${theater ? '' : ' mt-[clamp(20px,3.2vh,32px)]'}${column ? ' max-md:mt-0' : ''}`}>
             {/* As the mini player's: the title opens the album, each credited name its artist. */}
             <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+              {remote && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFullScreen(false);
+                    useUi.getState().setSidePanel('devices');
+                  }}
+                  className="mb-1.5 flex w-fit items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-0.5 text-white/90 hover:bg-white/20 hover:text-white transition-colors cursor-pointer"
+                  title="Click to view connected devices"
+                >
+                  <DeviceIcon form={remote.form} size={14} />
+                  <span className="type-caption-1 font-semibold uppercase tracking-wider text-[11px]">Playing on {remote.name || 'Device'}</span>
+                </button>
+              )}
               <div className="flex min-w-0 items-center">
                 <PageLink
                   className={`min-w-0 max-w-full self-start truncate type-[600_17px/22px] ${pageLink}`}
@@ -484,7 +518,7 @@ function FullScreenPlayerContent({ closing = false, onClosed }: { closing?: bool
             aria-label="Up Next"
             data-morph-fade
           >
-            <UpNext />
+            {remote ? <RemoteUpNext device={remote} /> : <UpNext />}
           </section>
         )}
       </div>

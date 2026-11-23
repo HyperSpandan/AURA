@@ -260,6 +260,7 @@ class ConnectSession(
             activeId = when {
                 phonePlaying -> myId
                 playingRemote != null -> playingRemote.id
+                activeRemoteWithTrack != null && !phoneHasTrack -> activeRemoteWithTrack.id
                 phoneHasTrack -> myId
                 activeRemoteWithTrack != null -> activeRemoteWithTrack.id
                 else -> myId

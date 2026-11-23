@@ -133,10 +133,7 @@ fun DevicesSheet(
             )
 
             val isLocalPlaying by com.aura.data.connect.ConnectManager.isLocalPlaying.collectAsState()
-            val activeRemote = if (!isLocalPlaying) {
-                remoteDevices.firstOrNull { it.state?.playing == true }
-                    ?: remoteDevices.firstOrNull { it.id == connectView.activeId && it.state?.track != null && connectView.activeId != connectView.myId }
-            } else null
+            val activeRemote = com.aura.data.connect.ConnectManager.activeRemoteDevice.collectAsState().value
 
             if (session != null) {
                 val s = session!!
@@ -163,7 +160,7 @@ fun DevicesSheet(
                         haptics.press()
                         com.aura.data.connect.ConnectManager.pullToPhone()
                     },
-                    showVolume = false,
+                    showVolume = true,
                 )
             } else {
                 ActiveDeviceCard(

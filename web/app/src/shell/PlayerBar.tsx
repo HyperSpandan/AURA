@@ -21,7 +21,7 @@ import { usePlayer } from '@/state/player';
 import { useUi } from '@/state/ui';
 import { useLiquidGlass } from '@/lib/liquidGlass';
 import { Lcd } from './Lcd';
-import { useControlling } from '@/connect/connect';
+import { useControlling, sendVolume } from '@/connect/connect';
 import { RemoteLcd } from '@/connect/RemoteLcd';
 
 const control = 'grid place-items-center rounded-[6px] disabled:opacity-40';
@@ -47,11 +47,12 @@ const slider = [
  * in where the other actions were (they fade out while it's open).
  */
 function VolumeControl({ open, onOpen }: { open: boolean; onOpen: () => void }) {
+  const remote = useControlling();
   const volume = usePlayer((s) => s.volume);
   const muted = usePlayer((s) => s.muted);
   const setVolume = usePlayer((s) => s.setVolume);
   const toggleMute = usePlayer((s) => s.toggleMute);
-  const level = muted ? 0 : volume;
+  const level = remote ? (remote.state?.volume ?? 1) : (muted ? 0 : volume);
   return (
     <>
       <input
@@ -65,13 +66,26 @@ function VolumeControl({ open, onOpen }: { open: boolean; onOpen: () => void }) 
         aria-label="Volume"
         tabIndex={open ? 0 : -1}
         style={{ '--fill': `${level * 100}%` } as React.CSSProperties}
-        onChange={(e) => setVolume(Number(e.currentTarget.value))}
+        onChange={(e) => {
+          const v = Number(e.currentTarget.value);
+          if (remote) {
+            sendVolume(v);
+          } else {
+            setVolume(v);
+          }
+        }}
       />
       <button
         className={action}
         aria-label={muted ? 'Unmute' : 'Mute'}
         aria-pressed={muted}
-        onClick={toggleMute}
+        onClick={() => {
+          if (remote) {
+            sendVolume(level > 0 ? 0 : 1);
+          } else {
+            toggleMute();
+          }
+        }}
         onPointerEnter={onOpen}
         onFocus={onOpen}
       >

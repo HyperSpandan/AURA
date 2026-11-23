@@ -37,6 +37,7 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
     private val artwork = com.aura.data.covers.PlaybackArtwork()
     /** A sharper catalogue cover found for the playing track, by its id. */
     private val betterCover = MutableStateFlow<Pair<String, String>?>(null)
+    private val optimisticSeek = MutableStateFlow<Pair<Long, Long>?>(null)
     private val localSong = combine(player.currentSong, betterCover) { song, better ->
         song?.copy(thumbnailUrl = artwork.choose(song, better?.takeIf { it.first == song.videoId }?.second)) ?: run { artwork.clear(); null }
     }
@@ -48,7 +49,7 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
         } else {
             local
         }
-    }.stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.Eagerly, null)
+    }.stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.Lazily, null)
 
     /** Apple's animated cover and Spotify's Canvas found for the playing track, by its id. */
     private val motionFound = MutableStateFlow<Pair<String, com.aura.data.covers.AppleMotionArt.Motion>?>(null)
@@ -56,20 +57,20 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
     /** The animated cover to loop in the player's cover; null when none, or turned off since. */
     val coverVideo = combine(player.currentSong, motionFound, AppSettings.ui) { song, found, ui ->
         found?.takeIf { song != null && it.first == song.videoId && ui.animatedCovers && !ui.reduceAnimation }?.second
-    }.stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.Eagerly, null)
+    }.stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.Lazily, null)
     /** The Canvas to loop behind the player; null when none, or turned off or disconnected since. */
     val canvasVideo = combine(player.currentSong, canvasFound, AppSettings.ui, com.aura.ui.spotify.SpotifyConnection.connected) { song, found, ui, connected ->
         found?.takeIf { song != null && it.first == song.videoId && ui.spotifyCanvas && connected && !ui.reduceAnimation }?.second
-    }.stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.Eagerly, null)
+    }.stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.Lazily, null)
     val queue = player.queue
     val currentIndex = player.currentIndex
     val upNext = player.upNext
     val hasNext = combine(player.hasNext, com.aura.data.connect.ConnectManager.activeRemoteDevice) { localHasNext, remote ->
         if (player.isPlaying.value || remote == null) localHasNext else (remote.state?.queue?.isNotEmpty() == true)
-    }.stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.Eagerly, false)
+    }.stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.Lazily, false)
     val isPlaying = combine(player.isPlaying, com.aura.data.connect.ConnectManager.activeRemoteDevice) { localPlaying, remote ->
         if (localPlaying) true else remote?.state?.playing == true
-    }.stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.Eagerly, false)
+    }.stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.Lazily, false)
     val isBuffering = player.isBuffering
     val loadingMessage = player.loadingMessage
     val shuffleEnabled = player.shuffleEnabled
@@ -78,7 +79,7 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
     val repeatMode = player.repeatMode
     val durationMs = combine(player.durationMs, com.aura.data.connect.ConnectManager.activeRemoteDevice) { localDuration, remote ->
         if (player.isPlaying.value || remote == null) localDuration else com.aura.data.connect.ConnectManager.lengthToMs(remote.state?.track?.length)
-    }.stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.Eagerly, 0L)
+    }.stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.Lazily, 0L)
     val playbackError = player.error
     val source = player.source
     val audioFormat = player.audioFormat
@@ -91,7 +92,7 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
     init {
         Together.attach(player)
         viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
-            kotlinx.coroutines.delay(1200L)
+            kotlinx.coroutines.delay(2500L)
             com.aura.data.connect.ConnectManager.bind(application, player)
         }
         viewModelScope.launch { player.connect() }
@@ -266,6 +267,7 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
         if (Together.intercept(Together.Control.Seek(positionMs))) return
         val remote = com.aura.data.connect.ConnectManager.activeRemoteDevice.value
         if (!player.isPlaying.value && remote != null) {
+            optimisticSeek.value = positionMs to System.currentTimeMillis()
             com.aura.data.connect.ConnectManager.sendCommand("seek", targetId = remote.id, pos = positionMs)
             return
         }
@@ -279,9 +281,22 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
         val remote = com.aura.data.connect.ConnectManager.activeRemoteDevice.value
         val state = remote?.state
         if (state != null) {
+            val opt = optimisticSeek.value
+            val now = System.currentTimeMillis()
+            if (opt != null) {
+                val (optPos, optAt) = opt
+                val elapsedSinceOpt = now - optAt
+                if (elapsedSinceOpt < 3000L && state.at <= optAt) {
+                    val duration = com.aura.data.connect.ConnectManager.lengthToMs(state.track?.length)
+                    val currentOpt = if (state.playing == true) optPos + elapsedSinceOpt else optPos
+                    return if (duration > 0) currentOpt.coerceAtMost(duration) else currentOpt
+                } else {
+                    optimisticSeek.value = null
+                }
+            }
             val basePos = state.pos ?: 0L
             return if (state.playing == true && state.at > 0) {
-                val elapsed = (System.currentTimeMillis() - state.at).coerceIn(0L, 30_000L)
+                val elapsed = (now - state.at).coerceIn(0L, 30_000L)
                 val duration = com.aura.data.connect.ConnectManager.lengthToMs(state.track?.length)
                 val total = basePos + elapsed
                 if (duration > 0) total.coerceAtMost(duration) else total

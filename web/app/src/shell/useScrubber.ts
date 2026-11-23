@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { getAudio, usePlayer } from '@/state/player';
+import { useControlling, seekRemote } from '@/connect/connect';
+import { positionAt } from '@/connect/session';
+import { lengthSec } from '@/connect/shown';
 
 export function clock(seconds: number): string {
   if (!Number.isFinite(seconds) || seconds < 0) return '0:00';
@@ -20,30 +23,47 @@ export function useScrubber() {
   const status = usePlayer((s) => s.status);
   const deck = usePlayer((s) => s.deck);
   const seek = usePlayer((s) => s.seek);
+  const remote = useControlling();
   const [dragging, setDragging] = useState<number | null>(null);
 
   useEffect(() => {
-    const audio = getAudio();
     const element = bar.current;
-    if (!audio || !element) return;
+    if (!element) return;
     let frame = 0;
-    const draw = () => {
-      const duration = audio.duration;
-      const time = dragging !== null && Number.isFinite(duration) ? dragging * duration : audio.currentTime;
-      const fraction = duration > 0 ? time / duration : 0;
-      element.style.setProperty('--progress', String(Math.min(1, Math.max(0, fraction))));
-      if (elapsed.current) elapsed.current.textContent = clock(time);
-      if (remaining.current) remaining.current.textContent = `-${clock((duration || 0) - time)}`;
-      if (!audio.paused || dragging !== null) frame = requestAnimationFrame(draw);
-    };
-    draw();
-    const onSeeked = () => draw();
-    audio.addEventListener('seeked', onSeeked);
-    return () => {
-      cancelAnimationFrame(frame);
-      audio.removeEventListener('seeked', onSeeked);
-    };
-  }, [status, deck, dragging]);
+
+    if (remote) {
+      const dur = lengthSec(remote.state?.track?.length);
+      const draw = () => {
+        const time = dragging !== null && dur > 0 ? dragging * dur : positionAt(remote, Date.now()) / 1000;
+        const fraction = dur > 0 ? Math.min(1, Math.max(0, time / dur)) : 0;
+        element.style.setProperty('--progress', String(fraction));
+        if (elapsed.current) elapsed.current.textContent = clock(time);
+        if (remaining.current) remaining.current.textContent = `-${clock(Math.max(0, dur - time))}`;
+        if (remote.state?.playing || dragging !== null) frame = requestAnimationFrame(draw);
+      };
+      draw();
+      return () => cancelAnimationFrame(frame);
+    } else {
+      const audio = getAudio();
+      if (!audio) return;
+      const draw = () => {
+        const duration = audio.duration;
+        const time = dragging !== null && Number.isFinite(duration) ? dragging * duration : audio.currentTime;
+        const fraction = duration > 0 ? time / duration : 0;
+        element.style.setProperty('--progress', String(Math.min(1, Math.max(0, fraction))));
+        if (elapsed.current) elapsed.current.textContent = clock(time);
+        if (remaining.current) remaining.current.textContent = `-${clock((duration || 0) - time)}`;
+        if (!audio.paused || dragging !== null) frame = requestAnimationFrame(draw);
+      };
+      draw();
+      const onSeeked = () => draw();
+      audio.addEventListener('seeked', onSeeked);
+      return () => {
+        cancelAnimationFrame(frame);
+        audio.removeEventListener('seeked', onSeeked);
+      };
+    }
+  }, [status, deck, dragging, remote]);
 
   const fractionAt = (event: React.PointerEvent<HTMLElement>) => {
     const rect = event.currentTarget.getBoundingClientRect();
@@ -52,7 +72,7 @@ export function useScrubber() {
 
   const handlers = {
     onPointerDown: (e: React.PointerEvent<HTMLElement>) => {
-      if (!getAudio()) return;
+      if (!getAudio() && !remote) return;
       e.currentTarget.setPointerCapture(e.pointerId);
       setDragging(fractionAt(e));
     },
@@ -61,8 +81,14 @@ export function useScrubber() {
     },
     onPointerUp: (e: React.PointerEvent<HTMLElement>) => {
       if (dragging === null) return;
-      const audio = getAudio();
-      if (audio && Number.isFinite(audio.duration)) seek(fractionAt(e) * audio.duration);
+      const frac = fractionAt(e);
+      if (remote) {
+        const dur = lengthSec(remote.state?.track?.length);
+        if (dur > 0) seekRemote(frac * dur * 1000);
+      } else {
+        const audio = getAudio();
+        if (audio && Number.isFinite(audio.duration)) seek(frac * audio.duration);
+      }
       setDragging(null);
     },
     onPointerCancel: () => setDragging(null),

@@ -1278,13 +1278,96 @@ fun NerdStatsLine(format: AudioFormatInfo?) {
     )
 }
 
-/** Volume of the active output: the cast receiver when connected, otherwise the phone. */
+/** Volume of the active output: the cast receiver when connected, a remote connect device when controlling one, otherwise the phone. */
 @Composable
 fun VolumeBar(modifier: Modifier = Modifier) {
     val session by com.aura.cast.Cast.session.collectAsState()
     val receiver = session?.receiver
-    // Cancel gestures and pending UI work when the output changes.
-    androidx.compose.runtime.key(receiver) { OutputVolumeBar(receiver, modifier) }
+    val isLocalPlaying by com.aura.data.connect.ConnectManager.isLocalPlaying.collectAsState()
+    val activeRemote by com.aura.data.connect.ConnectManager.activeRemoteDevice.collectAsState()
+
+    if (receiver != null) {
+        androidx.compose.runtime.key(receiver) { OutputVolumeBar(receiver, modifier) }
+    } else if (!isLocalPlaying && activeRemote != null) {
+        androidx.compose.runtime.key(activeRemote?.id) { ConnectVolumeBar(activeRemote!!, modifier) }
+    } else {
+        OutputVolumeBar(null, modifier)
+    }
+}
+
+@Composable
+fun ConnectVolumeBar(
+    device: com.aura.data.connect.ConnectDevice,
+    modifier: Modifier = Modifier,
+) {
+    val remoteVol = device.state?.volume?.toFloat() ?: 1f
+    var volume by remember(device.id) { mutableFloatStateOf(remoteVol) }
+    var dragging by remember { mutableStateOf(false) }
+
+    LaunchedEffect(remoteVol, dragging) {
+        if (!dragging) {
+            volume = remoteVol.coerceIn(0f, 1f)
+        }
+    }
+
+    fun commit(newVol: Float) {
+        val clamped = newVol.coerceIn(0f, 1f)
+        volume = clamped
+        com.aura.data.connect.ConnectManager.sendCommand(
+            action = "volume",
+            targetId = device.id,
+            value = clamped.toDouble(),
+        )
+    }
+
+    val step = 0.05f
+    Row(modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Icon(
+            Icons.AutoMirrored.Rounded.VolumeDown,
+            "Volume down",
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(20.dp).clickable { commit(volume - step) }
+        )
+        val track = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.18f)
+        val fill = MaterialTheme.colorScheme.onSurface
+        Canvas(
+            Modifier
+                .weight(1f)
+                .padding(horizontal = 10.dp)
+                .height(28.dp)
+                .pointerInput(device.id) {
+                    detectTapGestures { offset ->
+                        if (size.width > 0) commit(offset.x / size.width)
+                    }
+                }
+                .pointerInput(device.id) {
+                    detectHorizontalDragGestures(
+                        onDragStart = { dragging = true },
+                        onDragEnd = { dragging = false },
+                        onDragCancel = { dragging = false },
+                    ) { change, _ ->
+                        change.consume()
+                        if (size.width > 0) {
+                            val newV = (change.position.x / size.width).coerceIn(0f, 1f)
+                            volume = newV
+                            commit(newV)
+                        }
+                    }
+                }
+        ) {
+            val h = 4.dp.toPx()
+            val y = (size.height - h) / 2
+            val f = volume.coerceIn(0f, 1f)
+            drawRoundRect(track, Offset(0f, y), Size(size.width, h), CornerRadius(h / 2))
+            drawRoundRect(fill, Offset(0f, y), Size(size.width * f, h), CornerRadius(h / 2))
+        }
+        Icon(
+            Icons.AutoMirrored.Rounded.VolumeUp,
+            "Volume up",
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(20.dp).clickable { commit(volume + step) }
+        )
+    }
 }
 
 @Composable
