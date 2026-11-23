@@ -132,20 +132,42 @@ fun DevicesSheet(
                 modifier = Modifier.padding(start = 6.dp, top = 2.dp),
             )
 
+            val activeRemote = webDevices.firstOrNull { it.state?.playing == true }
+                ?: connectView.devices.firstOrNull { it.id == connectView.activeId && it.state?.track != null }
+
             if (session != null) {
                 val s = session!!
                 ActiveDeviceCard(
                     icon = Icons.Rounded.CastConnected,
                     title = s.target.name,
                     subtitle = if (s.receiver == null) "Connecting…" else "Google Cast · Playing here",
-                    onStop = { haptics.press(); Cast.disconnect() },
+                    actionLabel = "Disconnect",
+                    onAction = { haptics.press(); Cast.disconnect() },
+                )
+            } else if (activeRemote != null) {
+                val trackTitle = activeRemote.state?.track?.title ?: "Music"
+                val artistName = activeRemote.state?.track?.artist
+                val detail = if (!artistName.isNullOrBlank()) "$trackTitle · $artistName" else trackTitle
+                ActiveDeviceCard(
+                    icon = when (activeRemote.form) {
+                        "tv" -> Icons.Rounded.Tv
+                        else -> Icons.Rounded.Laptop
+                    },
+                    title = activeRemote.name.ifBlank { "AURA Web Player" },
+                    subtitle = "$detail · Playing here",
+                    actionLabel = "Play on phone",
+                    onAction = {
+                        haptics.press()
+                        com.aura.data.connect.ConnectManager.pullToPhone()
+                    },
+                    showVolume = false,
                 )
             } else {
                 ActiveDeviceCard(
                     icon = if (route == OutputRoute.CAST) Icons.Rounded.Smartphone else route.icon,
                     title = if (route == OutputRoute.CAST) "This phone" else deviceName,
                     subtitle = "This device · Playing here",
-                    onStop = null,
+                    onAction = null,
                 )
             }
 
@@ -172,15 +194,18 @@ fun DevicesSheet(
                 }
             }
 
-            // If currently casting, option to switch back to phone
-            if (session != null) {
+            // If currently casting or playing on another connected device, option to switch back to phone
+            if (session != null || activeRemote != null) {
                 DeviceItemRow(
                     icon = route.icon,
                     title = deviceName,
                     subtitle = "Switch playback to this phone",
                     onClick = {
                         haptics.tick()
-                        Cast.disconnect()
+                        if (session != null) Cast.disconnect()
+                        if (activeRemote != null) {
+                            com.aura.data.connect.ConnectManager.pullToPhone()
+                        }
                     },
                 )
             }
@@ -370,7 +395,9 @@ private fun ActiveDeviceCard(
     icon: ImageVector,
     title: String,
     subtitle: String,
-    onStop: (() -> Unit)?,
+    actionLabel: String = "Stop",
+    onAction: (() -> Unit)? = null,
+    showVolume: Boolean = true,
 ) {
     val scheme = MaterialTheme.colorScheme
     Column(
@@ -415,12 +442,12 @@ private fun ActiveDeviceCard(
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-            if (onStop != null) {
+            if (onAction != null) {
                 FilledTonalButton(
-                    onClick = onStop,
+                    onClick = onAction,
                     shape = RoundedCornerShape(14.dp),
                 ) {
-                    Text("Stop")
+                    Text(actionLabel)
                 }
             } else {
                 Box(
@@ -439,7 +466,9 @@ private fun ActiveDeviceCard(
                 }
             }
         }
-        VolumeBar(Modifier.padding(top = 10.dp))
+        if (showVolume) {
+            VolumeBar(Modifier.padding(top = 10.dp))
+        }
     }
 }
 

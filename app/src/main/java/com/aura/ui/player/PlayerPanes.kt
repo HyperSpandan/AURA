@@ -623,6 +623,12 @@ fun rememberOutputDeviceName(): String {
         onDispose { am?.unregisterAudioDeviceCallback(cb) }
     }
     val cast by com.aura.cast.Cast.session.collectAsState()
+    val connectView by com.aura.data.connect.ConnectManager.view.collectAsState()
+    val activeRemote = connectView.devices.firstOrNull { it.state?.playing == true }
+    if (activeRemote != null) {
+        val title = activeRemote.state?.track?.title
+        return if (!title.isNullOrBlank()) "Playing on ${activeRemote.name}: $title" else "Playing on ${activeRemote.name}"
+    }
     return cast?.let { if (it.receiver == null) "Connecting to ${it.target.name}…" else "Playing on ${it.target.name}" } ?: name
 }
 
@@ -670,7 +676,9 @@ fun rememberOutputRoute(): OutputRoute {
         onDispose { am?.unregisterAudioDeviceCallback(cb) }
     }
     val cast by com.aura.cast.Cast.session.collectAsState()
-    return if (cast != null) OutputRoute.CAST else route
+    val connectView by com.aura.data.connect.ConnectManager.view.collectAsState()
+    val remotePlaying = connectView.devices.any { it.state?.playing == true }
+    return if (cast != null || remotePlaying) OutputRoute.CAST else route
 }
 
 private fun outputRoute(am: AudioManager?): OutputRoute {

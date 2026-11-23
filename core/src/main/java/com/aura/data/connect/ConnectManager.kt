@@ -55,10 +55,6 @@ object ConnectManager {
         val explicit = PrefsStorage(context, "connect_group_secret").read()
         if (explicit != null && PairedComputers.parse(explicit) != null) return PairedComputers.parse(explicit)
 
-        // 3. Phone's own connect secret
-        val phoneSec = PrefsStorage(context, "connect_phone_secret").read()
-        if (phoneSec != null && PairedComputers.parse(phoneSec) != null) return PairedComputers.parse(phoneSec)
-
         return null
     }
 
@@ -99,18 +95,23 @@ object ConnectManager {
         val s = session ?: return
 
         syncJob?.cancel()
-        syncJob = scope.launch {
+        syncJob = scope.launch(Dispatchers.Default) {
             combine(
                 p.currentSong,
                 p.isPlaying,
-                p.durationMs,
                 p.queue,
                 p.shuffleEnabled,
-            ) { song, isPlaying, durationMs, queue, shuffle ->
-                SyncSnapshot(song, isPlaying, durationMs, queue, shuffle)
-            }.distinctUntilChanged().collectLatest { snap ->
+            ) { song, isPlaying, queue, shuffle ->
+                SyncSnapshot(song, isPlaying, queue, shuffle)
+            }.distinctUntilChanged { old, new ->
+                old.song?.videoId == new.song?.videoId &&
+                old.isPlaying == new.isPlaying &&
+                old.shuffle == new.shuffle &&
+                old.queue.size == new.queue.size
+            }.collectLatest { snap ->
+                kotlinx.coroutines.delay(250)
                 val cTrack = snap.song?.let { songToCTrack(it) }
-                val cQueue = snap.queue.map { songToCTrack(it) }
+                val cQueue = snap.queue.take(25).map { songToCTrack(it) }
                 val pos = runCatching { withContext(Dispatchers.Main) { p.currentPositionMs() } }.getOrDefault(0L)
                 s.broadcastState(
                     track = cTrack,
@@ -184,6 +185,36 @@ object ConnectManager {
         return true
     }
 
+    fun pullToPhone(): Boolean {
+        val s = session ?: return false
+        val p = player ?: return false
+        val remote = view.value.devices.firstOrNull { it.state?.playing == true }
+            ?: view.value.devices.firstOrNull { it.id == view.value.activeId && it.state?.track != null }
+            ?: view.value.devices.firstOrNull { it.state?.track != null }
+            ?: return false
+        val state = remote.state ?: return false
+        val track = state.track ?: return false
+
+        // Pause remote playback
+        s.command(remote.id, "pause")
+
+        // Build queue
+        val currentSong = cTrackToSong(track)
+        val queueSongs = state.queue?.map { cTrackToSong(it) }?.filter { it.videoId.isNotBlank() } ?: emptyList()
+        val allSongs = if (queueSongs.any { it.videoId == currentSong.videoId }) queueSongs else listOf(currentSong) + queueSongs
+        val startIndex = allSongs.indexOfFirst { it.videoId == currentSong.videoId }.coerceAtLeast(0)
+
+        scope.launch(Dispatchers.Main) {
+            p.playAll(
+                songs = allSongs,
+                startIndex = startIndex,
+                startPositionMs = state.pos ?: 0L,
+                shuffle = state.shuffle == true,
+            )
+        }
+        return true
+    }
+
     fun sendCommand(targetDeviceId: String, action: String, pos: Long? = null) {
         session?.command(targetDeviceId, action, pos = pos)
     }
@@ -219,7 +250,6 @@ object ConnectManager {
     private data class SyncSnapshot(
         val song: Song?,
         val isPlaying: Boolean,
-        val durationMs: Long,
         val queue: List<Song>,
         val shuffle: Boolean,
     )

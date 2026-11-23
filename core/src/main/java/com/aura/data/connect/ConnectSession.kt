@@ -70,7 +70,7 @@ class ConnectSession(
             put("#t", buildJsonArray { add(JsonPrimitive(group.tag)) })
             put("since", (System.currentTimeMillis() / 1000) - 20)
         }
-        val p = RelayPool(Together.RELAYS, filter)
+        val p = RelayPool(CONNECT_RELAYS, filter)
         pool = p
         p.start()
 
@@ -163,7 +163,7 @@ class ConnectSession(
 
     private fun sendState(state: ConnectMsg.State) {
         send(state)
-        updateActive()
+        updateView()
     }
 
     fun command(targetId: String, action: String, pos: Long? = null, value: Double? = null) {
@@ -221,7 +221,6 @@ class ConnectSession(
                     lastSeen = System.currentTimeMillis(),
                     state = msg,
                 )
-                updateActive()
                 updateView()
             }
             is ConnectMsg.Command -> {
@@ -244,9 +243,10 @@ class ConnectSession(
         }
     }
 
-    private fun updateActive() {
+    private fun updateView() {
         val playingRemote = deviceMap.values.firstOrNull { it.state?.playing == true }
         _view.value = _view.value.copy(
+            devices = deviceMap.values.toList(),
             activeId = when {
                 lastState?.playing == true -> myId
                 playingRemote != null -> playingRemote.id
@@ -255,23 +255,19 @@ class ConnectSession(
         )
     }
 
-    private fun updateView() {
-        _view.value = _view.value.copy(
-            devices = deviceMap.values.toList()
-        )
-    }
-
     private fun send(msg: ConnectMsg) {
         val p = pool ?: return
-        val encoded = ConnectMsg.encode(msg)
-        val sealed = group.seal(encoded)
-        val event = NostrEvent.signed(
-            privateKey = sessionKey,
-            kind = KIND,
-            tags = listOf(listOf("t", group.tag)),
-            content = sealed,
-        )
-        p.publish(event)
+        scope.launch(Dispatchers.Default) {
+            val encoded = ConnectMsg.encode(msg)
+            val sealed = group.seal(encoded)
+            val event = NostrEvent.signed(
+                privateKey = sessionKey,
+                kind = KIND,
+                tags = listOf(listOf("t", group.tag)),
+                content = sealed,
+            )
+            p.publish(event)
+        }
     }
 
     fun stop() {
@@ -283,9 +279,14 @@ class ConnectSession(
     }
 
     companion object {
+        val CONNECT_RELAYS = listOf(
+            "wss://relay.damus.io",
+            "wss://relay.primal.net",
+            "wss://nos.lol",
+        )
         const val KIND = 21421
         const val PRESENCE_MS = 25_000L
         const val GONE_MS = 75_000L
-        const val TICK_MS = 1_000L
+        const val TICK_MS = 5_000L
     }
 }
