@@ -68,7 +68,11 @@ object ConnectManager {
         scope.launch {
             playerConnection.isPlaying.collect { playing ->
                 _isLocalPlaying.value = playing
-                _activeRemoteDevice.value = computeActiveRemote(_view.value, playing)
+                if (playing) {
+                    pauseActiveRemote()
+                } else {
+                    _activeRemoteDevice.value = computeActiveRemote(_view.value, playing)
+                }
             }
         }
 
@@ -78,6 +82,15 @@ object ConnectManager {
                 start(context, secret)
             }
         }
+    }
+
+    fun pauseActiveRemote() {
+        val s = session ?: return
+        val active = _activeRemoteDevice.value
+            ?: _view.value.devices.firstOrNull { it.id != _view.value.myId && it.state?.playing == true }
+            ?: return
+        s.command(active.id, "pause")
+        _activeRemoteDevice.value = null
     }
 
     fun resolveSecret(context: Context): String? {
@@ -120,6 +133,7 @@ object ConnectManager {
         session = newSession
         newSession.start()
 
+        var lastPlayingRemoteId: String? = null
         viewJob?.cancel()
         viewJob = scope.launch {
             newSession.view.collect { v ->
@@ -130,11 +144,12 @@ object ConnectManager {
                 _activeRemoteDevice.value = computeActiveRemote(v, phonePlaying)
 
                 // When remote device starts playing, pause local playback if phone was playing
-                if (playingRemote != null && phonePlaying) {
+                if (playingRemote != null && playingRemote.id != lastPlayingRemoteId && phonePlaying) {
                     player?.let { p ->
                         withContext(Dispatchers.Main) { p.pause() }
                     }
                 }
+                lastPlayingRemoteId = playingRemote?.id
             }
         }
 

@@ -537,11 +537,11 @@ export class ConnectSession {
     const m = this.mine;
     const meHas = !!m && (!!m.track || m.private);
     if (meHas && m!.playing) return this.myId;
-    const newest = (list: Device[]) => list.reduce<Device | null>((a, b) => (!a || b.since > a.since ? b : a), null);
+    const newest = (list: Device[]) => list.reduce<Device | null>((a, b) => (!a || (b.since || b.receivedAt) > (a.since || a.receivedAt) ? b : a), null);
     const playing = newest(others.filter((d) => hasSomething(d) && d.state!.playing));
     if (playing) return playing.id;
     const latest = newest(others.filter(hasSomething));
-    if (meHas && (!latest || this.mineAt >= latest.since)) return this.myId;
+    if (meHas && (!latest || this.mineAt >= (latest.since || latest.receivedAt))) return this.myId;
     return latest?.id ?? null;
   }
 

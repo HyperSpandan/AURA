@@ -5,12 +5,16 @@ import { sizedArtwork } from '@/lib/artwork';
 import { usePlayer } from '@/state/player';
 import { useUi } from '@/state/ui';
 import { useLiquidGlass } from '@/lib/liquidGlass';
+import { useControlling } from '@/connect/connect';
+import { useShownNowPlaying } from '@/connect/shown';
 const TABS = [[Home, '/home', 'Home'], [Compass, '/new', 'Explore'], [Library, '/library', 'Library'], [Search, '/search', 'Search'], [Settings, '/settings', 'Settings']] as const;
 
 export function MobileDock() {
   const fullScreen = useUi(s => s.fullScreen);
-  const track = usePlayer(s => s.nowPlaying);
-  const playing = usePlayer(s => s.status === 'playing' || s.status === 'buffering');
+  const remote = useControlling();
+  const track = useShownNowPlaying();
+  const playingHere = usePlayer(s => s.status === 'playing' || s.status === 'buffering');
+  const playing = remote ? !!remote.state?.playing : playingHere;
   const { togglePlay, next } = usePlayer.getState();
   const { pathname } = useLocation();
   const mini = useLiquidGlass<HTMLElement>(20, 20);

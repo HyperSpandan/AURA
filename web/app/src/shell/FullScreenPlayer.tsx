@@ -197,6 +197,7 @@ function FullScreenPlayerContent({ closing = false, onClosed }: { closing?: bool
     index: null,
     plays: null,
   } : null);
+  const track = currentTrack;
   const entry = usePlayer((s) => s.queue[s.index] ?? null);
   const playingFrom = remote
     ? { label: 'PLAYING ON', title: remote.name || 'Connected device' }

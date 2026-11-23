@@ -24,7 +24,7 @@ export function RemoteLcd({ device }: { device: Device }) {
   const open = useUi((s) => s.setFullScreen);
   return (
     <button className="relative flex h-full w-full items-center gap-3 overflow-hidden text-left" aria-label="Open Now Playing" onClick={() => open(true)}>
-      {track?.thumb && <img src={track.thumb} alt="" className="size-10 flex-none rounded-[6px] object-cover" />}
+      {track?.thumb && <img src={track.thumb} alt="" data-cover-origin className="size-10 flex-none rounded-[6px] object-cover" />}
       <div className="min-w-0 flex-1">
         <p className="truncate type-body-emphasized text-primary">{track?.title ?? 'Something of its own'}</p>
         <p className="truncate type-caption-1 text-key">Playing on {device.name || 'another device'}</p>

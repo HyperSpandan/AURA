@@ -21,7 +21,8 @@ import { usePlayer } from '@/state/player';
 import { useUi } from '@/state/ui';
 import { useLiquidGlass } from '@/lib/liquidGlass';
 import { Lcd } from './Lcd';
-import { useControlling, sendVolume } from '@/connect/connect';
+import { useControlling, sendVolume, fromCTrack } from '@/connect/connect';
+import { useShownNowPlaying } from '@/connect/shown';
 import { RemoteLcd } from '@/connect/RemoteLcd';
 
 const control = 'grid place-items-center rounded-[6px] disabled:opacity-40';
@@ -104,13 +105,14 @@ export function PlayerBar() {
   const hasLyrics = !!lyrics.data || sidePanel === 'lyrics';
   // Another of the person's devices playing: the bar shows and controls it (see Connect).
   const remote = useControlling();
-  const hasTrack = usePlayer((s) => s.nowPlaying !== null) || !!remote;
-  const nowPlaying = usePlayer((s) => s.nowPlaying);
-  const track = usePlayer((s) => {
+  const nowPlaying = useShownNowPlaying();
+  const hasTrack = (nowPlaying !== null) || !!remote;
+  const localTrack = usePlayer((s) => {
     const entry = s.queue[s.index]?.track;
     return entry && entry.videoId === s.nowPlaying?.videoId ? entry : null;
   });
-  const currentTrack: Track | null = track ?? (nowPlaying ? {
+  const remoteTrack = remote?.state?.track ? fromCTrack(remote.state.track) : null;
+  const currentTrack: Track | null = remoteTrack ?? localTrack ?? (nowPlaying ? {
     videoId: nowPlaying.videoId,
     title: nowPlaying.title,
     artists: [{ name: nowPlaying.artist, id: null }],

@@ -1200,35 +1200,6 @@ fun PlayerLayout(
                     progress = { if (state.durationMs > 0) position() / state.durationMs.toFloat() else 0f },
                 )
                 if (!state.ui.hideVolumeBar && !minimal && roomy) VolumeBar(Modifier.padding(vertical = 4.dp))
-                val isLocalPlaying by com.aura.data.connect.ConnectManager.isLocalPlaying.collectAsState()
-                val activeRemoteDevice by com.aura.data.connect.ConnectManager.activeRemoteDevice.collectAsState()
-                if (!isLocalPlaying && activeRemoteDevice != null) {
-                    Spacer(Modifier.height(4.dp))
-                    Row(
-                        Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(14.dp))
-                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
-                            .clickable { showOutput = true }
-                            .padding(horizontal = 14.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center,
-                    ) {
-                        Icon(
-                            if (activeRemoteDevice?.form == "tv") Icons.Rounded.Tv else Icons.Rounded.Laptop,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(18.dp),
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        Text(
-                            "Playing on ${activeRemoteDevice?.name?.ifBlank { "Web Player" }}",
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.primary,
-                        )
-                    }
-                }
                 Spacer(Modifier.height(10.dp))
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     GlassToggle(PlayerIcons.Lyrics, "Lyrics", pane == Pane.LYRICS, { toggle(Pane.LYRICS) })
