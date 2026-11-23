@@ -624,10 +624,11 @@ fun rememberOutputDeviceName(): String {
     }
     val cast by com.aura.cast.Cast.session.collectAsState()
     val connectView by com.aura.data.connect.ConnectManager.view.collectAsState()
-    val activeRemote = connectView.devices.firstOrNull { it.state?.playing == true }
+    val activeRemote = connectView.devices.firstOrNull { it.id != connectView.myId && it.state?.playing == true }
     if (activeRemote != null) {
         val title = activeRemote.state?.track?.title
-        return if (!title.isNullOrBlank()) "Playing on ${activeRemote.name}: $title" else "Playing on ${activeRemote.name}"
+        val devName = activeRemote.name.ifBlank { "AURA Web Player" }
+        return if (!title.isNullOrBlank()) "Playing on $devName: $title" else "Playing on $devName"
     }
     return cast?.let { if (it.receiver == null) "Connecting to ${it.target.name}…" else "Playing on ${it.target.name}" } ?: name
 }
@@ -677,7 +678,7 @@ fun rememberOutputRoute(): OutputRoute {
     }
     val cast by com.aura.cast.Cast.session.collectAsState()
     val connectView by com.aura.data.connect.ConnectManager.view.collectAsState()
-    val remotePlaying = connectView.devices.any { it.state?.playing == true }
+    val remotePlaying = connectView.devices.any { it.id != connectView.myId && it.state?.playing == true }
     return if (cast != null || remotePlaying) OutputRoute.CAST else route
 }
 

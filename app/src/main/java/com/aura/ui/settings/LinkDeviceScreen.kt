@@ -57,6 +57,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -126,6 +127,12 @@ fun LinkDeviceScreen(
         val s = PrefsStorage(context, "connect_phone_secret")
         s.read()?.takeIf { PairedComputers.parse(it) != null }
             ?: PairedComputers.generateSecret().also { s.write(it) }
+    }
+
+    LaunchedEffect(target, phoneSecret) {
+        if (target == LinkTarget.COMPUTER) {
+            com.aura.data.connect.ConnectManager.start(context, phoneSecret)
+        }
     }
 
     // QR scanner handles TV pairing codes, computer connect codes, and general AURA links.

@@ -55,6 +55,10 @@ object ConnectManager {
         val explicit = PrefsStorage(context, "connect_group_secret").read()
         if (explicit != null && PairedComputers.parse(explicit) != null) return PairedComputers.parse(explicit)
 
+        // 3. Phone pairing secret
+        val phoneSec = PrefsStorage(context, "connect_phone_secret").read()
+        if (phoneSec != null && PairedComputers.parse(phoneSec) != null) return PairedComputers.parse(phoneSec)
+
         return null
     }
 
@@ -84,6 +88,16 @@ object ConnectManager {
         viewJob = scope.launch {
             newSession.view.collect { v ->
                 _view.value = v
+
+                // When remote device starts playing, pause local playback if phone was playing
+                val remotePlaying = v.devices.any { it.id != v.myId && it.state?.playing == true }
+                if (remotePlaying) {
+                    player?.let { p ->
+                        if (p.isPlaying.value) {
+                            withContext(Dispatchers.Main) { p.pause() }
+                        }
+                    }
+                }
             }
         }
 
@@ -188,9 +202,10 @@ object ConnectManager {
     fun pullToPhone(): Boolean {
         val s = session ?: return false
         val p = player ?: return false
-        val remote = view.value.devices.firstOrNull { it.state?.playing == true }
-            ?: view.value.devices.firstOrNull { it.id == view.value.activeId && it.state?.track != null }
-            ?: view.value.devices.firstOrNull { it.state?.track != null }
+        val myId = view.value.myId
+        val remote = view.value.devices.firstOrNull { it.id != myId && it.state?.playing == true }
+            ?: view.value.devices.firstOrNull { it.id == view.value.activeId && it.id != myId && it.state?.track != null }
+            ?: view.value.devices.firstOrNull { it.id != myId && it.state?.track != null }
             ?: return false
         val state = remote.state ?: return false
         val track = state.track ?: return false
@@ -204,11 +219,14 @@ object ConnectManager {
         val allSongs = if (queueSongs.any { it.videoId == currentSong.videoId }) queueSongs else listOf(currentSong) + queueSongs
         val startIndex = allSongs.indexOfFirst { it.videoId == currentSong.videoId }.coerceAtLeast(0)
 
+        val elapsed = if (state.playing == true && state.at > 0) (System.currentTimeMillis() - state.at).coerceIn(0L, 30_000L) else 0L
+        val startPos = (state.pos ?: 0L) + elapsed
+
         scope.launch(Dispatchers.Main) {
             p.playAll(
                 songs = allSongs,
                 startIndex = startIndex,
-                startPositionMs = state.pos ?: 0L,
+                startPositionMs = startPos,
                 shuffle = state.shuffle == true,
             )
         }

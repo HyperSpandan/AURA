@@ -77,7 +77,7 @@ class ConnectSession(
         eventsJob = scope.launch {
             p.events.collect { event ->
                 if (event.kind == KIND) {
-                    handleEvent(event)
+                    runCatching { handleEvent(event) }
                 }
             }
         }
@@ -244,12 +244,22 @@ class ConnectSession(
     }
 
     private fun updateView() {
-        val playingRemote = deviceMap.values.firstOrNull { it.state?.playing == true }
+        val playingRemote = deviceMap.values
+            .filter { it.id != myId && it.state?.playing == true }
+            .maxByOrNull { it.state?.since ?: it.lastSeen }
+
+        val activeRemoteWithTrack = deviceMap.values
+            .filter { it.id != myId && it.state?.track != null }
+            .maxByOrNull { it.state?.since ?: it.lastSeen }
+
+        val phonePlaying = lastState?.playing == true
+
         _view.value = _view.value.copy(
             devices = deviceMap.values.toList(),
             activeId = when {
-                lastState?.playing == true -> myId
                 playingRemote != null -> playingRemote.id
+                phonePlaying -> myId
+                activeRemoteWithTrack != null -> activeRemoteWithTrack.id
                 else -> null
             }
         )

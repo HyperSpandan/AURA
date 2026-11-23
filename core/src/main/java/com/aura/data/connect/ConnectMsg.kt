@@ -3,6 +3,7 @@ package com.aura.data.connect
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -103,8 +104,9 @@ sealed interface ConnectMsg {
         val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
 
         fun decode(text: String): ConnectMsg? = runCatching {
-            val element = json.parseToJsonElement(text).jsonObject
-            val type = element["type"]?.jsonPrimitive?.contentOrNull ?: return null
+            val rawElement = json.parseToJsonElement(text).jsonObject
+            val type = rawElement["type"]?.jsonPrimitive?.contentOrNull ?: return null
+            val element = sanitizeNumericFields(rawElement)
             when (type) {
                 "presence" -> json.decodeFromJsonElement(Presence.serializer(), element)
                 "state" -> json.decodeFromJsonElement(State.serializer(), element)
@@ -115,6 +117,31 @@ sealed interface ConnectMsg {
                 else -> null
             }
         }.getOrNull()
+
+        private fun sanitizeNumericFields(obj: JsonObject): JsonObject {
+            val longKeys = setOf("seq", "at", "pos", "since")
+            val doubleKeys = setOf("volume", "value")
+            val modified = obj.toMutableMap()
+            longKeys.forEach { key ->
+                val prim = obj[key] as? JsonPrimitive
+                if (prim != null && !prim.isString) {
+                    val doubleVal = prim.content.toDoubleOrNull()
+                    if (doubleVal != null) {
+                        modified[key] = JsonPrimitive(doubleVal.toLong())
+                    }
+                }
+            }
+            doubleKeys.forEach { key ->
+                val prim = obj[key] as? JsonPrimitive
+                if (prim != null && !prim.isString) {
+                    val doubleVal = prim.content.toDoubleOrNull()
+                    if (doubleVal != null) {
+                        modified[key] = JsonPrimitive(doubleVal)
+                    }
+                }
+            }
+            return JsonObject(modified)
+        }
 
         fun encode(msg: ConnectMsg): String = when (msg) {
             is Presence -> buildString { append("{\"type\":\"presence\","); append(json.encodeToString(Presence.serializer(), msg).removePrefix("{")) }

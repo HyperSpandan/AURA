@@ -113,7 +113,7 @@ fun DevicesSheet(
 
     // Live Web Player & Connect Session state
     val connectView by com.aura.data.connect.ConnectManager.view.collectAsState()
-    val webDevices = connectView.devices.filter { it.form == "web" }
+    val remoteDevices = connectView.devices.filter { it.id != connectView.myId }
 
     FloatingCard(onDismiss = onDismiss, title = "Connect to a device", icon = Icons.Rounded.Devices) {
         Column(
@@ -132,8 +132,9 @@ fun DevicesSheet(
                 modifier = Modifier.padding(start = 6.dp, top = 2.dp),
             )
 
-            val activeRemote = webDevices.firstOrNull { it.state?.playing == true }
-                ?: connectView.devices.firstOrNull { it.id == connectView.activeId && it.state?.track != null }
+            val activeRemote = remoteDevices.firstOrNull { it.state?.playing == true }
+                ?: remoteDevices.firstOrNull { it.id == connectView.activeId && it.state?.track != null }
+                ?: remoteDevices.firstOrNull { it.state?.track != null }
 
             if (session != null) {
                 val s = session!!
@@ -267,18 +268,21 @@ fun DevicesSheet(
             }
 
             // Live AURA Web Players connected via Nostr Connect
-            if (webDevices.isNotEmpty()) {
-                webDevices.forEach { web ->
-                    val isPlaying = web.state?.playing == true
-                    val songTitle = web.state?.track?.title
+            if (remoteDevices.isNotEmpty()) {
+                remoteDevices.forEach { dev ->
+                    val isPlaying = dev.state?.playing == true
+                    val songTitle = dev.state?.track?.title
                     val subtitle = when {
                         isPlaying && !songTitle.isNullOrBlank() -> "Playing: $songTitle · Tap to bring to phone"
-                        isPlaying -> "Playing on browser · Tap to bring to phone"
-                        else -> "Connected · Tap to play music on computer"
+                        isPlaying -> "Playing · Tap to bring to phone"
+                        else -> "Connected · Tap to play music here"
                     }
                     DeviceItemRow(
-                        icon = Icons.Rounded.Laptop,
-                        title = web.name.ifBlank { "AURA Web Player" },
+                        icon = when (dev.form) {
+                            "tv" -> Icons.Rounded.Tv
+                            else -> Icons.Rounded.Laptop
+                        },
+                        title = dev.name.ifBlank { "AURA Web Player" },
                         subtitle = subtitle,
                         chevron = !isPlaying,
                         trailing = if (isPlaying) {
@@ -286,7 +290,7 @@ fun DevicesSheet(
                                 FilledTonalButton(
                                     onClick = {
                                         haptics.tick()
-                                        com.aura.data.connect.ConnectManager.sendCommand(web.id, "toggle")
+                                        com.aura.data.connect.ConnectManager.sendCommand(dev.id, "toggle")
                                     },
                                     shape = RoundedCornerShape(12.dp),
                                 ) {
@@ -297,11 +301,11 @@ fun DevicesSheet(
                         onClick = {
                             haptics.press()
                             if (isPlaying) {
-                                com.aura.data.connect.ConnectManager.sendCommand(web.id, "pause")
+                                com.aura.data.connect.ConnectManager.pullToPhone()
                             } else {
-                                val ok = com.aura.data.connect.ConnectManager.transferTo(web.id)
+                                val ok = com.aura.data.connect.ConnectManager.transferTo(dev.id)
                                 if (ok) {
-                                    com.aura.data.Pills.info("Music moved to ${web.name}", context)
+                                    com.aura.data.Pills.info("Music moved to ${dev.name}", context)
                                 }
                             }
                             onDismiss()

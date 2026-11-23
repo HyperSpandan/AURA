@@ -31,7 +31,10 @@ class ConnectGroup private constructor(
     }
 
     fun open(sealed: String): String? = runCatching {
-        val all = Base64.getDecoder().decode(sealed)
+        val cleaned = sealed.trim()
+        val all = runCatching { Base64.getDecoder().decode(cleaned) }
+            .recoverCatching { Base64.getUrlDecoder().decode(cleaned) }
+            .getOrNull() ?: return null
         if (all.size < 12 + 16) return null
         val cipher = Cipher.getInstance("AES/GCM/NoPadding")
         cipher.init(Cipher.DECRYPT_MODE, key, GCMParameterSpec(128, all, 0, 12))

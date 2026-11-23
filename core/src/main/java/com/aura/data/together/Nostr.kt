@@ -112,9 +112,16 @@ class RelayPool(
     private val filter: JsonObject,
 ) : RoomTransport {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val client: OkHttpClient = Http.client.newBuilder()
-        .pingInterval(25, TimeUnit.SECONDS)
+    private val client: OkHttpClient = OkHttpClient.Builder()
+        .dispatcher(okhttp3.Dispatcher().apply {
+            maxRequests = 10
+            maxRequestsPerHost = 4
+        })
+        .connectionPool(okhttp3.ConnectionPool(8, 2, TimeUnit.MINUTES))
+        .connectTimeout(10, TimeUnit.SECONDS)
         .readTimeout(0, TimeUnit.MILLISECONDS)
+        .pingInterval(30, TimeUnit.SECONDS)
+        .retryOnConnectionFailure(true)
         .build()
     private val json = Json { ignoreUnknownKeys = true }
     private val sockets = mutableMapOf<String, WebSocket>()
@@ -137,13 +144,13 @@ class RelayPool(
     }
 
     private suspend fun keepConnected(url: String) {
-        var backoff = 2_000L
+        var backoff = 5_000L
         while (!closed) {
             val done = kotlinx.coroutines.CompletableDeferred<Unit>()
             val ws = client.newWebSocket(Request.Builder().url(url).build(), object : WebSocketListener() {
                 override fun onOpen(webSocket: WebSocket, response: Response) {
                     synchronized(open) { open += url; _connected.value = open.size }
-                    backoff = 2_000L
+                    backoff = 5_000L
                     webSocket.send(buildJsonArray { add(JsonPrimitive("REQ")); add(JsonPrimitive(SUB)); add(filter) }.toString())
                 }
 
