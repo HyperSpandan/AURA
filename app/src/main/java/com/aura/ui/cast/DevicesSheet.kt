@@ -59,6 +59,8 @@ import androidx.compose.ui.unit.dp
 import com.aura.cast.Cast
 import com.aura.cast.CastTarget
 import com.aura.data.remote.FoundTv
+import com.aura.data.remote.PairedComputer
+import com.aura.data.remote.PairedComputers
 import com.aura.data.remote.PairedTv
 import com.aura.data.remote.PairedTvs
 import com.aura.data.remote.PrefsStorage
@@ -101,6 +103,7 @@ fun DevicesSheet(
 
     // Paired AURA TVs and local discovery
     val pairedTvs by remember { PairedTvs(PrefsStorage(context, "remote_tvs")).tvs }.collectAsState(initial = emptyList())
+    val pairedComputers by remember { PairedComputers(PrefsStorage(context, "remote_computers")).computers }.collectAsState(initial = emptyList())
     val tvDiscovery = remember { TvDiscovery(context) }
     val foundTvs by tvDiscovery.found.collectAsState(initial = emptyList())
     DisposableEffect(Unit) {
@@ -235,17 +238,33 @@ fun DevicesSheet(
             }
 
             // AURA Web Player (Computer)
-            DeviceItemRow(
-                icon = Icons.Rounded.Laptop,
-                title = "AURA Web Player",
-                subtitle = "Play on computer or share player link",
-                chevron = true,
-                onClick = {
-                    haptics.tick()
-                    onLinkDevice()
-                    onDismiss()
-                },
-            )
+            if (pairedComputers.isNotEmpty()) {
+                pairedComputers.forEach { pc ->
+                    DeviceItemRow(
+                        icon = Icons.Rounded.Laptop,
+                        title = pc.name,
+                        subtitle = "AURA Web Player · Linked",
+                        chevron = true,
+                        onClick = {
+                            haptics.tick()
+                            onLinkDevice()
+                            onDismiss()
+                        },
+                    )
+                }
+            } else {
+                DeviceItemRow(
+                    icon = Icons.Rounded.Laptop,
+                    title = "AURA Web Player",
+                    subtitle = "Play on computer or share player link",
+                    chevron = true,
+                    onClick = {
+                        haptics.tick()
+                        onLinkDevice()
+                        onDismiss()
+                    },
+                )
+            }
 
             // Listen Together
             DeviceItemRow(

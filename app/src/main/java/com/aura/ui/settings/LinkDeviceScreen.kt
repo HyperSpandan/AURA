@@ -1,8 +1,12 @@
 package com.aura.ui.settings
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -35,19 +39,23 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.OpenInNew
 import androidx.compose.material.icons.rounded.CameraAlt
 import androidx.compose.material.icons.rounded.Cast
-import androidx.compose.material.icons.rounded.Code
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.ContentCopy
+import androidx.compose.material.icons.rounded.DeleteOutline
 import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.Groups
 import androidx.compose.material.icons.rounded.Laptop
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.QrCode2
+import androidx.compose.material.icons.rounded.QrCodeScanner
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.Speaker
 import androidx.compose.material.icons.rounded.Tv
-import androidx.compose.material.icons.rounded.Watch
-import com.aura.ui.theme.Icon
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
-import com.aura.ui.theme.Text
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -58,6 +66,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -66,14 +75,21 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import com.aura.data.Pills
 import com.aura.data.account.AccountStore
+import com.aura.data.remote.PairedComputer
+import com.aura.data.remote.PairedComputers
+import com.aura.data.remote.PrefsStorage
 import com.aura.ui.components.PageHeader
 import com.aura.ui.components.SheetButton
 import com.aura.ui.components.SheetTone
 import com.aura.ui.components.rememberHaptics
+import com.aura.ui.theme.Icon
+import com.aura.ui.theme.Text
+import com.aura.ui.together.QrCode
 
 /** The other screens AURA can reach from this one. */
 internal enum class LinkTarget(val label: String, val icon: ImageVector) {
@@ -81,14 +97,13 @@ internal enum class LinkTarget(val label: String, val icon: ImageVector) {
     COMPUTER("Computer", Icons.Rounded.Laptop),
     SPEAKER("Speaker", Icons.Rounded.Speaker),
     FRIEND("Friend", Icons.Rounded.Groups),
-    WATCH("Watch", Icons.Rounded.Watch),
 }
 
 /**
  * Link a device: one place for everything that reaches past this phone.
  * A row of devices at the top picks one; under it, that device's steps in
- * order, each with the button that does it. Signing a TV in, the web player,
- * casting, listening together and the watch app all start from here.
+ * order, each with the button that does it. Signing a TV in, linking a computer
+ * web player, casting, and listening together.
  */
 @Composable
 fun LinkDeviceScreen(
@@ -102,16 +117,41 @@ fun LinkDeviceScreen(
     var target by rememberSaveable { mutableStateOf(LinkTarget.TV) }
     var casting by remember { mutableStateOf(false) }
     var scanning by remember { mutableStateOf(false) }
-    // The TV's code read here goes the same way as one scanned with the phone's camera app:
-    // a sign-in code asks to approve, any other AURA link opens.
+
+    val pairedComputers = remember { PairedComputers(PrefsStorage(context, "remote_computers")) }
+    val computers by pairedComputers.computers.collectAsState()
+
+    val phoneSecret = remember {
+        val s = PrefsStorage(context, "connect_phone_secret")
+        s.read()?.takeIf { PairedComputers.parse(it) != null }
+            ?: PairedComputers.generateSecret().also { s.write(it) }
+    }
+
+    // QR scanner handles TV pairing codes, computer connect codes, and general AURA links.
     if (scanning) com.aura.ui.account.QrScannerDialog(onDismiss = { scanning = false }) { text ->
         scanning = false
+        val computerSecret = PairedComputers.parse(text)
+        if (computerSecret != null) {
+            val computer = PairedComputer(
+                id = java.util.UUID.randomUUID().toString().take(12),
+                name = "Web Browser",
+                secret = computerSecret,
+            )
+            pairedComputers.add(computer)
+            Pills.info("Connected to AURA Web Player", context)
+            return@QrScannerDialog
+        }
+
         val view = Intent(Intent.ACTION_VIEW, text.toUri())
         if (!com.aura.ui.account.PairingLinks.receive(view)) {
-            if (com.aura.ui.Links.parse(text) != null || text.startsWith("aura://")) com.aura.ui.Links.receive(view)
-            else Pills.error("That isn't an AURA code", context)
+            if (com.aura.ui.Links.parse(text) != null || text.startsWith("aura://")) {
+                com.aura.ui.Links.receive(view)
+            } else {
+                Pills.error("That isn't an AURA code", context)
+            }
         }
     }
+
     val signedIn by AccountStore.signedIn.collectAsState()
     if (casting) com.aura.ui.cast.CastSheet { casting = false }
 
@@ -124,16 +164,18 @@ fun LinkDeviceScreen(
         runCatching { context.startActivity(Intent.createChooser(send, "Send the link")) }
     }
     fun camera() {
-        // Scanned here, in the app; a phone without a camera can still scan with any other phone's camera app.
-        if (context.packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY)) scanning = true
-        else Pills.error("This device has no camera. Scan the code with the phone's camera app", context)
+        if (context.packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY)) {
+            scanning = true
+        } else {
+            Pills.error("This device has no camera. Scan the code with the phone's camera app", context)
+        }
     }
 
     LazyColumn(contentPadding = contentPadding, modifier = Modifier.fillMaxSize()) {
         item { PageHeader("Link a device", onBack = onBack) }
         item {
             Text(
-                "Sign in your TV, open AURA on a computer, play on a speaker or listen with a friend.",
+                "Sign in your TV, link AURA on a computer, play on a speaker or listen with a friend.",
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(start = 20.dp, end = 20.dp, bottom = 20.dp),
@@ -153,28 +195,14 @@ fun LinkDeviceScreen(
                 Column(Modifier.padding(top = 20.dp)) {
                     when (shown) {
                         LinkTarget.TV -> TvSteps(signedIn, onSignIn, ::camera, ::open, ::share, onRemote)
-                        LinkTarget.COMPUTER -> DeviceCard(
-                            "In your browser",
-                            "Browse, search and listen on a computer. Your library there stays in that browser.",
-                        ) {
-                            Step(1, "Open the web player", "On the computer, go to the address below, or send it there from this phone.") {
-                                Text(
-                                    WEB_PLAYER.removePrefix("https://"),
-                                    style = MaterialTheme.typography.titleSmall,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(10.dp))
-                                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
-                                        .padding(horizontal = 10.dp, vertical = 6.dp),
-                                )
-                                Buttons(
-                                    { SheetButton("Share", onClick = { share(WEB_PLAYER) }, icon = Icons.Rounded.Share, tone = SheetTone.Primary) },
-                                    { SheetButton("Open here", onClick = { open(WEB_PLAYER) }, icon = Icons.AutoMirrored.Rounded.OpenInNew) },
-                                )
-                            }
-                            Step(2, "Add the companion extension", "It lets the page reach YouTube Music from your own browser. Choose Get the Extension in the web player.", last = true)
-                            Note(Icons.Rounded.Lock, "A preview. What you save there stays in that browser; it doesn't sync with this phone.")
-                        }
+                        LinkTarget.COMPUTER -> ComputerSteps(
+                            pairedComputers = pairedComputers,
+                            computers = computers,
+                            phoneSecret = phoneSecret,
+                            onCamera = ::camera,
+                            onOpen = ::open,
+                            onShare = ::share,
+                        )
                         LinkTarget.SPEAKER -> DeviceCard(
                             "On a speaker or smart TV",
                             "Send what's playing to a Chromecast, a Google speaker or a TV that plays over the network.",
@@ -193,19 +221,248 @@ fun LinkDeviceScreen(
                                 Buttons({ SheetButton("Listen together", onClick = onTogether, icon = Icons.Rounded.Groups, tone = SheetTone.Primary) })
                             }
                         }
-                        LinkTarget.WATCH -> DeviceCard(
-                            "On your watch",
-                            "A separate Wear OS app plays on the watch itself, over its Wi-Fi or LTE and Bluetooth headphones, with no phone needed.",
-                        ) {
-                            Step(1, "Build the watch app", "It isn't in the releases yet. It's the wear folder in the source code.", last = true) {
-                                Buttons({ SheetButton("Source code", onClick = { open(SOURCE) }, icon = Icons.Rounded.Code) })
-                            }
-                        }
                     }
                 }
             }
         }
         item { Spacer(Modifier.height(24.dp)) }
+    }
+}
+
+/** Computer & Web Player linking: scan computer screen, show phone QR code/link, or enter code. */
+@Composable
+private fun ComputerSteps(
+    pairedComputers: PairedComputers,
+    computers: List<PairedComputer>,
+    phoneSecret: String,
+    onCamera: () -> Unit,
+    onOpen: (String) -> Unit,
+    onShare: (String) -> Unit,
+) {
+    val context = LocalContext.current
+    val haptics = rememberHaptics()
+    var manualCode by rememberSaveable { mutableStateOf("") }
+    var showPhoneQr by rememberSaveable { mutableStateOf(false) }
+    var computerToUnlink by remember { mutableStateOf<PairedComputer?>(null) }
+
+    computerToUnlink?.let { pc ->
+        AlertDialog(
+            onDismissRequest = { computerToUnlink = null },
+            title = { Text("Unlink ${pc.name}?") },
+            text = { Text("This computer will be disconnected from your phone until you link it again.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    pairedComputers.remove(pc.id)
+                    computerToUnlink = null
+                    Pills.info("Computer unlinked", context)
+                }) {
+                    Text("Unlink")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { computerToUnlink = null }) { Text("Cancel") }
+            },
+        )
+    }
+
+    // 1. Linked Computers list
+    if (computers.isNotEmpty()) {
+        DeviceCard(
+            title = "Linked computers",
+            about = "Browsers and desktop players connected with this phone for remote control.",
+            compact = true,
+        ) {
+            computers.forEach { pc ->
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Box(
+                        Modifier
+                            .size(38.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(Icons.Rounded.Laptop, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                    }
+                    Spacer(Modifier.width(12.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(pc.name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text("AURA Web Player · Linked", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    TextButton(onClick = { computerToUnlink = pc }) {
+                        Icon(Icons.Rounded.DeleteOutline, contentDescription = "Unlink", modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(4.dp))
+                        Text("Unlink")
+                    }
+                }
+                Spacer(Modifier.height(8.dp))
+            }
+        }
+    }
+
+    // 2. Scan Computer Screen QR Code (Recommended)
+    DeviceCard(
+        title = "Scan from computer screen",
+        about = "Scan the QR code on your computer screen to link instantly with your phone.",
+    ) {
+        Step(1, "Open AURA Web Player", "On your computer, open the web player address below.") {
+            Text(
+                WEB_PLAYER.removePrefix("https://"),
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
+                    .padding(horizontal = 10.dp, vertical = 6.dp),
+            )
+            Buttons(
+                { SheetButton("Open here", onClick = { onOpen(WEB_PLAYER) }, icon = Icons.AutoMirrored.Rounded.OpenInNew) },
+                { SheetButton("Share address", onClick = { onShare(WEB_PLAYER) }, icon = Icons.Rounded.Share) },
+            )
+        }
+        Step(2, "Show code on your computer", "In the web player, go to Settings › Your devices to display your computer's QR code.")
+        Step(3, "Scan with this phone", "Point your camera at the computer screen to link both devices.", last = true) {
+            Buttons({
+                SheetButton(
+                    "Scan computer QR code",
+                    onClick = onCamera,
+                    icon = Icons.Rounded.QrCodeScanner,
+                    tone = SheetTone.Primary,
+                )
+            })
+        }
+    }
+
+    // 3. Phone Link & QR Code (Alternative: Computer joins Phone)
+    val webJoinUrl = PairedComputers.webLink(phoneSecret)
+    DeviceCard(
+        title = "Or link from phone",
+        about = "Send this phone's pairing link to your computer, or show this phone's QR code.",
+        compact = true,
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text(
+                "Open this link on your computer browser to join:",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                webJoinUrl.removePrefix("https://"),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
+                    .padding(horizontal = 10.dp, vertical = 8.dp),
+            )
+            Buttons(
+                {
+                    SheetButton(
+                        "Copy link",
+                        onClick = {
+                            val cb = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+                            cb?.setPrimaryClip(ClipData.newPlainText("AURA Connect Link", webJoinUrl))
+                            Pills.info("Link copied to clipboard", context)
+                        },
+                        icon = Icons.Rounded.ContentCopy,
+                        tone = SheetTone.Primary,
+                    )
+                },
+                {
+                    SheetButton(
+                        "Share link",
+                        onClick = { onShare(webJoinUrl) },
+                        icon = Icons.Rounded.Share,
+                    )
+                },
+            )
+
+            TextButton(
+                onClick = { showPhoneQr = !showPhoneQr; haptics.tick() },
+                modifier = Modifier.align(Alignment.CenterHorizontally),
+            ) {
+                Icon(Icons.Rounded.QrCode2, null, Modifier.size(18.dp))
+                Spacer(Modifier.width(6.dp))
+                Text(if (showPhoneQr) "Hide QR code" else "Show QR code")
+            }
+
+            AnimatedVisibility(showPhoneQr) {
+                Column(
+                    Modifier.fillMaxWidth().padding(top = 8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Box(
+                        Modifier
+                            .size(220.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(Color.White)
+                            .padding(16.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        QrCode(PairedComputers.appLink(phoneSecret), Modifier.fillMaxSize())
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "Scan with a device running AURA, or open the link on your computer",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                    )
+                }
+            }
+        }
+    }
+
+    // 4. Enter Code Manually
+    DeviceCard(
+        title = "Enter code manually",
+        about = "Paste a link or enter the 43-character pairing code shown in your browser.",
+        compact = true,
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            OutlinedTextField(
+                value = manualCode,
+                onValueChange = { manualCode = it },
+                placeholder = { Text("Paste link or 43-character code…") },
+                singleLine = true,
+                shape = RoundedCornerShape(14.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                ),
+                modifier = Modifier.fillMaxWidth(),
+            )
+            SheetButton(
+                "Connect",
+                onClick = {
+                    val parsed = PairedComputers.parse(manualCode)
+                    if (parsed != null) {
+                        pairedComputers.add(
+                            PairedComputer(
+                                id = java.util.UUID.randomUUID().toString().take(12),
+                                name = "Web Browser",
+                                secret = parsed,
+                            )
+                        )
+                        manualCode = ""
+                        Pills.info("Connected to AURA Web Player", context)
+                    } else {
+                        Pills.error("Please enter a valid AURA connect link or code", context)
+                    }
+                },
+                icon = Icons.Rounded.Check,
+                tone = SheetTone.Primary,
+            )
+        }
     }
 }
 
@@ -355,4 +612,3 @@ private fun Note(icon: ImageVector, text: String) {
 
 private val WEB_PLAYER get() = com.aura.data.config.RemoteConfig.current.web
 private const val RELEASES = "https://github.com/HyperSpandan/AURA/releases/latest"
-private const val SOURCE = "https://github.com/HyperSpandan/AURA/tree/main/wear"

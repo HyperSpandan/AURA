@@ -41,7 +41,9 @@ class LinkDeviceScreenTest {
         shot("tv")
         compose.onNodeWithText("Computer").performClick()
         compose.waitForIdle()
-        compose.onNodeWithText("Open the web player").assertExists()
+        compose.onNodeWithText("Scan from computer screen").assertExists()
+        compose.onNodeWithText("Scan computer QR code").assertExists()
+        compose.onNodeWithText("Open AURA Web Player").assertExists()
         compose.onNodeWithText("Install AURA for TV").assertDoesNotExist()
         shot("computer")
         compose.onNodeWithText("Speaker").performClick()
@@ -51,8 +53,6 @@ class LinkDeviceScreenTest {
         compose.onNodeWithText("Friend").performClick()
         compose.waitForIdle()
         compose.onNodeWithText("Listen together").assertExists()
-        compose.onNodeWithText("Watch").performClick()
-        compose.waitForIdle()
-        compose.onNodeWithText("Build the watch app").assertExists()
+        compose.onNodeWithText("Watch").assertDoesNotExist()
     }
 }
