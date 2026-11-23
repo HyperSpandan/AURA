@@ -37,8 +37,17 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
     private val artwork = com.aura.data.covers.PlaybackArtwork()
     /** A sharper catalogue cover found for the playing track, by its id. */
     private val betterCover = MutableStateFlow<Pair<String, String>?>(null)
-    val currentSong = combine(player.currentSong, betterCover) { song, better ->
+    private val localSong = combine(player.currentSong, betterCover) { song, better ->
         song?.copy(thumbnailUrl = artwork.choose(song, better?.takeIf { it.first == song.videoId }?.second)) ?: run { artwork.clear(); null }
+    }
+    val currentSong = combine(localSong, com.aura.data.connect.ConnectManager.activeRemoteDevice) { local, remote ->
+        if (player.isPlaying.value) {
+            local
+        } else if (remote?.state?.track != null) {
+            com.aura.data.connect.ConnectManager.cTrackToSong(remote.state!!.track!!)
+        } else {
+            local
+        }
     }.stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.Eagerly, null)
 
     /** Apple's animated cover and Spotify's Canvas found for the playing track, by its id. */
@@ -55,15 +64,21 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
     val queue = player.queue
     val currentIndex = player.currentIndex
     val upNext = player.upNext
-    val hasNext = player.hasNext
-    val isPlaying = player.isPlaying
+    val hasNext = combine(player.hasNext, com.aura.data.connect.ConnectManager.activeRemoteDevice) { localHasNext, remote ->
+        if (player.isPlaying.value || remote == null) localHasNext else (remote.state?.queue?.isNotEmpty() == true)
+    }.stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.Eagerly, false)
+    val isPlaying = combine(player.isPlaying, com.aura.data.connect.ConnectManager.activeRemoteDevice) { localPlaying, remote ->
+        if (localPlaying) true else remote?.state?.playing == true
+    }.stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.Eagerly, false)
     val isBuffering = player.isBuffering
     val loadingMessage = player.loadingMessage
     val shuffleEnabled = player.shuffleEnabled
     val shuffleMode = player.shuffleMode
     val smartShuffleAvailable = player.smartShuffleAvailable
     val repeatMode = player.repeatMode
-    val durationMs = player.durationMs
+    val durationMs = combine(player.durationMs, com.aura.data.connect.ConnectManager.activeRemoteDevice) { localDuration, remote ->
+        if (player.isPlaying.value || remote == null) localDuration else com.aura.data.connect.ConnectManager.lengthToMs(remote.state?.track?.length)
+    }.stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.Eagerly, 0L)
     val playbackError = player.error
     val source = player.source
     val audioFormat = player.audioFormat
@@ -75,7 +90,10 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
 
     init {
         Together.attach(player)
-        com.aura.data.connect.ConnectManager.bind(application, player)
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            kotlinx.coroutines.delay(1200L)
+            com.aura.data.connect.ConnectManager.bind(application, player)
+        }
         viewModelScope.launch { player.connect() }
         viewModelScope.launch { watchLyrics() }
         viewModelScope.launch {
@@ -203,9 +221,37 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
     fun playNext(song: Song) { if (!toRoom(song)) player.playNext(song) }
     fun addToQueue(song: Song) { if (!toRoom(song)) player.addToQueue(song) }
     // In someone else's room these go to the host instead (see Together.intercept).
-    fun togglePlayPause() { if (!Together.intercept(Together.Control.PlayPause)) player.togglePlayPause() }
-    fun skipNext() { if (!Together.intercept(Together.Control.Next)) player.skipNext() }
-    fun skipPrevious() { if (!Together.intercept(Together.Control.Previous)) player.skipPrevious() }
+    fun togglePlayPause() {
+        if (Together.intercept(Together.Control.PlayPause)) return
+        val remote = com.aura.data.connect.ConnectManager.activeRemoteDevice.value
+        if (!player.isPlaying.value && remote != null) {
+            val cmd = if (remote.state?.playing == true) "pause" else "play"
+            com.aura.data.connect.ConnectManager.sendCommand(cmd, targetId = remote.id)
+            return
+        }
+        player.togglePlayPause()
+    }
+
+    fun skipNext() {
+        if (Together.intercept(Together.Control.Next)) return
+        val remote = com.aura.data.connect.ConnectManager.activeRemoteDevice.value
+        if (!player.isPlaying.value && remote != null) {
+            com.aura.data.connect.ConnectManager.sendCommand("next", targetId = remote.id)
+            return
+        }
+        player.skipNext()
+    }
+
+    fun skipPrevious() {
+        if (Together.intercept(Together.Control.Previous)) return
+        val remote = com.aura.data.connect.ConnectManager.activeRemoteDevice.value
+        if (!player.isPlaying.value && remote != null) {
+            com.aura.data.connect.ConnectManager.sendCommand("previous", targetId = remote.id)
+            return
+        }
+        player.skipPrevious()
+    }
+
     fun toggleShuffle() = player.toggleShuffle()
     /** Off, shuffle, then smart shuffle for a queue from a list; returns the new mode. */
     fun cycleShuffle(): com.aura.playback.ShuffleMode = player.cycleShuffle()
@@ -215,9 +261,43 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
     fun moveQueueItem(from: Int, to: Int) = player.moveQueueItem(from, to)
     /** A song on its own; the service follows it with radio. */
     fun startRadio(song: Song) { if (!toRoom(song)) player.play(song, "${song.title} radio") }
-    fun seekTo(positionMs: Long) { if (!Together.intercept(Together.Control.Seek(positionMs))) player.seekTo(positionMs) }
-    fun positionMs(): Long = player.currentPositionMs()
-    fun bufferedPositionMs(): Long = player.bufferedPositionMs()
+
+    fun seekTo(positionMs: Long) {
+        if (Together.intercept(Together.Control.Seek(positionMs))) return
+        val remote = com.aura.data.connect.ConnectManager.activeRemoteDevice.value
+        if (!player.isPlaying.value && remote != null) {
+            com.aura.data.connect.ConnectManager.sendCommand("seek", targetId = remote.id, pos = positionMs)
+            return
+        }
+        player.seekTo(positionMs)
+    }
+
+    fun positionMs(): Long {
+        if (player.isPlaying.value) {
+            return player.currentPositionMs()
+        }
+        val remote = com.aura.data.connect.ConnectManager.activeRemoteDevice.value
+        val state = remote?.state
+        if (state != null) {
+            val basePos = state.pos ?: 0L
+            return if (state.playing == true && state.at > 0) {
+                val elapsed = (System.currentTimeMillis() - state.at).coerceIn(0L, 30_000L)
+                val duration = com.aura.data.connect.ConnectManager.lengthToMs(state.track?.length)
+                val total = basePos + elapsed
+                if (duration > 0) total.coerceAtMost(duration) else total
+            } else {
+                basePos
+            }
+        }
+        return player.currentPositionMs()
+    }
+
+    fun bufferedPositionMs(): Long {
+        if (!player.isPlaying.value && com.aura.data.connect.ConnectManager.activeRemoteDevice.value != null) {
+            return durationMs.value
+        }
+        return player.bufferedPositionMs()
+    }
 
     override fun onCleared() {
         Together.detach()

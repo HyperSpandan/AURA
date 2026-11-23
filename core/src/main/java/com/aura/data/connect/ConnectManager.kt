@@ -35,13 +35,38 @@ object ConnectManager {
     private val _view = MutableStateFlow(ConnectView(myId = "", myName = "This phone"))
     val view: StateFlow<ConnectView> = _view.asStateFlow()
 
+    private val _isLocalPlaying = MutableStateFlow(false)
+    val isLocalPlaying: StateFlow<Boolean> = _isLocalPlaying.asStateFlow()
+
+    private val _activeRemoteDevice = MutableStateFlow<ConnectDevice?>(null)
+    val activeRemoteDevice: StateFlow<ConnectDevice?> = _activeRemoteDevice.asStateFlow()
+
+    fun computeActiveRemote(v: ConnectView, phonePlaying: Boolean): ConnectDevice? {
+        val playingRemote = v.devices.firstOrNull { it.id != v.myId && it.state?.playing == true }
+        if (playingRemote != null) return playingRemote
+        if (phonePlaying) return null
+        return if (v.activeId != null && v.activeId != v.myId) {
+            v.devices.firstOrNull { it.id == v.activeId && it.state?.track != null }
+        } else {
+            null
+        }
+    }
+
     fun bind(context: Context, playerConnection: PlayerConnection) {
         player = playerConnection
 
-        // Resolve active secret
-        val secret = resolveSecret(context)
-        if (secret != null) {
-            start(context, secret)
+        scope.launch {
+            playerConnection.isPlaying.collect { playing ->
+                _isLocalPlaying.value = playing
+                _activeRemoteDevice.value = computeActiveRemote(_view.value, playing)
+            }
+        }
+
+        scope.launch(Dispatchers.IO) {
+            val secret = resolveSecret(context)
+            if (secret != null) {
+                start(context, secret)
+            }
         }
     }
 
@@ -89,13 +114,14 @@ object ConnectManager {
             newSession.view.collect { v ->
                 _view.value = v
 
+                val phonePlaying = _isLocalPlaying.value
+                val playingRemote = v.devices.firstOrNull { it.id != v.myId && it.state?.playing == true }
+                _activeRemoteDevice.value = computeActiveRemote(v, phonePlaying)
+
                 // When remote device starts playing, pause local playback if phone was playing
-                val remotePlaying = v.devices.any { it.id != v.myId && it.state?.playing == true }
-                if (remotePlaying) {
+                if (playingRemote != null && phonePlaying) {
                     player?.let { p ->
-                        if (p.isPlaying.value) {
-                            withContext(Dispatchers.Main) { p.pause() }
-                        }
+                        withContext(Dispatchers.Main) { p.pause() }
                     }
                 }
             }
@@ -237,6 +263,13 @@ object ConnectManager {
         session?.command(targetDeviceId, action, pos = pos)
     }
 
+    fun sendCommand(action: String, targetId: String? = null, pos: Long? = null, value: Double? = null): Boolean {
+        val s = session ?: return false
+        val target = targetId ?: _activeRemoteDevice.value?.id ?: _view.value.activeId ?: return false
+        s.command(target, action, pos = pos, value = value)
+        return true
+    }
+
     fun stop() {
         syncJob?.cancel()
         syncJob = null
@@ -247,7 +280,7 @@ object ConnectManager {
         currentSecret = null
     }
 
-    private fun songToCTrack(song: Song): CTrack = CTrack(
+    fun songToCTrack(song: Song): CTrack = CTrack(
         id = song.videoId,
         title = song.title,
         artist = song.artist,
@@ -256,7 +289,7 @@ object ConnectManager {
         album = song.albumName,
     )
 
-    private fun cTrackToSong(track: CTrack): Song = Song(
+    fun cTrackToSong(track: CTrack): Song = Song(
         videoId = track.id,
         title = track.title,
         artist = track.artist ?: "Unknown Artist",
@@ -264,6 +297,16 @@ object ConnectManager {
         durationText = track.length,
         albumName = track.album,
     )
+
+    fun lengthToMs(length: String?): Long {
+        if (length.isNullOrBlank()) return 0L
+        val parts = length.split(":").mapNotNull { it.toLongOrNull() }
+        return when (parts.size) {
+            2 -> (parts[0] * 60 + parts[1]) * 1000L
+            3 -> (parts[0] * 3600 + parts[1] * 60 + parts[2]) * 1000L
+            else -> 0L
+        }
+    }
 
     private data class SyncSnapshot(
         val song: Song?,

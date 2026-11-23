@@ -132,9 +132,11 @@ fun DevicesSheet(
                 modifier = Modifier.padding(start = 6.dp, top = 2.dp),
             )
 
-            val activeRemote = remoteDevices.firstOrNull { it.state?.playing == true }
-                ?: remoteDevices.firstOrNull { it.id == connectView.activeId && it.state?.track != null }
-                ?: remoteDevices.firstOrNull { it.state?.track != null }
+            val isLocalPlaying by com.aura.data.connect.ConnectManager.isLocalPlaying.collectAsState()
+            val activeRemote = if (!isLocalPlaying) {
+                remoteDevices.firstOrNull { it.state?.playing == true }
+                    ?: remoteDevices.firstOrNull { it.id == connectView.activeId && it.state?.track != null && connectView.activeId != connectView.myId }
+            } else null
 
             if (session != null) {
                 val s = session!!

@@ -253,14 +253,16 @@ class ConnectSession(
             .maxByOrNull { it.state?.since ?: it.lastSeen }
 
         val phonePlaying = lastState?.playing == true
+        val phoneHasTrack = lastState?.track != null
 
         _view.value = _view.value.copy(
             devices = deviceMap.values.toList(),
             activeId = when {
-                playingRemote != null -> playingRemote.id
                 phonePlaying -> myId
+                playingRemote != null -> playingRemote.id
+                phoneHasTrack -> myId
                 activeRemoteWithTrack != null -> activeRemoteWithTrack.id
-                else -> null
+                else -> myId
             }
         )
     }

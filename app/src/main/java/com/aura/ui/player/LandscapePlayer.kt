@@ -33,19 +33,22 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.QueueMusic
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.FavoriteBorder
-import androidx.compose.material.icons.rounded.Headphones
-import androidx.compose.material.icons.rounded.KeyboardArrowDown
-import androidx.compose.material.icons.rounded.MoreHoriz
-import androidx.compose.material.icons.rounded.SpeakerGroup
 import androidx.compose.material.icons.rounded.Cast
 import androidx.compose.material.icons.rounded.CastConnected
+import androidx.compose.material.icons.rounded.Headphones
+import androidx.compose.material.icons.rounded.KeyboardArrowDown
+import androidx.compose.material.icons.rounded.Laptop
+import androidx.compose.material.icons.rounded.MoreHoriz
 import androidx.compose.material.icons.rounded.Smartphone
+import androidx.compose.material.icons.rounded.SpeakerGroup
+import androidx.compose.material.icons.rounded.Tv
 import androidx.compose.material.icons.rounded.Lyrics
 import androidx.compose.material.icons.rounded.Shuffle
 import androidx.compose.material.icons.rounded.Repeat
 import androidx.compose.foundation.focusGroup
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.withFrameNanos
+import androidx.compose.runtime.collectAsState
 import com.aura.ui.theme.Icon
 import androidx.compose.material3.MaterialTheme
 import com.aura.ui.theme.Text
@@ -184,11 +187,19 @@ internal fun LandscapePlayer(
                     }
                     val context = LocalContext.current
                     RoundIcon(Icons.Rounded.SpeakerGroup, "Choose where it plays", { openOutputSwitcher(context) })
+                    val activeRemote by com.aura.data.connect.ConnectManager.activeRemoteDevice.collectAsState()
+                    val devicesIcon = when {
+                        activeRemote?.form == "tv" -> Icons.Rounded.Tv
+                        activeRemote != null -> Icons.Rounded.Laptop
+                        outputRoute == OutputRoute.CAST -> Icons.Rounded.CastConnected
+                        else -> outputRoute.icon
+                    }
+                    val devicesHighlight = activeRemote != null || outputRoute == OutputRoute.CAST
                     RoundIcon(
-                        if (outputRoute == OutputRoute.CAST) Icons.Rounded.CastConnected else outputRoute.icon,
+                        devicesIcon,
                         "Devices",
                         { showOutput = true },
-                        tint = if (outputRoute == OutputRoute.CAST) scheme.primary else scheme.onSurface,
+                        tint = if (devicesHighlight) scheme.primary else scheme.onSurface,
                     )
                     if (showOutput) com.aura.ui.cast.DevicesSheet(
                         onDismiss = { showOutput = false },

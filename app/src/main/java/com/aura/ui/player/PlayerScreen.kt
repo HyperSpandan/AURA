@@ -57,7 +57,9 @@ import androidx.compose.material.icons.rounded.Bedtime
 import androidx.compose.material.icons.rounded.Cast
 import androidx.compose.material.icons.rounded.CastConnected
 import androidx.compose.material.icons.rounded.Headphones
+import androidx.compose.material.icons.rounded.Laptop
 import androidx.compose.material.icons.rounded.Smartphone
+import androidx.compose.material.icons.rounded.Tv
 import androidx.compose.material.icons.rounded.BugReport
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.Person
@@ -1218,11 +1220,19 @@ fun PlayerLayout(
                                     PillButton(Icons.Rounded.Bedtime, "Sleep timer", sleepLabel != null, { showSleep = true }, enabled = enabled)
                                     Box(Modifier.width(1.dp).fillMaxHeight().background(Color.White.copy(alpha = 0.16f)))
                                 }
+                                val activeRemote by com.aura.data.connect.ConnectManager.activeRemoteDevice.collectAsState()
+                                val devicesIcon = when {
+                                    activeRemote?.form == "tv" -> Icons.Rounded.Tv
+                                    activeRemote != null -> Icons.Rounded.Laptop
+                                    outputRoute == OutputRoute.CAST -> Icons.Rounded.CastConnected
+                                    else -> outputRoute.icon
+                                }
+                                val devicesHighlight = activeRemote != null || outputRoute == OutputRoute.CAST
                                 PillButton(
-                                    if (outputRoute == OutputRoute.CAST) Icons.Rounded.CastConnected else outputRoute.icon,
+                                    devicesIcon,
                                     "Devices",
-                                    // Headphones only change the icon; lit up is for casting, a session to notice.
-                                    outputRoute == OutputRoute.CAST,
+                                    // Lit up when connected to remote player or casting
+                                    devicesHighlight,
                                     { showOutput = true },
                                     enabled = enabled,
                                 )
