@@ -560,7 +560,13 @@ class PlayerConnection(private val context: Context) {
         controller?.seekTo(positionMs)
     }
 
-    fun currentPositionMs(): Long = controller?.currentPosition ?: 0L
+    fun currentPositionMs(): Long = runCatching {
+        if (android.os.Looper.myLooper() == android.os.Looper.getMainLooper()) {
+            controller?.currentPosition ?: 0L
+        } else {
+            0L
+        }
+    }.getOrDefault(0L)
 
     /**
      * Plays at [rate] times the Remix speed, pitch unchanged. Listening

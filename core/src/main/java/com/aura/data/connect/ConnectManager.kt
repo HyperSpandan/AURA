@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.UUID
 
 /**
@@ -110,7 +111,7 @@ object ConnectManager {
             }.distinctUntilChanged().collectLatest { snap ->
                 val cTrack = snap.song?.let { songToCTrack(it) }
                 val cQueue = snap.queue.map { songToCTrack(it) }
-                val pos = p.currentPositionMs()
+                val pos = runCatching { withContext(Dispatchers.Main) { p.currentPositionMs() } }.getOrDefault(0L)
                 s.broadcastState(
                     track = cTrack,
                     playing = snap.isPlaying,
@@ -158,26 +159,28 @@ object ConnectManager {
         val s = session ?: return false
         val p = player ?: return false
 
-        val currentSong = p.currentSong.value
-        val queue = p.queue.value
-        val currentIndex = p.currentIndex.value
-        val currentPos = p.currentPositionMs()
-        val isPlaying = p.isPlaying.value
+        scope.launch(Dispatchers.Main) {
+            val currentSong = p.currentSong.value
+            val queue = p.queue.value
+            val currentIndex = p.currentIndex.value
+            val currentPos = runCatching { p.currentPositionMs() }.getOrDefault(0L)
+            val isPlaying = p.isPlaying.value
 
-        val songsToSend = if (queue.isNotEmpty()) queue else listOfNotNull(currentSong)
-        val cQueue = songsToSend.map { songToCTrack(it) }
+            val songsToSend = if (queue.isNotEmpty()) queue else listOfNotNull(currentSong)
+            val cQueue = songsToSend.map { songToCTrack(it) }
 
-        // Pause phone locally
-        p.pause()
+            // Pause phone locally
+            p.pause()
 
-        // Transfer to target device
-        s.transferTo(
-            targetId = targetDeviceId,
-            queue = cQueue,
-            index = currentIndex.coerceIn(0, (cQueue.size - 1).coerceAtLeast(0)),
-            pos = currentPos,
-            playing = isPlaying,
-        )
+            // Transfer to target device
+            s.transferTo(
+                targetId = targetDeviceId,
+                queue = cQueue,
+                index = currentIndex.coerceIn(0, (cQueue.size - 1).coerceAtLeast(0)),
+                pos = currentPos,
+                playing = isPlaying,
+            )
+        }
         return true
     }
 
