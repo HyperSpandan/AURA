@@ -97,6 +97,7 @@ interface RowProps {
   fallbackArtwork: string | null | undefined;
   onPlayRow: () => void;
   reordering?: boolean;
+  dragActive?: boolean;
   dragging?: boolean;
   shiftY?: number;
   onMove?: (fromIndex: number, toIndex: number) => void;
@@ -114,6 +115,7 @@ function Row({
   fallbackArtwork,
   onPlayRow,
   reordering,
+  dragActive,
   dragging,
   shiftY = 0,
   onMove,
@@ -146,14 +148,14 @@ function Row({
 
   return (
     <div
-      className={`${row} ${rowVariant[variant]}${dragging ? ' z-30 bg-[color-mix(in_srgb,var(--systemPrimary)_14%,rgb(24_24_28))] shadow-[0_12px_30px_rgb(0_0_0/0.5)] ring-1 ring-white/20' : ''}${reordering ? ' cursor-grab active:cursor-grabbing select-none touch-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-key/70' : ''}`}
+      className={`${row} ${rowVariant[variant]}${dragging ? ' z-30 will-change-transform bg-[color-mix(in_srgb,var(--systemPrimary)_14%,rgb(24_24_28))] shadow-[0_12px_30px_rgb(0_0_0/0.5)] ring-1 ring-white/20' : ''}${reordering ? ' cursor-grab active:cursor-grabbing select-none touch-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-key/70' : ''}`}
       style={
         dragging
-          ? { transform: `translateY(${shiftY}px) scale(1.015)` }
-          : reordering
+          ? undefined
+          : dragActive
             ? {
-                transform: shiftY !== 0 ? `translateY(${shiftY}px)` : undefined,
-                transition: 'transform 160ms cubic-bezier(0.2, 0, 0, 1)',
+                transform: shiftY !== 0 ? `translate3d(0, ${shiftY}px, 0)` : 'translate3d(0, 0, 0)',
+                transition: 'transform 150ms cubic-bezier(0.2, 0, 0, 1)',
               }
             : undefined
       }
@@ -334,20 +336,24 @@ export function TrackList({ tracks, variant, fallbackArtwork, fallbackArtists, o
   useEffect(() => setScrollElement(document.getElementById('scrollable-page')), []);
 
   const dragRef = useRef<{
+    el: HTMLElement;
     fromIndex: number;
     startY: number;
     startScrollTop: number;
+    scrollRect: DOMRect | null;
     hoverIndex: number;
     dy: number;
+    rafId: number | null;
   } | null>(null);
   const [dragVisual, setDragVisual] = useState<{
     fromIndex: number;
     hoverIndex: number;
-    dy: number;
   } | null>(null);
 
   useEffect(() => {
-    if (!reordering) {
+    if (!reordering && dragRef.current) {
+      if (dragRef.current.rafId !== null) cancelAnimationFrame(dragRef.current.rafId);
+      dragRef.current.el.style.transform = '';
       dragRef.current = null;
       setDragVisual(null);
     }
@@ -356,41 +362,57 @@ export function TrackList({ tracks, variant, fallbackArtwork, fallbackArtists, o
   const handleDragPointerDown = (index: number, e: PointerEvent<HTMLElement>) => {
     if (!reordering || e.button !== 0) return;
     e.preventDefault();
-    e.currentTarget.setPointerCapture(e.pointerId);
+    const el = e.currentTarget;
+    el.setPointerCapture(e.pointerId);
+    el.style.transform = 'translate3d(0, 0, 0) scale(1.012)';
     dragRef.current = {
+      el,
       fromIndex: index,
       startY: e.clientY,
       startScrollTop: scrollElement?.scrollTop ?? 0,
+      scrollRect: scrollElement ? scrollElement.getBoundingClientRect() : null,
       hoverIndex: index,
       dy: 0,
+      rafId: null,
     };
-    setDragVisual({ fromIndex: index, hoverIndex: index, dy: 0 });
+    setDragVisual({ fromIndex: index, hoverIndex: index });
   };
 
   const handleDragPointerMove = (e: PointerEvent<HTMLElement>) => {
     const drag = dragRef.current;
     if (!drag) return;
-    if (scrollElement) {
-      const rect = scrollElement.getBoundingClientRect();
+    if (scrollElement && drag.scrollRect) {
       const edge = 72;
-      if (e.clientY < rect.top + edge) {
+      if (e.clientY < drag.scrollRect.top + edge) {
         scrollElement.scrollTop = Math.max(0, scrollElement.scrollTop - 10);
-      } else if (e.clientY > rect.bottom - edge) {
+      } else if (e.clientY > drag.scrollRect.bottom - edge) {
         scrollElement.scrollTop += 10;
       }
     }
     const scrollDelta = (scrollElement?.scrollTop ?? 0) - drag.startScrollTop;
     const dy = e.clientY - drag.startY + scrollDelta;
+    drag.dy = dy;
+    if (drag.rafId === null) {
+      drag.rafId = requestAnimationFrame(() => {
+        const current = dragRef.current;
+        if (!current) return;
+        current.rafId = null;
+        current.el.style.transform = `translate3d(0, ${current.dy}px, 0) scale(1.012)`;
+      });
+    }
     const rawTarget = drag.fromIndex + Math.round(dy / rowHeight);
     const hoverIndex = Math.max(0, Math.min(tracks.length - 1, rawTarget));
-    drag.dy = dy;
-    drag.hoverIndex = hoverIndex;
-    setDragVisual({ fromIndex: drag.fromIndex, hoverIndex, dy });
+    if (hoverIndex !== drag.hoverIndex) {
+      drag.hoverIndex = hoverIndex;
+      setDragVisual({ fromIndex: drag.fromIndex, hoverIndex });
+    }
   };
 
   const handleDragPointerUp = (e: PointerEvent<HTMLElement>) => {
     const drag = dragRef.current;
     if (!drag) return;
+    if (drag.rafId !== null) cancelAnimationFrame(drag.rafId);
+    drag.el.style.transform = '';
     if (e.currentTarget.hasPointerCapture(e.pointerId)) {
       e.currentTarget.releasePointerCapture(e.pointerId);
     }
@@ -403,14 +425,19 @@ export function TrackList({ tracks, variant, fallbackArtwork, fallbackArtists, o
   };
 
   const handleDragPointerCancel = () => {
+    const drag = dragRef.current;
+    if (drag) {
+      if (drag.rafId !== null) cancelAnimationFrame(drag.rafId);
+      drag.el.style.transform = '';
+    }
     dragRef.current = null;
     setDragVisual(null);
   };
 
   const shiftForIndex = (i: number): number => {
     if (!dragVisual) return 0;
-    const { fromIndex, hoverIndex, dy } = dragVisual;
-    if (i === fromIndex) return dy;
+    const { fromIndex, hoverIndex } = dragVisual;
+    if (i === fromIndex) return 0;
     if (fromIndex < hoverIndex && i > fromIndex && i <= hoverIndex) return -rowHeight;
     if (fromIndex > hoverIndex && i >= hoverIndex && i < fromIndex) return rowHeight;
     return 0;
@@ -469,6 +496,7 @@ export function TrackList({ tracks, variant, fallbackArtwork, fallbackArtists, o
                   fallbackArtwork={fallbackArtwork}
                   onPlayRow={() => playRow(item.index)}
                   reordering={reordering}
+                  dragActive={dragVisual !== null}
                   dragging={isDragged}
                   shiftY={shiftForIndex(item.index)}
                   onMove={onMove}
@@ -499,6 +527,7 @@ export function TrackList({ tracks, variant, fallbackArtwork, fallbackArtists, o
                   fallbackArtwork={fallbackArtwork}
                   onPlayRow={() => playRow(i)}
                   reordering={reordering}
+                  dragActive={dragVisual !== null}
                   dragging={isDragged}
                   shiftY={shiftForIndex(i)}
                   onMove={onMove}
