@@ -457,7 +457,7 @@ function FullScreenPlayerContent({ closing = false, onClosed }: { closing?: bool
                   type="button"
                   onClick={() => {
                     setFullScreen(false);
-                    useUi.getState().setSidePanel('devices');
+                    useUi.getState().toggleSidePanel('devices');
                   }}
                   className="mb-1.5 flex w-fit items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-0.5 text-white/90 hover:bg-white/20 hover:text-white transition-colors cursor-pointer"
                   title="Click to view connected devices"

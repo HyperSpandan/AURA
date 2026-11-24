@@ -34,6 +34,7 @@ describe('FullScreenPlayer', () => {
       receivedAt: Date.now(),
       since: Date.now(),
       state: {
+        type: 'state' as const,
         from: 'phone_abc',
         seq: 1,
         at: Date.now(),
