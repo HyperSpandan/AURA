@@ -288,10 +288,14 @@ export function useMoveInPlaylist() {
       }
     },
     onMutate: async ({ playlistId, fromIndex, toIndex }) => {
-      const keys = [
-        ['music', 'playlist', playlistId],
-        ['music', 'playlist', `VL${playlistId.replace(/^VL/, '')}`],
-      ];
+      const vlId = `VL${playlistId.replace(/^VL/, '')}`;
+      const keys =
+        playlistId === vlId
+          ? [['music', 'playlist', playlistId]]
+          : [
+              ['music', 'playlist', playlistId],
+              ['music', 'playlist', vlId],
+            ];
       for (const key of keys) {
         const prev = queryClient.getQueryData<{ pages: Array<{ tracks: import('./types').Track[] }>; pageParams: unknown[] }>(key);
         if (!prev) continue;
