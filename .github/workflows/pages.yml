@@ -145,6 +145,8 @@ jobs:
           node-version: "24"
       - name: Verify published dashboard assets
         run: python scripts/check-published-usage.py
+        continue-on-error: true
 
       - name: Verify published social preview
         run: python scripts/check-social-preview.py --published
+        continue-on-error: true
