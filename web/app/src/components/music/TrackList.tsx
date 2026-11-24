@@ -408,30 +408,42 @@ export function TrackList({ tracks, variant, fallbackArtwork, fallbackArtists, o
     }
   };
 
-  const handleDragPointerUp = (e: PointerEvent<HTMLElement>) => {
+  const finishDrag = (commit: boolean) => {
     const drag = dragRef.current;
     if (!drag) return;
     if (drag.rafId !== null) cancelAnimationFrame(drag.rafId);
     drag.el.style.transform = '';
-    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
-      e.currentTarget.releasePointerCapture(e.pointerId);
-    }
     const { fromIndex, hoverIndex } = drag;
     dragRef.current = null;
     setDragVisual(null);
-    if (fromIndex !== hoverIndex) {
+    if (commit && fromIndex !== hoverIndex) {
       onMove?.(fromIndex, hoverIndex);
     }
   };
 
-  const handleDragPointerCancel = () => {
-    const drag = dragRef.current;
-    if (drag) {
-      if (drag.rafId !== null) cancelAnimationFrame(drag.rafId);
-      drag.el.style.transform = '';
+  useEffect(() => {
+    if (!dragVisual) return;
+    const onWinUp = () => finishDrag(true);
+    const onWinBlur = () => finishDrag(false);
+    window.addEventListener('pointerup', onWinUp);
+    window.addEventListener('pointercancel', onWinBlur);
+    window.addEventListener('blur', onWinBlur);
+    return () => {
+      window.removeEventListener('pointerup', onWinUp);
+      window.removeEventListener('pointercancel', onWinBlur);
+      window.removeEventListener('blur', onWinBlur);
+    };
+  }, [dragVisual !== null]);
+
+  const handleDragPointerUp = (e: PointerEvent<HTMLElement>) => {
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
     }
-    dragRef.current = null;
-    setDragVisual(null);
+    finishDrag(true);
+  };
+
+  const handleDragPointerCancel = () => {
+    finishDrag(false);
   };
 
   const shiftForIndex = (i: number): number => {
