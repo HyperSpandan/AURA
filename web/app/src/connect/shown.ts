@@ -10,12 +10,27 @@ export const lengthSec = (length: string | null | undefined): number => {
 };
 
 /** What [device] plays, shaped as this player's own now-playing. */
-export function remoteNowPlaying(device: Device): NowPlaying | null {
+export function remoteNowPlaying(device: Device): NowPlaying {
   const s = device.state;
-  if (!s) return null;
-  const t = s.track;
-  if (!t) return { videoId: '', title: 'Something of its own', artist: '', artworkUrl: null, durationSec: 0, streamInfo: null };
-  return { videoId: t.id, title: t.title, artist: t.artist ?? '', artworkUrl: t.thumb ?? null, durationSec: lengthSec(t.length), streamInfo: null };
+  const t = s?.track;
+  if (!t) {
+    return {
+      videoId: '',
+      title: s?.private ? 'Private session' : 'Something of its own',
+      artist: device.name || 'Connected device',
+      artworkUrl: null,
+      durationSec: 0,
+      streamInfo: null,
+    };
+  }
+  return {
+    videoId: t.id,
+    title: t.title,
+    artist: t.artist ?? '',
+    artworkUrl: t.thumb ?? null,
+    durationSec: lengthSec(t.length),
+    streamInfo: null,
+  };
 }
 
 /**

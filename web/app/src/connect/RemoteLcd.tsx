@@ -72,7 +72,7 @@ export function RemoteLcd({ device }: { device: Device }) {
         </p>
       </div>
 
-      <div className="absolute right-0 bottom-0 left-0 h-[3px] rounded-full bg-quaternary">
+      <div className="pointer-events-none absolute right-0 bottom-0 left-0 h-[3px] rounded-full bg-quaternary">
         <div className="h-full rounded-full bg-key-bg transition-[width] duration-300" style={{ width: `${done * 100}%` }} />
       </div>
     </div>

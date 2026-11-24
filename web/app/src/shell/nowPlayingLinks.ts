@@ -22,6 +22,7 @@ function searchHref(query: string): string {
  */
 export async function albumPageFor(videoId: string, album: AlbumRef | null, fallbackQuery: string): Promise<string> {
   if (album?.id) return albumHref(album.id)!;
+  if (!videoId) return searchHref(fallbackQuery);
   const linked = await trackLinks(videoId);
   return albumHref(linked?.album?.id ?? null) ?? searchHref(fallbackQuery);
 }
