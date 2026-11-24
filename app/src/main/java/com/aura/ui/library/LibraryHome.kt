@@ -1119,8 +1119,9 @@ fun LocalPlaylistScreen(id: String, contentPadding: PaddingValues, actions: Song
     var order by remember(id) { mutableStateOf(com.aura.ui.browse.ListOrder.DEFAULT) }
     var sortOpen by remember { mutableStateOf(false) }
     var moreOpen by remember { mutableStateOf(false) }
+    val canReorder = songs.size > 1 && playlist.spotifyId != com.aura.data.spotify.SpotifyLibrary.LIKED_ID
     var reordering by remember(id) { mutableStateOf(false) }
-    if ((searching || playlist.spotifyId != null || songs.size <= 1) && reordering) reordering = false
+    if ((searching || !canReorder) && reordering) reordering = false
     if (reordering && order != com.aura.ui.browse.ListOrder.DEFAULT) order = com.aura.ui.browse.ListOrder.DEFAULT
     val haptics = com.aura.ui.components.rememberHaptics()
     val dragOrder = remember { mutableStateListOf<Int>() }
@@ -1209,6 +1210,8 @@ fun LocalPlaylistScreen(id: String, contentPadding: PaddingValues, actions: Song
             modifier = modifier,
             privacy = playlist.privacy,
             onPrivacy = if (online) ({ choosingPrivacy = true }) else null,
+            onReorder = if (canReorder) ({ order = com.aura.ui.browse.ListOrder.DEFAULT; reordering = !reordering }) else null,
+            reordering = reordering,
         )
     }
     if (moreOpen) LocalListMoreSheet(playlist, songs, actions,
@@ -1480,9 +1483,11 @@ private fun LocalListMoreSheet(
             }
             if (!spotify) {
                 com.aura.ui.components.MenuRow(Icons.Rounded.Add, "Add songs") { close(); onAddSongs() }
-                if (songs.size > 1) {
-                    com.aura.ui.components.MenuRow(Icons.Rounded.Reorder, "Reorder songs") { close(); onReorder() }
-                }
+            }
+            if (songs.size > 1 && playlist.spotifyId != com.aura.data.spotify.SpotifyLibrary.LIKED_ID) {
+                com.aura.ui.components.MenuRow(Icons.Rounded.Reorder, "Reorder songs") { close(); onReorder() }
+            }
+            if (!spotify) {
                 com.aura.ui.components.MenuRow(Icons.Rounded.Edit, "Rename") { close(); onRename() }
             }
             com.aura.ui.components.MenuRow(Icons.Rounded.Share, "Share") { close(); onShare() }

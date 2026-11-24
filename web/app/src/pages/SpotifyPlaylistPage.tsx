@@ -1,6 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
-import { ListPlus } from 'lucide-react';
-import { useState } from 'react';
+import { ArrowUpDown, ListPlus } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { DetailHeader, detailButton } from '@/components/music/DetailHeader';
 import { PlaylistMenu } from '@/components/music/PlaylistMenu';
@@ -30,6 +30,11 @@ export default function SpotifyPlaylistPage() {
   const signedIn = useSpotifySignedIn();
   const info = useSpotifyPlaylistInfo(id);
   const rows = useSpotifyRows(id);
+  const [reordering, setReordering] = useState(false);
+  const [orderedRows, setOrderedRows] = useState(rows.rows);
+  useEffect(() => {
+    setOrderedRows(rows.rows);
+  }, [rows.rows]);
   usePageTint(useArtworkColor(info.data?.imageUrl));
 
   if (extension.state === 'missing') return <NeedsExtension what="your Spotify playlists" />;
@@ -37,8 +42,20 @@ export default function SpotifyPlaylistPage() {
   if (rows.status === 'error' && !rows.rows.length) return <LoadError error={rows.error} onRetry={rows.retry} />;
   if (!info.data || (rows.status === 'loading' && !rows.rows.length)) return <PlaylistSkeleton />;
 
-  const playable = rows.rows.filter((t) => !t.unavailable);
-  const missing = rows.rows.filter((t) => t.unavailable === 'missing');
+  const displayRows = orderedRows.length === rows.rows.length ? orderedRows : rows.rows;
+  const playable = displayRows.filter((t) => !t.unavailable);
+  const missing = displayRows.filter((t) => t.unavailable === 'missing');
+  const canReorder = displayRows.length > 1;
+  const handleMove = (fromIndex: number, toIndex: number) => {
+    if (fromIndex === toIndex) return;
+    setOrderedRows((prev) => {
+      const base = prev.length === rows.rows.length ? [...prev] : [...rows.rows];
+      if (fromIndex < 0 || fromIndex >= base.length || toIndex < 0 || toIndex >= base.length) return base;
+      const [moved] = base.splice(fromIndex, 1);
+      base.splice(toIndex, 0, moved!);
+      return base;
+    });
+  };
   const total = Math.max(rows.total, info.data.total);
   const meta = [
     `${total} ${total === 1 ? 'song' : 'songs'}`,
@@ -66,17 +83,50 @@ export default function SpotifyPlaylistPage() {
         canPlay={playable.length > 0}
         onPlay={() => playList(playable, 0, context)}
         onShuffle={() => shuffleList(playable, context)}
-        extra={<ImportButton title={info.data.name} videoIds={playable.map((t) => t.videoId)} ready={rows.matching === 0} />}
+        extra={
+          <div className="flex items-center gap-2">
+            <ImportButton title={info.data.name} videoIds={playable.map((t) => t.videoId)} ready={rows.matching === 0} />
+            {canReorder && (
+              <button
+                type="button"
+                className={`${detailButton} !rounded-lg`}
+                onClick={() => setReordering((v) => !v)}
+              >
+                <ArrowUpDown size={16} />
+                {reordering ? 'Done' : 'Reorder'}
+              </button>
+            )}
+          </div>
+        }
         menu={
           <PlaylistMenu
             id={`spotify:${id}`}
             title={info.data.name}
             tracks={playable}
             thumbnail={info.data.imageUrl}
+            onReorder={canReorder ? () => setReordering((v) => !v) : undefined}
           />
         }
       />
-      <TrackList tracks={rows.rows} variant="playlist" source={context.source} />
+      {reordering && canReorder && (
+        <div className="mx-(--body-gutter) mb-3 flex items-center justify-between rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-secondary">
+          <span>Drag songs or use arrows to reorder</span>
+          <button
+            type="button"
+            onClick={() => setReordering(false)}
+            className="rounded-lg bg-key px-3 py-1 text-xs font-semibold text-white transition hover:opacity-90"
+          >
+            Done
+          </button>
+        </div>
+      )}
+      <TrackList
+        tracks={displayRows}
+        variant="playlist"
+        source={context.source}
+        reordering={reordering && canReorder}
+        onMove={handleMove}
+      />
       <footer className={detailFooter}>
         <p>From Spotify. Songs are matched to YouTube Music by title, artist and length.</p>
       </footer>
