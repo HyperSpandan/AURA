@@ -27,6 +27,7 @@ import { SupportModal } from '@/components/SupportModal';
 import { KeyboardShortcutsModal } from '@/components/KeyboardShortcutsModal';
 import { FullScreenPlayer } from './FullScreenPlayer';
 import { OfflinePage } from '@/components/music/OfflinePage';
+import { OpeningIntro } from '@/components/OpeningIntro';
 import { useIsOnline } from '@/lib/useIsOnline';
 
 const mobile = isMobileBrowser();
@@ -248,6 +249,7 @@ export function AppShell() {
       {(fullScreen || playerUp) && (
         <FullScreenPlayer closing={!fullScreen} onClosed={() => setPlayerUp(false)} />
       )}
+      <OpeningIntro />
     </div>
   );
 }
