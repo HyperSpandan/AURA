@@ -81,7 +81,29 @@ export const useControlling = (): Device | null => useConnect((s) => controlling
 
 // ---- Tracks across the boundary -----------------------------------------------------------
 
-const toCTrack = (t: Track | undefined | null): CTrack | null => toRoomTrack(t);
+const formatClock = (sec: number): string => {
+  if (!Number.isFinite(sec) || sec < 0) return '0:00';
+  const s = Math.floor(sec);
+  const m = Math.floor(s / 60);
+  const rem = s % 60;
+  return `${m}:${String(rem).padStart(2, '0')}`;
+};
+
+export const toCTrack = (t: Track | undefined | null, durationOverride?: number | null): CTrack | null => {
+  if (!t) return null;
+  const audio = getAudio();
+  const sec = durationOverride 
+    ?? t.durationSec 
+    ?? (audio && Number.isFinite(audio.duration) && audio.duration > 0 ? Math.round(audio.duration) : null);
+  return {
+    id: t.videoId,
+    title: t.title || 'Unknown Title',
+    artist: t.artists?.map((a) => a.name).join(', ') || '',
+    thumb: t.thumbnail ?? null,
+    length: sec ? formatClock(sec) : null,
+    album: t.album?.name ?? null,
+  };
+};
 
 export function fromCTrack(t: CTrack): Track {
   const parts = t.length?.split(':').map(Number) ?? [];
@@ -127,8 +149,23 @@ const webPlayer: ConnectPlayer = {
     const { queue, index, nowPlaying, volume, shuffle, repeat, status } = usePlayer.getState();
     if (!nowPlaying) return null;
     const entry = queue[index];
-    const track = toCTrack(entry?.track);
     const audio = getAudio();
+    const durationSec = nowPlaying.durationSec
+      ?? entry?.track?.durationSec
+      ?? (audio && Number.isFinite(audio.duration) && audio.duration > 0 ? Math.round(audio.duration) : null);
+
+    const sourceTrack: Track = entry?.track ?? {
+      videoId: nowPlaying.videoId,
+      title: nowPlaying.title,
+      artists: nowPlaying.artist ? [{ name: nowPlaying.artist, id: null }] : [],
+      album: null,
+      durationSec,
+      explicit: false,
+      thumbnail: nowPlaying.artworkUrl,
+      index: null,
+      plays: null,
+    };
+    const track = toCTrack(sourceTrack, durationSec);
     return {
       track,
       private: !track,
@@ -204,7 +241,7 @@ let unsubscribe: (() => void) | null = null;
 let settle: ReturnType<typeof setTimeout> | null = null;
 /** The audio element whose stalls are being listened to; the player swaps between two for crossfades. */
 let heard: HTMLMediaElement | null = null;
-const MEDIA_EVENTS = ['waiting', 'stalled', 'playing', 'seeked', 'canplay'] as const;
+const MEDIA_EVENTS = ['waiting', 'stalled', 'playing', 'seeked', 'canplay', 'durationchange', 'loadedmetadata'] as const;
 const onMedia = () => {
   if (settle) clearTimeout(settle);
   settle = setTimeout(() => session?.localChanged(), 150);
@@ -252,9 +289,14 @@ function restart(): void {
     unsubscribe = usePlayer.subscribe((now, before) => {
       hearAudio();
       if (
-        now.nowPlaying?.videoId === before.nowPlaying?.videoId && now.nowPlaying?.streamInfo === before.nowPlaying?.streamInfo &&
-        now.status === before.status && now.queue === before.queue && now.volume === before.volume &&
-        now.shuffle === before.shuffle && now.repeat === before.repeat
+        now.nowPlaying?.videoId === before.nowPlaying?.videoId &&
+        now.nowPlaying?.durationSec === before.nowPlaying?.durationSec &&
+        now.nowPlaying?.streamInfo === before.nowPlaying?.streamInfo &&
+        now.status === before.status &&
+        now.queue === before.queue &&
+        now.volume === before.volume &&
+        now.shuffle === before.shuffle &&
+        now.repeat === before.repeat
       ) return;
       if (settle) clearTimeout(settle);
       settle = setTimeout(() => session?.localChanged(), 300);

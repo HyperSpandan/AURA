@@ -99,7 +99,7 @@ function Transport() {
   const hasTrack = remote ? !!remote.state?.track : localHasTrack;
   const playing = remote ? !!remote.state?.playing : localPlaying;
   const buffering = remote ? false : localBuffering;
-  const hasNext = remote ? ((remote.state?.queue?.length ?? 0) > 0) : localHasNext;
+  const hasNext = remote ? true : localHasNext;
   const shuffle = remote ? !!remote.state?.shuffle : localShuffle;
   const repeat = remote ? (remote.state?.repeat ?? 'off') : localRepeat;
 

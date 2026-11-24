@@ -12,6 +12,9 @@ import { enabledSources } from '@/lyrics/settings';
 import { sourceById, type LyricsSourceId } from '@/lyrics/sources';
 import { useLyrics, useLyricsUi } from '@/lyrics/useLyrics';
 import { getAudio, usePlayer } from '@/state/player';
+import { useControlling, seekRemote } from '@/connect/connect';
+import { useShownNowPlaying } from '@/connect/shown';
+import { positionAt } from '@/connect/session';
 import { LyricsSettings } from './LyricsSettings';
 
 type AmLyricsElement = HTMLElement & {
@@ -97,7 +100,9 @@ function LyricsView({ ttml, full }: { ttml: string; full: boolean }) {
   const host = useRef<HTMLDivElement>(null);
   const element = useRef<AmLyricsElement | null>(null);
   const deck = usePlayer((s) => s.deck);
-  const videoId = usePlayer((s) => s.nowPlaying?.videoId);
+  const shown = useShownNowPlaying();
+  const videoId = shown?.videoId;
+  const remote = useControlling();
 
   // Created by hand, with its TTML set before it's attached: am-lyrics starts
   // loading the moment it connects, and through React the properties arrive
@@ -114,7 +119,14 @@ function LyricsView({ ttml, full }: { ttml: string; full: boolean }) {
     el.toggleAttribute('data-full', full);
     const onLineClick = (event: Event) => {
       const timestamp = (event as CustomEvent<{ timestamp: number }>).detail?.timestamp;
-      if (typeof timestamp === 'number') usePlayer.getState().seek(timestamp / 1000);
+      if (typeof timestamp === 'number') {
+        const target = useControlling();
+        if (target) {
+          seekRemote(timestamp);
+        } else {
+          usePlayer.getState().seek(timestamp / 1000);
+        }
+      }
     };
     el.addEventListener('line-click', onLineClick);
     host.current?.append(el);
@@ -152,47 +164,63 @@ function LyricsView({ ttml, full }: { ttml: string; full: boolean }) {
   }, [ttml]);
 
   useEffect(() => {
-    const audio = getAudio();
     const el = element.current;
-    if (!audio || !el) return;
-    const clock = new LyricClock(audio.currentTime * 1000);
-    let discontinuity = 0;
-    let frame = 0;
-    const tick = () => {
-      const now = performance.now();
-      // The reading and its stamp are taken together.
-      el.currentTime = clock.frame(now, Math.trunc(audio.currentTime * 1000), now, discontinuity);
-      frame = requestAnimationFrame(tick);
-    };
-    const hold = () => {
-      cancelAnimationFrame(frame);
-      const ms = audio.currentTime * 1000;
-      clock.hold(ms, performance.now());
-      el.currentTime = ms;
-    };
-    const resume = () => {
-      cancelAnimationFrame(frame);
-      clock.restart();
-      frame = requestAnimationFrame(tick);
-    };
-    const onSeeking = () => {
-      discontinuity++;
+    if (!el) return;
+
+    if (remote) {
+      let frame = 0;
+      const tick = () => {
+        if (!element.current) return;
+        const ms = positionAt(remote, Date.now());
+        element.current.currentTime = ms;
+        if (remote.state?.playing) {
+          frame = requestAnimationFrame(tick);
+        }
+      };
+      tick();
+      return () => cancelAnimationFrame(frame);
+    } else {
+      const audio = getAudio();
+      if (!audio) return;
+      const clock = new LyricClock(audio.currentTime * 1000);
+      let discontinuity = 0;
+      let frame = 0;
+      const tick = () => {
+        const now = performance.now();
+        // The reading and its stamp are taken together.
+        el.currentTime = clock.frame(now, Math.trunc(audio.currentTime * 1000), now, discontinuity);
+        frame = requestAnimationFrame(tick);
+      };
+      const hold = () => {
+        cancelAnimationFrame(frame);
+        const ms = audio.currentTime * 1000;
+        clock.hold(ms, performance.now());
+        el.currentTime = ms;
+      };
+      const resume = () => {
+        cancelAnimationFrame(frame);
+        clock.restart();
+        frame = requestAnimationFrame(tick);
+      };
+      const onSeeking = () => {
+        discontinuity++;
+        if (audio.paused) hold();
+      };
+      audio.addEventListener('seeking', onSeeking);
+      audio.addEventListener('seeked', onSeeking);
+      audio.addEventListener('pause', hold);
+      audio.addEventListener('play', resume);
       if (audio.paused) hold();
-    };
-    audio.addEventListener('seeking', onSeeking);
-    audio.addEventListener('seeked', onSeeking);
-    audio.addEventListener('pause', hold);
-    audio.addEventListener('play', resume);
-    if (audio.paused) hold();
-    else resume();
-    return () => {
-      cancelAnimationFrame(frame);
-      audio.removeEventListener('seeking', onSeeking);
-      audio.removeEventListener('seeked', onSeeking);
-      audio.removeEventListener('pause', hold);
-      audio.removeEventListener('play', resume);
-    };
-  }, [deck, videoId, ttml]);
+      else resume();
+      return () => {
+        cancelAnimationFrame(frame);
+        audio.removeEventListener('seeking', onSeeking);
+        audio.removeEventListener('seeked', onSeeking);
+        audio.removeEventListener('pause', hold);
+        audio.removeEventListener('play', resume);
+      };
+    }
+  }, [deck, videoId, ttml, remote]);
 
   // am-lyrics renders and scrolls itself; it only needs the space. Full screen fades it out at the top and bottom.
   return (
@@ -217,7 +245,8 @@ const NO_STATES: Partial<Record<LyricsSourceId, SourceState>> = {};
 
 /** The provider picker: which provider these lyrics are from, and the others' answers for this track. */
 function ProviderPicker({ current, full }: { current: LyricsSourceId | null; full: boolean }) {
-  const videoId = usePlayer((s) => s.nowPlaying?.videoId ?? '');
+  const shown = useShownNowPlaying();
+  const videoId = shown?.videoId ?? '';
   const states = useLyricsUi((s) => s.states[videoId]) ?? NO_STATES;
   const picked = useLyricsUi((s) => s.picked[videoId]);
   const pick = useLyricsUi((s) => s.pick);
@@ -356,7 +385,8 @@ const fullSizes =
  */
 export function LyricsPanel({ variant = 'panel' }: { variant?: 'panel' | 'full' }) {
   const lyrics = useLyrics();
-  const hasTrack = usePlayer((s) => s.nowPlaying !== null);
+  const shown = useShownNowPlaying();
+  const hasTrack = shown !== null;
   const ungranted = useUngranted();
   const canvas = useCanvas();
   const fontReady = useLyricFont();

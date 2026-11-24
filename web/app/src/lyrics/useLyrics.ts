@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { create } from 'zustand';
 import { getOfflineTrack, saveOfflineTrack } from '@/data/download/offlineStore';
 import { usePlayer } from '@/state/player';
+import { useShownNowPlaying } from '@/connect/shown';
 import { queryClient } from '@/lib/queryClient';
 import { onGranted } from './http';
 import { forgetLyrics, lookupLyrics, type LyricsResult, type SourceState } from './repository';
@@ -39,9 +40,10 @@ function reportState(videoId: string, source: LyricsSourceId, state: SourceState
 
 /** The playing track's lyrics, from the provider chain or the provider picked for it. */
 export function useLyrics() {
-  const videoId = usePlayer((s) => s.nowPlaying?.videoId ?? null);
-  const title = usePlayer((s) => s.nowPlaying?.title ?? '');
-  const artist = usePlayer((s) => s.nowPlaying?.artist ?? '');
+  const shown = useShownNowPlaying();
+  const videoId = shown?.videoId ?? null;
+  const title = shown?.title ?? '';
+  const artist = shown?.artist ?? '';
   const only = useLyricsUi((s) => (videoId ? s.picked[videoId] : undefined));
   const order = useLyricsSettings((s) => s.order.filter((id) => !s.disabled.includes(id)).join(','));
   const preferSyllables = useLyricsSettings((s) => s.preferSyllables);
@@ -67,7 +69,7 @@ export function useLyrics() {
 
       const player = usePlayer.getState();
       const entry = player.queue[player.index];
-      const durationSec = entry?.track.durationSec || player.nowPlaying?.durationSec || 0;
+      const durationSec = shown?.durationSec || entry?.track.durationSec || player.nowPlaying?.durationSec || 0;
       const result = await lookupLyrics(
         {
           videoId: videoId!,

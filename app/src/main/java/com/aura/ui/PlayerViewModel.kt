@@ -78,7 +78,20 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
     val smartShuffleAvailable = player.smartShuffleAvailable
     val repeatMode = player.repeatMode
     val durationMs = combine(player.durationMs, com.aura.data.connect.ConnectManager.activeRemoteDevice) { localDuration, remote ->
-        if (player.isPlaying.value || remote == null) localDuration else com.aura.data.connect.ConnectManager.lengthToMs(remote.state?.track?.length)
+        if (player.isPlaying.value || remote == null) {
+            localDuration
+        } else {
+            val remoteDuration = com.aura.data.connect.ConnectManager.lengthToMs(remote.state?.track?.length)
+            if (remoteDuration > 0L) {
+                remoteDuration
+            } else {
+                val song = player.currentSong.value
+                val fallback = if (song != null && song.videoId == remote.state?.track?.id) {
+                    com.aura.data.connect.ConnectManager.lengthToMs(song.durationText)
+                } else 0L
+                if (fallback > 0L) fallback else localDuration.coerceAtLeast(0L)
+            }
+        }
     }.stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.Lazily, 0L)
     val playbackError = player.error
     val source = player.source

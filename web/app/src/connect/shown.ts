@@ -27,7 +27,5 @@ export function remoteNowPlaying(device: Device): NowPlaying | null {
 export function useShownNowPlaying(): NowPlaying | null {
   const remote = useControlling();
   const local = usePlayer((s) => s.nowPlaying);
-  const key = remote ? `${remote.id}|${remote.state?.track?.id ?? ''}|${remote.state?.track?.thumb ?? ''}` : null;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  return useMemo(() => (remote ? remoteNowPlaying(remote) : local), [key, local]);
+  return remote ? remoteNowPlaying(remote) : local;
 }
