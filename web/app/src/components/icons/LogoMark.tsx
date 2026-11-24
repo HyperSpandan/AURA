@@ -1,16 +1,23 @@
-import markSvg from '@/assets/logo-mark.svg?raw';
-
-// AURA's mark, the same file the desktop app ships, recoloured to
-// currentColor so it follows the text colour it sits in.
-const markup = markSvg.replace(/width="\d+" height="\d+"/, 'width="100%" height="100%"');
+import type { CSSProperties } from 'react';
 
 export function LogoMark({ size = 20, className }: { size?: number; className?: string }) {
+  const style: CSSProperties = {
+    display: 'inline-flex',
+    width: size,
+    height: size,
+  };
   return (
     <span
       aria-hidden="true"
-      className={className}
-      style={{ display: 'inline-flex', width: size, height: size }}
-      dangerouslySetInnerHTML={{ __html: markup }}
-    />
+      className={`items-center justify-center overflow-hidden rounded-[26%] bg-black ${className ?? ''}`}
+      style={style}
+    >
+      <img
+        src={`${import.meta.env.BASE_URL}splash-logo.png`}
+        alt=""
+        draggable={false}
+        className="h-full w-full scale-[1.45] object-contain"
+      />
+    </span>
   );
 }
