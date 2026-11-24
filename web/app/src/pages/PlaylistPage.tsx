@@ -1,7 +1,6 @@
-import { ArrowUpDown } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import { useParams } from 'react-router';
-import { DetailHeader, detailButton } from '@/components/music/DetailHeader';
+import { DetailHeader } from '@/components/music/DetailHeader';
 import { PlaylistMenu } from '@/components/music/PlaylistMenu';
 import { playList, shuffleList } from '@/components/music/play';
 import { LoadError, LoadMoreError, NeedsExtension } from '@/components/music/States';
@@ -88,18 +87,6 @@ export default function PlaylistPage() {
         canPlay={tracks.length > 0}
         onPlay={() => playList(tracks, 0, context)}
         onShuffle={() => shuffleList(tracks, context)}
-        extra={
-          canReorder ? (
-            <button
-              type="button"
-              className={`${detailButton} !rounded-lg`}
-              onClick={() => setReordering((v) => !v)}
-            >
-              <ArrowUpDown size={16} />
-              {reordering ? 'Done' : 'Reorder'}
-            </button>
-          ) : undefined
-        }
         menu={
           <PlaylistMenu
             id={id}

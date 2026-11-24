@@ -36,7 +36,6 @@ import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.DownloadDone
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.DeleteOutline
-import androidx.compose.material.icons.rounded.Reorder
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -374,14 +373,11 @@ fun ListTools(
     /** For a playlist on the account's YouTube Music: who can see it, and changing that. */
     privacy: com.aura.data.model.PlaylistPrivacy? = null,
     onPrivacy: (() -> Unit)? = null,
-    onReorder: (() -> Unit)? = null,
-    reordering: Boolean = false,
 ) {
     androidx.compose.foundation.layout.FlowRow(modifier, horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         if (saved != null) ListHeart(saved, onSave)
         if (onPrivacy != null) com.aura.ui.components.PrivacyButton(privacy, onPrivacy)
         if (onAddSongs != null) AddSongsButton(onAddSongs)
-        if (onReorder != null) RoundToolButton(if (reordering) Icons.Rounded.Check else Icons.Rounded.Reorder, if (reordering) "Done reordering" else "Reorder songs", onReorder)
         if (songs.isNotEmpty()) DownloadAllButton(songs, list = list)
         if (onShare != null) RoundToolButton(Icons.Rounded.Share, "Share", onShare)
     }

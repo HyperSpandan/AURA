@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
-import { ArrowUpDown, ListPlus } from 'lucide-react';
+import { ListPlus } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { DetailHeader, detailButton } from '@/components/music/DetailHeader';
@@ -83,21 +83,7 @@ export default function SpotifyPlaylistPage() {
         canPlay={playable.length > 0}
         onPlay={() => playList(playable, 0, context)}
         onShuffle={() => shuffleList(playable, context)}
-        extra={
-          <div className="flex items-center gap-2">
-            <ImportButton title={info.data.name} videoIds={playable.map((t) => t.videoId)} ready={rows.matching === 0} />
-            {canReorder && (
-              <button
-                type="button"
-                className={`${detailButton} !rounded-lg`}
-                onClick={() => setReordering((v) => !v)}
-              >
-                <ArrowUpDown size={16} />
-                {reordering ? 'Done' : 'Reorder'}
-              </button>
-            )}
-          </div>
-        }
+        extra={<ImportButton title={info.data.name} videoIds={playable.map((t) => t.videoId)} ready={rows.matching === 0} />}
         menu={
           <PlaylistMenu
             id={`spotify:${id}`}

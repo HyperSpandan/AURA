@@ -1210,8 +1210,6 @@ fun LocalPlaylistScreen(id: String, contentPadding: PaddingValues, actions: Song
             modifier = modifier,
             privacy = playlist.privacy,
             onPrivacy = if (online) ({ choosingPrivacy = true }) else null,
-            onReorder = if (canReorder) ({ order = com.aura.ui.browse.ListOrder.DEFAULT; reordering = !reordering }) else null,
-            reordering = reordering,
         )
     }
     if (moreOpen) LocalListMoreSheet(playlist, songs, actions,
