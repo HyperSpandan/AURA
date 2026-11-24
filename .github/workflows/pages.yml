@@ -26,7 +26,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  deploy:
+  build:
     # Also honor merge-only commits when Release/iOS completion triggers this workflow.
     if: >-
       ${{ !contains(github.event.head_commit.message, '[skip deploy]') &&
@@ -35,9 +35,6 @@ jobs:
          github.event.workflow_run.conclusion == 'success' &&
          !contains(github.event.workflow_run.head_commit.message, '[skip deploy]'))) }}
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -121,7 +118,7 @@ jobs:
               }],
               news: []
             } end' ios-release.json > site/ios/source.json
-          rm -f ios-release.json
+            rm -f ios-release.json
           [ -s site/ios/source.json ] && jq -c '.apps[0].versions[0] | {version, size}' site/ios/source.json || rm -f site/ios/source.json
       - name: Validate social preview
         run: python scripts/check-social-preview.py
@@ -131,9 +128,21 @@ jobs:
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
       - id: deployment
         uses: actions/deploy-pages@v4
 
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
       - name: Verify published dashboard assets
         run: python scripts/check-published-usage.py
 
