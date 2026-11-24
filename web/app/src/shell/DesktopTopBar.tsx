@@ -29,14 +29,14 @@ export function DesktopTopBar() {
   };
 
   const navButton =
-    'grid size-8 place-items-center rounded-full bg-white/[0.06] hover:bg-white/[0.12] text-secondary hover:text-primary active:scale-95 transition-all';
+    'grid size-8 place-items-center rounded-full border border-white/[0.08] bg-white/[0.08] backdrop-blur-md hover:bg-white/[0.15] text-secondary hover:text-primary active:scale-95 transition-all';
 
   return (
     <header
       className={`fixed top-0 right-0 left-(--web-navigation-width) z-[calc(var(--z-web-chrome)-2)] flex h-16 items-center justify-between px-6 max-sm:hidden transition-[background-color,border-color,backdrop-filter,box-shadow,left] duration-200 ease-out ${
         scrolled
-          ? 'bg-page/80 backdrop-blur-2xl border-b border-white/5 shadow-[0_4px_24px_rgba(0,0,0,0.25)]'
-          : 'bg-transparent border-b border-transparent'
+          ? 'bg-black/40 backdrop-blur-2xl border-b border-white/[0.08] shadow-[0_4px_24px_rgba(0,0,0,0.28)]'
+          : 'bg-black/15 backdrop-blur-xl border-b border-white/[0.06]'
       }`}
     >
       {/* Left: History navigation buttons */}
