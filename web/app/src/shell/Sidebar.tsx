@@ -1,5 +1,6 @@
 import { ArrowUpRight, Library as LibraryIcon, ListMusic, PanelLeftClose, PanelLeftOpen, Settings } from 'lucide-react';
 import { useEffect } from 'react';
+import { useMatch } from 'react-router';
 import { SiSpotify } from 'react-icons/si';
 import { PrefetchLink, PrefetchNavLink } from '@/components/PrefetchLink';
 import { LogoMark } from '@/components/icons/LogoMark';
@@ -38,16 +39,48 @@ const PRIMARY: NavItem[] = [
 
 // A sidebar row; NavLink sets aria-current on the page's own row.
 const item =
-  'ot-nav-item group flex h-9 items-center gap-2.5 mb-1 px-2 py-1 rounded-xl type-body-reduced text-primary transition-all duration-150 hover:bg-white/[0.07] aria-[current=page]:bg-white/[0.12] aria-[current=page]:border aria-[current=page]:border-white/[0.12] aria-[current=page]:shadow-[inset_0_1px_0_rgba(255,255,255,0.18),0_4px_14px_rgba(0,0,0,0.2)]';
+  'ot-nav-item relative group flex h-9 items-center gap-2.5 px-2.5 py-1 rounded-nav type-body-reduced text-primary transition-colors duration-150 hover:bg-white/[0.07]';
 // Apple's glyphs, drawn at 24px (their 24-unit box), which the user preferred to Apple's own 28px.
 const icon = 'inline-grid size-6 flex-none place-items-center text-primary group-aria-[current=page]:text-key';
 const navLabel = 'ot-side-label min-w-0 truncate';
 // "Library", "Playlists" (report §1: 12px/15px 600, secondary, padding 4px 8px).
-const sectionHeader = 'ot-side-header mt-4 px-2 py-1 type-callout-emphasized text-secondary';
+const sectionHeader = 'ot-side-header mt-4 px-2.5 py-1 type-callout-emphasized text-secondary';
 const list = 'flex flex-col';
 
 /** The folded rail names each icon in a tooltip; the open sidebar already shows the names. */
 const tip = (label: string) => (useUi.getState().sidebarCollapsed ? label : undefined);
+
+function LiquidNavLink({
+  to,
+  end,
+  className,
+  onClick,
+  title,
+  children,
+}: {
+  to: string;
+  end?: boolean;
+  className?: string;
+  onClick?: () => void;
+  title?: string;
+  children: React.ReactNode;
+}) {
+  const match = useMatch({ path: to, end: Boolean(end) });
+  const glass = useLiquidGlass<HTMLDivElement>(12, 10);
+  return (
+    <div ref={match ? glass : undefined} className={match ? 'glass-pill relative mb-1 rounded-nav' : 'relative mb-1 rounded-nav'}>
+      <PrefetchNavLink
+        to={to}
+        end={end}
+        className={className ?? item}
+        onClick={onClick}
+        title={title}
+      >
+        {children}
+      </PrefetchNavLink>
+    </div>
+  );
+}
 
 function NavList({ items, onNavigate }: { items: NavItem[]; onNavigate: () => void }) {
   useUi((s) => s.sidebarCollapsed);
@@ -55,10 +88,10 @@ function NavList({ items, onNavigate }: { items: NavItem[]; onNavigate: () => vo
     <ul className={list}>
       {items.map(({ to, label, Icon }) => (
         <li key={to}>
-          <PrefetchNavLink to={to} className={item} onClick={onNavigate} title={tip(label)}>
+          <LiquidNavLink to={to} onClick={onNavigate} title={tip(label)}>
             <Icon size={24} className={icon} />
             <span className={navLabel}>{label}</span>
-          </PrefetchNavLink>
+          </LiquidNavLink>
         </li>
       ))}
     </ul>
@@ -73,20 +106,20 @@ function PlaylistsNav({ onNavigate }: { onNavigate: () => void }) {
       <h2 className={sectionHeader}>Playlists</h2>
       <ul className={list}>
         <li>
-          <PrefetchNavLink to="/library/playlists" className={item} onClick={onNavigate} title={tip(LIBRARY_SECTIONS.playlists.title)}>
+          <LiquidNavLink to="/library/playlists" onClick={onNavigate} title={tip(LIBRARY_SECTIONS.playlists.title)}>
             <AllPlaylistsIcon size={24} className={icon} />
             <span className={navLabel}>{LIBRARY_SECTIONS.playlists.title}</span>
-          </PrefetchNavLink>
+          </LiquidNavLink>
         </li>
         {playlists.data?.map((playlist) => (
           // Each playlist's glyph is the same one, so the folded rail leaves them out.
           <li key={playlist.id} className="ot-side-extra">
-            <PrefetchNavLink to={hrefFor(playlist) ?? '/library/playlists'} className={item} onClick={onNavigate}>
+            <LiquidNavLink to={hrefFor(playlist) ?? '/library/playlists'} onClick={onNavigate}>
               <span className={icon}>
                 <ListMusic size={17} strokeWidth={1.8} />
               </span>
               <span className={navLabel}>{playlist.title}</span>
-            </PrefetchNavLink>
+            </LiquidNavLink>
           </li>
         ))}
       </ul>
@@ -102,22 +135,22 @@ function SpotifyNav({ onNavigate }: { onNavigate: () => void }) {
       <h2 className={sectionHeader}>Spotify</h2>
       <ul className={list}>
         <li>
-          <PrefetchNavLink to="/spotify" end className={item} onClick={onNavigate} title={tip('All Spotify Playlists')}>
+          <LiquidNavLink to="/spotify" end onClick={onNavigate} title={tip('All Spotify Playlists')}>
             {/* Spotify's own mark, so it reads apart from All Playlists above it, folded or not. */}
             <span className={icon}>
               <SiSpotify size={20} />
             </span>
             <span className={navLabel}>All Spotify Playlists</span>
-          </PrefetchNavLink>
+          </LiquidNavLink>
         </li>
         {playlists.data?.map((playlist) => (
           <li key={playlist.id} className="ot-side-extra">
-            <PrefetchNavLink to={`/spotify/playlist/${encodeURIComponent(playlist.id)}`} className={item} onClick={onNavigate}>
+            <LiquidNavLink to={`/spotify/playlist/${encodeURIComponent(playlist.id)}`} onClick={onNavigate}>
               <span className={icon}>
                 <ListMusic size={17} strokeWidth={1.8} />
               </span>
               <span className={navLabel}>{playlist.name}</span>
-            </PrefetchNavLink>
+            </LiquidNavLink>
           </li>
         ))}
       </ul>
@@ -133,8 +166,8 @@ export function Sidebar() {
   const spotifySignedIn = useSpotifySignedIn();
   const folded = useUi((s) => s.sidebarCollapsed);
   const toggleSidebar = useUi((s) => s.toggleSidebar);
-  const sidebarGlass = useLiquidGlass<HTMLElement>(20, 14);
-  const toggleGlass = useLiquidGlass<HTMLButtonElement>(10, 8);
+  const toggleGlass = useLiquidGlass<HTMLButtonElement>(10, 10);
+  const dockGlass = useLiquidGlass<HTMLDivElement>(16, 14);
   const close = () => setDrawerOpen(false);
   // The page and the player pill take their left edge from --web-navigation-width (tokens.css).
   useEffect(() => {
@@ -146,13 +179,12 @@ export function Sidebar() {
     <>
       {/* Below 484px the sidebar is a drawer opened from the top bar's menu button. */}
       <nav
-        ref={sidebarGlass}
-        className="ot-side glass-pill absolute top-2.5 bottom-2.5 left-2.5 z-(--z-web-chrome) flex w-[calc(var(--web-navigation-width)-14px)] flex-col rounded-[20px] max-sm:inset-y-0 max-sm:left-0 max-sm:w-[min(300px,82vw)] max-sm:rounded-none max-sm:-translate-x-full max-sm:shadow-glass max-sm:transition-transform max-sm:duration-(--duration-panel) max-sm:ease-panel max-sm:data-[open=true]:translate-none"
+        className="ot-side glass-material absolute top-2.5 bottom-2.5 left-2.5 z-(--z-web-chrome) flex w-[calc(var(--web-navigation-width)-14px)] flex-col rounded-[24px] shadow-glass max-sm:inset-y-0 max-sm:left-0 max-sm:w-[min(300px,82vw)] max-sm:rounded-none max-sm:-translate-x-full max-sm:transition-transform max-sm:duration-(--duration-panel) max-sm:ease-panel max-sm:data-[open=true]:translate-none"
         data-open={drawerOpen}
         data-folded={folded}
         aria-label="Main"
       >
-        <div className="ot-side-top flex h-14 items-center justify-between pr-3 pl-4">
+        <div className="ot-side-top flex h-14 items-center justify-between pr-3 pl-5">
           <PrefetchLink to="/home" className="ot-side-wordmark inline-flex items-center gap-2 rounded-[6px]" aria-label="AURA, Home" onClick={close}>
             {/* White on dark, as Apple's own wordmark; it follows the label colour so it stays visible in light. */}
             <LogoMark size={22} className="text-primary" />
@@ -161,7 +193,7 @@ export function Sidebar() {
           {/* Folds the sidebar to a rail of icons and back. Phones have the drawer instead. */}
           <button
             ref={toggleGlass}
-            className="relative grid size-8 flex-none place-items-center rounded-xl border border-white/[0.08] bg-white/[0.07] text-secondary transition-colors duration-150 hover:bg-white/[0.14] hover:text-primary max-sm:hidden"
+            className="glass-pill relative grid size-8 flex-none place-items-center rounded-full text-secondary transition-colors duration-150 hover:text-primary max-sm:hidden"
             onClick={toggleSidebar}
             aria-label={folded ? 'Expand sidebar' : 'Collapse sidebar'}
             aria-expanded={!folded}
@@ -175,14 +207,17 @@ export function Sidebar() {
           {signedIn && <PlaylistsNav onNavigate={close} />}
           {spotifySignedIn && <SpotifyNav onNavigate={close} />}
         </div>
-        <div className="ot-side-bottom mx-2.5 mb-2.5 flex flex-col gap-2 rounded-2xl border border-white/[0.08] bg-white/[0.04] p-2.5 backdrop-blur-md">
+        <div
+          ref={dockGlass}
+          className="ot-side-bottom glass-pill relative mx-2.5 mb-2.5 flex flex-col gap-2 rounded-[20px] p-2.5"
+        >
           <div className="ot-side-full flex flex-col">
             <AccountButton />
           </div>
           <div className="ot-side-compact hidden flex-col">
             <AccountButton compact />
           </div>
-          <div className="ot-side-foot flex flex-col gap-1.5 border-t border-white/[0.06] pt-2">
+          <div className="ot-side-foot flex flex-col gap-1.5 pt-1">
             <div className={`flex items-center ${folded ? 'justify-center' : 'justify-between'}`}>
               {!folded && (
                 <a className="ot-side-android inline-flex items-center gap-1 ps-1 type-callout text-primary hover:underline" href={config.androidAppUrl} target="_blank" rel="noreferrer">
@@ -192,7 +227,7 @@ export function Sidebar() {
               )}
               <PrefetchNavLink
                 to="/settings"
-                className={`grid place-items-center rounded-xl text-secondary transition-colors hover:bg-white/[0.08] hover:text-primary aria-[current=page]:bg-white/[0.12] aria-[current=page]:text-primary ${
+                className={`grid place-items-center rounded-full text-secondary transition-colors hover:bg-white/[0.08] hover:text-primary aria-[current=page]:bg-white/[0.12] aria-[current=page]:text-primary ${
                   folded ? 'size-9 self-center' : 'size-7'
                 }`}
                 aria-label="Settings"
