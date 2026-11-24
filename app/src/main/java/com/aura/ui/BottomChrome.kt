@@ -547,14 +547,18 @@ private fun DockPill(c: ChromeContent, full: Dp, folded: Boolean, fold: () -> Fl
     var resting by remember { mutableIntStateOf(shown ?: 0) }
     if (shown != null) resting = shown
     val density = LocalDensity.current
+    var isPressed by remember { mutableStateOf(false) }
     var isDragging by remember { mutableStateOf(false) }
     val dragLeftState = remember { mutableFloatStateOf(slot.value * resting) }
     var hoveredTab by remember { mutableIntStateOf(resting) }
-    if (folded && isDragging) isDragging = false
+    if (folded && (isDragging || isPressed)) {
+        isDragging = false
+        isPressed = false
+    }
     val activeTab = if (isDragging) hoveredTab else shown
     val dragLift by animateFloatAsState(
-        if (isDragging) 1f else 0f,
-        spring(dampingRatio = 0.72f, stiffness = 460f),
+        if (isDragging || isPressed) 1f else 0f,
+        spring(dampingRatio = 0.68f, stiffness = 420f),
         label = "dockDragLift",
     )
     val itemsBackdrop = rememberLayerBackdrop()
@@ -565,31 +569,37 @@ private fun DockPill(c: ChromeContent, full: Dp, folded: Boolean, fold: () -> Fl
         Modifier.pointerInput(c.tabs.size, slotPx) {
             awaitEachGesture {
                 val down = awaitFirstDown(requireUnconsumed = false)
-                val drag = awaitHorizontalTouchSlopOrCancellation(down.id) { change, _ ->
-                    change.consume()
-                }
-                if (drag != null) {
-                    isDragging = true
-                    fun updateAt(xPx: Float) {
-                        val xDp = with(density) { xPx.toDp().value }
-                        dragLeftState.floatValue = (xDp - slot.value / 2f).coerceIn(0f, maxLeftDp)
-                        val next = (xPx / slotPx).toInt().coerceIn(0, c.tabs.lastIndex)
-                        if (next != hoveredTab) {
-                            hoveredTab = next
-                            haptics.tick()
+                isPressed = true
+                try {
+                    val drag = awaitHorizontalTouchSlopOrCancellation(down.id) { change, _ ->
+                        change.consume()
+                    }
+                    if (drag != null) {
+                        isDragging = true
+                        fun updateAt(xPx: Float) {
+                            val xDp = with(density) { xPx.toDp().value }
+                            dragLeftState.floatValue = (xDp - slot.value / 2f).coerceIn(0f, maxLeftDp)
+                            val next = (xPx / slotPx).toInt().coerceIn(0, c.tabs.lastIndex)
+                            if (next != hoveredTab) {
+                                hoveredTab = next
+                                haptics.tick()
+                            }
+                        }
+                        hoveredTab = (drag.position.x / slotPx).toInt().coerceIn(0, c.tabs.lastIndex)
+                        if (hoveredTab != resting) haptics.tick()
+                        updateAt(drag.position.x)
+                        val finished = horizontalDrag(drag.id) { change ->
+                            change.consume()
+                            updateAt(change.position.x)
+                        }
+                        isDragging = false
+                        if (finished) {
+                            c.onSelect(hoveredTab)
                         }
                     }
-                    hoveredTab = (drag.position.x / slotPx).toInt().coerceIn(0, c.tabs.lastIndex)
-                    if (hoveredTab != resting) haptics.tick()
-                    updateAt(drag.position.x)
-                    val finished = horizontalDrag(drag.id) { change ->
-                        change.consume()
-                        updateAt(change.position.x)
-                    }
+                } finally {
+                    isPressed = false
                     isDragging = false
-                    if (finished) {
-                        c.onSelect(hoveredTab)
-                    }
                 }
             }
         }
@@ -688,11 +698,11 @@ internal fun DockItem(tab: ChromeTab, selected: Boolean, modifier: Modifier, col
     val pressed by interaction.collectIsPressedAsState()
     val scale by animateFloatAsState(
         when {
-            pressed -> 0.9f
+            pressed -> 1.10f
             selected -> 1.06f
             else -> 1f
         },
-        spring(dampingRatio = 0.85f, stiffness = 320f),
+        spring(dampingRatio = 0.72f, stiffness = 360f),
         label = "dockScale",
     )
     val ink = dockInk()
