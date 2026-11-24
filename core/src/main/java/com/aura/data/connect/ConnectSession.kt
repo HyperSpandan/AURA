@@ -166,7 +166,15 @@ class ConnectSession(
         updateView()
     }
 
-    fun command(targetId: String, action: String, pos: Long? = null, value: Double? = null) {
+    fun command(
+        targetId: String,
+        action: String,
+        pos: Long? = null,
+        value: Double? = null,
+        track: CTrack? = null,
+        tracks: List<CTrack>? = null,
+        mode: String? = null,
+    ) {
         val cmd = ConnectMsg.Command(
             from = myId,
             to = targetId,
@@ -176,6 +184,9 @@ class ConnectSession(
             at = System.currentTimeMillis(),
             pos = pos,
             value = value,
+            track = track,
+            tracks = tracks,
+            mode = mode,
         )
         send(cmd)
     }

@@ -226,12 +226,23 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
 
     fun play(song: Song, source: String? = null) {
         if (!toRoom(song)) {
+            val remote = com.aura.data.connect.ConnectManager.activeRemoteDevice.value
+            if (remote != null && remote.state?.playing == true && !player.isPlaying.value) {
+                com.aura.data.connect.ConnectManager.sendPlayTrack(remote.id, song)
+                return
+            }
             com.aura.data.connect.ConnectManager.pauseActiveRemote()
             player.play(song, source)
         }
     }
     fun playAll(songs: List<Song>, startIndex: Int = 0, shuffle: Boolean = false, source: String? = null, fromList: Boolean = true) {
         if (!toRoom(songs.getOrNull(if (shuffle) 0 else startIndex))) {
+            val remote = com.aura.data.connect.ConnectManager.activeRemoteDevice.value
+            if (remote != null && remote.state?.playing == true && !player.isPlaying.value) {
+                val toPlay = if (shuffle) songs.shuffled() else songs
+                com.aura.data.connect.ConnectManager.sendPlayTracks(remote.id, toPlay, if (shuffle) 0 else startIndex)
+                return
+            }
             com.aura.data.connect.ConnectManager.pauseActiveRemote()
             player.playAll(songs, startIndex, shuffle, source, fromList = fromList)
         }

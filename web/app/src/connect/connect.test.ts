@@ -335,6 +335,24 @@ describe('sessions', () => {
     expect(a!.view?.devices.map((d) => d.name)).toEqual(['New']);
     a!.session.stop();
   });
+
+  it('controls and plays remote track and tracks', async () => {
+    const [a, b] = await devices(['a', 'Phone'], ['b', 'Chrome']);
+    await eventually('see each other', () => a!.view?.devices.length === 1 && b!.view?.devices.length === 1);
+
+    const track = { id: 'song1', title: 'Song 1', artist: 'Artist 1' };
+    b!.session.playTrackOn('a', track);
+    await eventually('a receives playTrack and plays it', () => a!.s.track?.id === 'song1');
+
+    const tracks = [
+      { id: 'songA', title: 'Song A' },
+      { id: 'songB', title: 'Song B' },
+    ];
+    b!.session.playTracksOn('a', tracks, 1);
+    await eventually('a receives playTracks and loads it', () => a!.s.track?.id === 'songB');
+
+    a!.session.stop(); b!.session.stop();
+  });
 });
 
 describe('the group kept in the YouTube account', () => {

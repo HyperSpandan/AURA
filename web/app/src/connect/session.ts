@@ -84,13 +84,16 @@ export const controllingOf = (v: ConnectView | null): Device | null => {
   const playingRemote = v.devices.find((d) => d.id !== v.myId && d.state?.playing);
   if (playingRemote) return playingRemote;
 
-  // 2. The explicitly active device according to the session view?
+  // 2. If this local device is explicitly the active device, we are not controlling a remote
+  if (v.activeId === v.myId) return null;
+
+  // 3. The explicitly active device according to the session view?
   if (v.activeId && v.activeId !== v.myId) {
     const active = v.devices.find((d) => d.id === v.activeId);
     if (active) return active;
   }
 
-  // 3. Fallback: any other device that has a track loaded?
+  // 4. Fallback: any other device that has a track loaded?
   const withTrack = v.devices
     .filter((d) => d.id !== v.myId && (d.state?.track || d.state?.private))
     .sort((a, b) => (b.since || b.receivedAt || b.state?.at || 0) - (a.since || a.receivedAt || a.state?.at || 0));
@@ -266,7 +269,43 @@ export class ConnectSession {
   }
 
   playTrackOn(deviceId: string, track: CTrack): void {
+    const target = this.devices.get(deviceId);
+    if (target) {
+      const now = this.clock();
+      const nextState: StateMsg = {
+        ...(target.state ?? { type: 'state' as const, from: deviceId, seq: 0, at: now }),
+        track,
+        playing: true,
+        pos: 0,
+        since: now,
+      };
+      this.setDevice({ ...target, state: nextState, receivedAt: now, since: now });
+      this.guess(deviceId, { playing: true });
+    }
     this.command(deviceId, 'playTrack', { track });
+  }
+
+  playTracksOn(deviceId: string, tracks: CTrack[], startIndex = 0): void {
+    const target = this.devices.get(deviceId);
+    const track = tracks[startIndex] ?? tracks[0];
+    if (target && track) {
+      const now = this.clock();
+      const nextState: StateMsg = {
+        ...(target.state ?? { type: 'state' as const, from: deviceId, seq: 0, at: now }),
+        track,
+        queue: tracks.slice(startIndex + 1),
+        playing: true,
+        pos: 0,
+        since: now,
+      };
+      this.setDevice({ ...target, state: nextState, receivedAt: now, since: now });
+      this.guess(deviceId, { playing: true });
+    }
+    this.command(deviceId, 'playTracks', { tracks, pos: startIndex });
+  }
+
+  playNextOn(deviceId: string, tracks: CTrack[]): void {
+    this.command(deviceId, 'playNext', { tracks });
   }
 
   addToQueueOn(deviceId: string, tracks: CTrack[]): void {
@@ -440,6 +479,22 @@ export class ConnectSession {
         this.player.setRepeat(c.mode);
         return true;
       case 'playTrack': if (!c.track) return false; this.player.playTrack(c.track); return true;
+      case 'playTracks':
+      case 'load':
+        if (c.tracks?.length) {
+          this.player.load(c.tracks, c.pos ?? 0, 0, true);
+          return true;
+        } else if (c.track) {
+          this.player.playTrack(c.track);
+          return true;
+        }
+        return false;
+      case 'playNext':
+        if (c.tracks?.length) {
+          this.player.addToQueue(c.tracks);
+          return true;
+        }
+        return false;
       case 'addToQueue': this.player.addToQueue(c.tracks ?? []); return true;
       case 'jump': return !!c.track && this.player.playQueued(c.pos ?? 0, c.track.id);
       case 'remove': return !!c.track && this.player.removeQueued(c.pos ?? 0, c.track.id);

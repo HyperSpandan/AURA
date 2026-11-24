@@ -209,8 +209,10 @@ const webPlayer: ConnectPlayer = {
     for (let i = 0; i < 3 && usePlayer.getState().repeat !== mode; i++) usePlayer.getState().cycleRepeat();
   }),
   playTrack: (t) => {
-    usePlayer.getState().playNext([fromCTrack(t)]);
-    usePlayer.getState().next();
+    here(() => {
+      const track = fromCTrack(t);
+      usePlayer.getState().playTrack(track, { title: 'From connected device', type: 'other' });
+    });
   },
   addToQueue: (ts) => usePlayer.getState().addToQueue(ts.map(fromCTrack)),
   playQueued: (at, id) => {
@@ -331,6 +333,30 @@ export function initConnect(): void {
           const next = target.state?.repeat === 'off' ? 'all' : target.state?.repeat === 'all' ? 'one' : 'off';
           return s.intercept('repeat', 0, 0, next);
         }
+        case 'playTrack': {
+          const ct = toCTrack(control.track);
+          if (!ct) return false;
+          s.playTrackOn(target.id, ct);
+          return true;
+        }
+        case 'playTracks': {
+          const cts = control.tracks.map((t) => toCTrack(t)).filter((t): t is CTrack => !!t);
+          if (!cts.length) return false;
+          s.playTracksOn(target.id, cts, control.startIndex);
+          return true;
+        }
+        case 'playNext': {
+          const cts = control.tracks.map((t) => toCTrack(t)).filter((t): t is CTrack => !!t);
+          if (!cts.length) return false;
+          s.playNextOn(target.id, cts);
+          return true;
+        }
+        case 'addToQueue': {
+          const cts = control.tracks.map((t) => toCTrack(t)).filter((t): t is CTrack => !!t);
+          if (!cts.length) return false;
+          s.addToQueueOn(target.id, cts);
+          return true;
+        }
       }
     },
     // Seeks and play/pause pressed here don't change the store's song or queue.
@@ -436,3 +462,21 @@ export function removeQueuedRemote(at: number, track: CTrack): void {
 /** Seeks the device playing elsewhere to [ms]. */
 export const seekRemote = (ms: number) => session?.intercept('seek', Math.round(ms)) ?? false;
 export const sendVolume = (value: number) => session?.intercept('volume', 0, value) ?? false;
+
+export function playOnActiveRemote(track: Track): boolean {
+  const target = controllingOf(useConnect.getState().view);
+  if (!target || !session) return false;
+  const ct = toCTrack(track);
+  if (!ct) return false;
+  session.playTrackOn(target.id, ct);
+  return true;
+}
+
+export function playListOnActiveRemote(tracks: Track[], startIndex = 0): boolean {
+  const target = controllingOf(useConnect.getState().view);
+  if (!target || !session) return false;
+  const cts = tracks.map((t) => toCTrack(t)).filter((t): t is CTrack => !!t);
+  if (!cts.length) return false;
+  session.playTracksOn(target.id, cts, startIndex);
+  return true;
+}

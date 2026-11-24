@@ -217,7 +217,14 @@ export function setPartyHooks(hooks: PartyHooks | null): void {
 // While another of the person's devices is the one playing, this player's
 // play/pause, skips and seeks act on that device instead.
 
-export type ConnectControl = PartyControl | { kind: 'shuffle' } | { kind: 'repeat' };
+export type ConnectControl =
+  | PartyControl
+  | { kind: 'shuffle' }
+  | { kind: 'repeat' }
+  | { kind: 'playTrack'; track: Track }
+  | { kind: 'playTracks'; tracks: Track[]; startIndex: number }
+  | { kind: 'playNext'; tracks: Track[] }
+  | { kind: 'addToQueue'; tracks: Track[] };
 
 export interface ConnectHooks {
   /** True when another device took the control, so nothing happens here. */
@@ -253,6 +260,7 @@ export const usePlayer = create<PlayerState>()((set, get) => ({
 
   playTracks(tracks, startIndex, source) {
     if (!tracks.length) return;
+    if (connectHooks?.intercept({ kind: 'playTracks', tracks, startIndex })) return;
     if (partyHooks?.suggest([tracks[startIndex] ?? tracks[0]!], true)) return;
     const { queue, index, shuffle } = get();
     const built = buildContextQueue(queue, index, tracks, startIndex, source);
@@ -269,6 +277,7 @@ export const usePlayer = create<PlayerState>()((set, get) => ({
   },
 
   playTrack(track, source) {
+    if (connectHooks?.intercept({ kind: 'playTrack', track })) return;
     if (partyHooks?.suggest([track], true)) return;
     const { queue, index } = get();
     canonical = null;
@@ -295,12 +304,14 @@ export const usePlayer = create<PlayerState>()((set, get) => ({
   },
 
   playNext(tracks, source = null) {
+    if (connectHooks?.intercept({ kind: 'playNext', tracks })) return;
     if (partyHooks?.suggest(tracks, false)) return;
     insertUser(tracks, source, true);
     intent();
   },
 
   addToQueue(tracks, source = null) {
+    if (connectHooks?.intercept({ kind: 'addToQueue', tracks })) return;
     if (partyHooks?.suggest(tracks, false)) return;
     insertUser(tracks, source, false);
     intent();

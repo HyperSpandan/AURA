@@ -265,6 +265,66 @@ object ConnectManager {
                         }
                     }
                 }
+                "playTrack" -> cmd.track?.let { ct ->
+                    val song = cTrackToSong(ct)
+                    p.play(song, "Connected device")
+                    scope.launch(Dispatchers.Default) {
+                        kotlinx.coroutines.delay(120)
+                        broadcastCurrentState()
+                    }
+                }
+                "playTracks", "load" -> {
+                    val tracks = cmd.tracks ?: cmd.track?.let { listOf(it) }
+                    if (!tracks.isNullOrEmpty()) {
+                        val songs = tracks.map { cTrackToSong(it) }
+                        val startIndex = cmd.pos?.toInt()?.coerceIn(0, songs.size - 1) ?: 0
+                        p.playAll(songs, startIndex = startIndex, shuffle = false, source = "Connected device")
+                        scope.launch(Dispatchers.Default) {
+                            kotlinx.coroutines.delay(120)
+                            broadcastCurrentState()
+                        }
+                    }
+                }
+                "playNext" -> {
+                    val tracks = cmd.tracks ?: cmd.track?.let { listOf(it) }
+                    if (!tracks.isNullOrEmpty()) {
+                        val songs = tracks.map { cTrackToSong(it) }
+                        songs.reversed().forEach { p.playNext(it) }
+                        scope.launch(Dispatchers.Default) {
+                            kotlinx.coroutines.delay(120)
+                            broadcastCurrentState()
+                        }
+                    }
+                }
+                "addToQueue" -> {
+                    val tracks = cmd.tracks ?: cmd.track?.let { listOf(it) }
+                    if (!tracks.isNullOrEmpty()) {
+                        val songs = tracks.map { cTrackToSong(it) }
+                        songs.forEach { p.addToQueue(it) }
+                        scope.launch(Dispatchers.Default) {
+                            kotlinx.coroutines.delay(120)
+                            broadcastCurrentState()
+                        }
+                    }
+                }
+                "jump" -> {
+                    cmd.pos?.toInt()?.let { index ->
+                        p.playQueueItem(index)
+                        scope.launch(Dispatchers.Default) {
+                            kotlinx.coroutines.delay(120)
+                            broadcastCurrentState()
+                        }
+                    }
+                }
+                "remove" -> {
+                    cmd.pos?.toInt()?.let { index ->
+                        p.removeQueueItem(index)
+                        scope.launch(Dispatchers.Default) {
+                            kotlinx.coroutines.delay(120)
+                            broadcastCurrentState()
+                        }
+                    }
+                }
             }
         }
     }
@@ -355,6 +415,20 @@ object ConnectManager {
         val s = session ?: return false
         val target = targetId ?: _activeRemoteDevice.value?.id ?: _view.value.activeId ?: return false
         s.command(target, action, pos = pos, value = value)
+        return true
+    }
+
+    fun sendPlayTrack(targetDeviceId: String, song: Song): Boolean {
+        val s = session ?: return false
+        val cTrack = songToCTrack(song)
+        s.command(targetDeviceId, "playTrack", track = cTrack)
+        return true
+    }
+
+    fun sendPlayTracks(targetDeviceId: String, songs: List<Song>, startIndex: Int = 0): Boolean {
+        val s = session ?: return false
+        val cTracks = songs.map { songToCTrack(it) }
+        s.command(targetDeviceId, "playTracks", pos = startIndex.toLong(), tracks = cTracks)
         return true
     }
 
