@@ -146,31 +146,33 @@ fun DownloadAllButton(songs: List<Song>, modifier: Modifier = Modifier, list: Do
     Row(
         modifier
             .height(44.dp)
-            .clip(CircleShape)
+            .clip(RoundedCornerShape(12.dp))
             .background(scheme.surfaceContainerHighest)
             .clickable(enabled = wanted.isNotEmpty()) {
                 haptics.press()
                 if (selection.stored.isNotEmpty()) options = true else downloadRemaining()
             }
-            .padding(horizontal = 16.dp),
+            .padding(horizontal = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(Modifier.size(22.dp), contentAlignment = Alignment.Center) {
+        Box(Modifier.size(20.dp), contentAlignment = Alignment.Center) {
             when {
-                all -> Icon(Icons.Rounded.DownloadDone, null, tint = scheme.primary, modifier = Modifier.size(22.dp))
-                going > 0 -> CircularProgressIndicator(progress = { progress }, strokeWidth = 2.5.dp, modifier = Modifier.size(20.dp), trackColor = scheme.onSurface.copy(alpha = 0.15f))
-                else -> Icon(Icons.Rounded.Download, null, modifier = Modifier.size(22.dp))
+                all -> Icon(Icons.Rounded.DownloadDone, null, tint = scheme.primary, modifier = Modifier.size(20.dp))
+                going > 0 -> CircularProgressIndicator(progress = { progress }, strokeWidth = 2.5.dp, modifier = Modifier.size(18.dp), trackColor = scheme.onSurface.copy(alpha = 0.15f))
+                else -> Icon(Icons.Rounded.Download, null, modifier = Modifier.size(20.dp))
             }
         }
-        Spacer(Modifier.width(8.dp))
+        Spacer(Modifier.width(6.dp))
         Text(
             when {
-                all -> "Downloaded · Manage"
-                going > 0 -> "Downloading · $done/${wanted.size}"
-                done > 0 -> "Download the other ${wanted.size - done}"
+                all -> "Downloaded"
+                going > 0 -> "$done/${wanted.size}"
+                done > 0 -> "Get ${wanted.size - done} more"
                 else -> "Download all"
             },
             style = MaterialTheme.typography.labelLarge,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
         )
     }
 }
@@ -182,15 +184,15 @@ fun AddSongsButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
     Row(
         modifier
             .height(44.dp)
-            .clip(CircleShape)
+            .clip(RoundedCornerShape(12.dp))
             .background(MaterialTheme.colorScheme.surfaceContainerHighest)
             .clickable { haptics.tick(); onClick() }
-            .padding(horizontal = 16.dp),
+            .padding(horizontal = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(Icons.AutoMirrored.Rounded.PlaylistAdd, null, modifier = Modifier.size(22.dp))
-        Spacer(Modifier.width(8.dp))
-        Text("Add songs", style = MaterialTheme.typography.labelLarge)
+        Icon(Icons.AutoMirrored.Rounded.PlaylistAdd, null, modifier = Modifier.size(20.dp))
+        Spacer(Modifier.width(6.dp))
+        Text("Add songs", style = MaterialTheme.typography.labelLarge, maxLines = 1)
     }
 }
 
@@ -318,12 +320,12 @@ internal fun AddRow(song: Song, added: Boolean, progress: com.aura.data.spotify.
     }
 }
 
-/** A round button the height of the others in the row. */
+/** A square-rounded button the height of the others in the row. */
 @Composable
 private fun RoundToolButton(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, onClick: () -> Unit) {
     val haptics = rememberHaptics()
     Box(
-        Modifier.size(44.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceContainerHighest)
+        Modifier.size(44.dp).clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceContainerHighest)
             .clickable { haptics.tick(); onClick() },
         contentAlignment = Alignment.Center,
     ) { Icon(icon, label, Modifier.size(20.dp)) }
@@ -341,7 +343,7 @@ private fun ListHeart(saved: Boolean, onClick: () -> Unit) {
         pop.animateTo(1f, androidx.compose.animation.core.spring(dampingRatio = 0.4f, stiffness = 500f))
     }
     Box(
-        Modifier.size(44.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceContainerHighest)
+        Modifier.size(44.dp).clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceContainerHighest)
             .clickable {
                 haptics.pattern(if (saved) Haptics.Pattern.OFF else Haptics.Pattern.LIKE)
                 if (!saved) bursts++
@@ -359,7 +361,6 @@ private fun ListHeart(saved: Boolean, onClick: () -> Unit) {
 }
 
 /** The row under a list's Play and Shuffle: download it all, and for the app's own playlists, add songs. */
-@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 fun ListTools(
     songs: List<Song>,
@@ -374,11 +375,15 @@ fun ListTools(
     privacy: com.aura.data.model.PlaylistPrivacy? = null,
     onPrivacy: (() -> Unit)? = null,
 ) {
-    androidx.compose.foundation.layout.FlowRow(modifier, horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Row(
+        modifier,
+        horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
         if (saved != null) ListHeart(saved, onSave)
         if (onPrivacy != null) com.aura.ui.components.PrivacyButton(privacy, onPrivacy)
         if (onAddSongs != null) AddSongsButton(onAddSongs)
-        if (songs.isNotEmpty()) DownloadAllButton(songs, list = list)
+        if (songs.isNotEmpty()) DownloadAllButton(songs, list = list, modifier = Modifier.weight(1f, fill = false))
         if (onShare != null) RoundToolButton(Icons.Rounded.Share, "Share", onShare)
     }
 }
