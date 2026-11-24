@@ -5,10 +5,26 @@ import { isExactArtistMatch, normalizedArtistName } from '@/lib/artistCredits';
 import { queryClient } from '@/lib/queryClient';
 
 /** The track's own watch-queue entry, asked for once per track. */
-function trackLinks(videoId: string) {
+export function trackLinks(videoId: string) {
   return queryClient
     .fetchQuery({ queryKey: ['music', 'track-links', videoId], queryFn: () => fetchTrackLinks(videoId), staleTime: Infinity })
     .catch(() => null);
+}
+
+/** Resolves track duration in seconds from trackLinks or player info. */
+export async function trackDuration(videoId: string): Promise<number | null> {
+  if (!videoId) return null;
+  const linked = await trackLinks(videoId);
+  if (linked?.durationSec && linked.durationSec > 0) return linked.durationSec;
+  try {
+    const { getMusicClient } = await import('@/playback/youtube/innertube');
+    const yt = await getMusicClient();
+    const info = await yt.getBasicInfo(videoId);
+    if (info?.basic_info?.duration && info.basic_info.duration > 0) {
+      return info.basic_info.duration;
+    }
+  } catch {}
+  return null;
 }
 
 function searchHref(query: string): string {

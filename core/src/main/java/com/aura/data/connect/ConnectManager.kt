@@ -164,7 +164,8 @@ object ConnectManager {
             val isPlaying = p.isPlaying.value
             val queue = p.queue.value
             val shuffle = p.shuffleEnabled.value
-            val cTrack = song?.let { songToCTrack(it) }
+            val durMs = p.durationMs.value
+            val cTrack = song?.let { songToCTrack(it, durMs) }
             val cQueue = queue.take(25).map { songToCTrack(it) }
             val pos = forcedPos ?: runCatching { withContext(Dispatchers.Main) { p.currentPositionMs() } }.getOrDefault(0L)
             val vol: Double = appContext?.let { ctx ->
@@ -190,20 +191,22 @@ object ConnectManager {
 
         syncJob?.cancel()
         syncJob = scope.launch(Dispatchers.Default) {
-            // Core state changes
+            // Core state changes including duration resolution
             launch {
                 combine(
                     p.currentSong,
                     p.isPlaying,
                     p.queue,
                     p.shuffleEnabled,
-                ) { song, isPlaying, queue, shuffle ->
-                    SyncSnapshot(song, isPlaying, queue, shuffle)
+                    p.durationMs,
+                ) { song, isPlaying, queue, shuffle, durationMs ->
+                    SyncSnapshot(song, isPlaying, queue, shuffle, durationMs)
                 }.distinctUntilChanged { old, new ->
                     old.song?.videoId == new.song?.videoId &&
                     old.isPlaying == new.isPlaying &&
                     old.shuffle == new.shuffle &&
-                    old.queue.size == new.queue.size
+                    old.queue.size == new.queue.size &&
+                    old.durationMs == new.durationMs
                 }.collectLatest {
                     kotlinx.coroutines.delay(200)
                     broadcastCurrentState()
@@ -365,14 +368,25 @@ object ConnectManager {
         currentSecret = null
     }
 
-    fun songToCTrack(song: Song): CTrack = CTrack(
-        id = song.videoId,
-        title = song.title,
-        artist = song.artist,
-        thumb = song.thumbnailUrl,
-        length = song.durationText,
-        album = song.albumName,
-    )
+    fun formatMs(ms: Long): String {
+        if (ms <= 0L) return "0:00"
+        val totalSec = ms / 1000L
+        val m = totalSec / 60L
+        val s = totalSec % 60L
+        return "$m:${s.toString().padStart(2, '0')}"
+    }
+
+    fun songToCTrack(song: Song, durMs: Long? = null): CTrack {
+        val len = song.durationText?.takeIf { it.isNotBlank() } ?: durMs?.takeIf { it > 0L }?.let { formatMs(it) }
+        return CTrack(
+            id = song.videoId,
+            title = song.title,
+            artist = song.artist,
+            thumb = song.thumbnailUrl,
+            length = len,
+            album = song.albumName,
+        )
+    }
 
     fun cTrackToSong(track: CTrack): Song = Song(
         videoId = track.id,
@@ -398,5 +412,6 @@ object ConnectManager {
         val isPlaying: Boolean,
         val queue: List<Song>,
         val shuffle: Boolean,
+        val durationMs: Long = 0L,
     )
 }

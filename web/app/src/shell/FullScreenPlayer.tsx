@@ -39,7 +39,6 @@ import { getPlayingFrom } from '@/playback/queue/playingFrom';
 import { useControlling, fromCTrack } from '@/connect/connect';
 import { useShownNowPlaying } from '@/connect/shown';
 import { RemoteUpNext } from '@/connect/RemoteUpNext';
-import { DeviceIcon } from '@/connect/parts';
 
 function useBrowserFullScreen(): boolean {
   return useSyncExternalStore(
@@ -452,20 +451,6 @@ function FullScreenPlayerContent({ closing = false, onClosed }: { closing?: bool
           <div key={videoId} data-morph-fade className={`ot-swap-in flex items-center gap-3${theater ? '' : ' mt-[clamp(20px,3.2vh,32px)]'}${column ? ' max-md:mt-0' : ''}`}>
             {/* As the mini player's: the title opens the album, each credited name its artist. */}
             <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-              {remote && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setFullScreen(false);
-                    useUi.getState().toggleSidePanel('devices');
-                  }}
-                  className="mb-1.5 flex w-fit items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-0.5 text-white/90 hover:bg-white/20 hover:text-white transition-colors cursor-pointer"
-                  title="Click to view connected devices"
-                >
-                  <DeviceIcon form={remote.form} size={14} />
-                  <span className="type-caption-1 font-semibold uppercase tracking-wider text-[11px]">Playing on {remote.name || 'Device'}</span>
-                </button>
-              )}
               <div className="flex min-w-0 items-center">
                 <PageLink
                   className={`min-w-0 max-w-full self-start truncate type-[600_17px/22px] ${pageLink}`}

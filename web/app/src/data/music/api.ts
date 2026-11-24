@@ -362,7 +362,8 @@ export async function fetchTrackLinks(videoId: string): Promise<Track | null> {
   const yt = await getMusicClient();
   const panel = await yt.music.getUpNext(videoId, false);
   // The row holding this video, by either of its cuts; its catalogue cut names the album.
-  const row = (panel.contents as unknown as Raw[]).find((raw) => panelCuts(raw).some((cut) => cut.video_id === videoId));
+  const contents = (panel.contents as unknown as Raw[]) ?? [];
+  const row = contents.find((raw) => panelCuts(raw).some((cut) => cut.video_id === videoId)) ?? contents[0];
   return (row && panelCandidate(row)?.track) ?? null;
 }
 

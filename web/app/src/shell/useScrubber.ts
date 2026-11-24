@@ -3,6 +3,7 @@ import { getAudio, usePlayer } from '@/state/player';
 import { useControlling, seekRemote } from '@/connect/connect';
 import { positionAt } from '@/connect/session';
 import { lengthSec } from '@/connect/shown';
+import { trackDuration } from './nowPlayingLinks';
 
 export function clock(seconds: number): string {
   if (!Number.isFinite(seconds) || seconds < 0) return '0:00';
@@ -25,6 +26,37 @@ export function useScrubber() {
   const seek = usePlayer((s) => s.seek);
   const remote = useControlling();
   const [dragging, setDragging] = useState<number | null>(null);
+  const [resolvedDur, setResolvedDur] = useState<number>(0);
+
+  const trackId = remote?.state?.track?.id;
+  const reportedLen = remote?.state?.track?.length;
+
+  useEffect(() => {
+    if (!remote || !trackId) {
+      setResolvedDur(0);
+      return;
+    }
+    const reported = lengthSec(reportedLen);
+    if (reported > 0) {
+      setResolvedDur(reported);
+      return;
+    }
+    let cancelled = false;
+    trackDuration(trackId).then((durSec) => {
+      if (!cancelled && durSec && durSec > 0) {
+        setResolvedDur(durSec);
+        if (remote.state?.track && !remote.state.track.length) {
+          remote.state.track.length = clock(durSec);
+        }
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [remote, trackId, reportedLen]);
+
+  const reportedDur = remote ? lengthSec(reportedLen) : 0;
+  const dur = reportedDur > 0 ? reportedDur : resolvedDur;
 
   useEffect(() => {
     const element = bar.current;
@@ -32,13 +64,14 @@ export function useScrubber() {
     let frame = 0;
 
     if (remote) {
-      const dur = lengthSec(remote.state?.track?.length);
       const draw = () => {
         const time = dragging !== null && dur > 0 ? dragging * dur : positionAt(remote, Date.now()) / 1000;
         const fraction = dur > 0 ? Math.min(1, Math.max(0, time / dur)) : 0;
         element.style.setProperty('--progress', String(fraction));
         if (elapsed.current) elapsed.current.textContent = clock(time);
-        if (remaining.current) remaining.current.textContent = `-${clock(Math.max(0, dur - time))}`;
+        if (remaining.current) {
+          remaining.current.textContent = dur > 0 ? `-${clock(Math.max(0, dur - time))}` : '';
+        }
         if (remote.state?.playing || dragging !== null) frame = requestAnimationFrame(draw);
       };
       draw();
@@ -63,7 +96,7 @@ export function useScrubber() {
         audio.removeEventListener('seeked', onSeeked);
       };
     }
-  }, [status, deck, dragging, remote]);
+  }, [status, deck, dragging, remote, dur]);
 
   const fractionAt = (event: React.PointerEvent<HTMLElement>) => {
     const rect = event.currentTarget.getBoundingClientRect();
@@ -83,8 +116,8 @@ export function useScrubber() {
       if (dragging === null) return;
       const frac = fractionAt(e);
       if (remote) {
-        const dur = lengthSec(remote.state?.track?.length);
-        if (dur > 0) seekRemote(frac * dur * 1000);
+        const durToUse = reportedDur > 0 ? reportedDur : resolvedDur;
+        if (durToUse > 0) seekRemote(frac * durToUse * 1000);
       } else {
         const audio = getAudio();
         if (audio && Number.isFinite(audio.duration)) seek(frac * audio.duration);
