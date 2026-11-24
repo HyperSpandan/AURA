@@ -98,12 +98,12 @@ interface RowProps {
   onPlayRow: () => void;
   reordering?: boolean;
   dragging?: boolean;
-  dragOffset?: number;
+  shiftY?: number;
   onMove?: (fromIndex: number, toIndex: number) => void;
-  onGripPointerDown?: (index: number, e: PointerEvent<HTMLButtonElement>) => void;
-  onGripPointerMove?: (index: number, e: PointerEvent<HTMLButtonElement>) => void;
-  onGripPointerUp?: (index: number, e: PointerEvent<HTMLButtonElement>) => void;
-  onGripPointerCancel?: () => void;
+  onDragPointerDown?: (index: number, e: PointerEvent<HTMLElement>) => void;
+  onDragPointerMove?: (e: PointerEvent<HTMLElement>) => void;
+  onDragPointerUp?: (e: PointerEvent<HTMLElement>) => void;
+  onDragPointerCancel?: () => void;
 }
 
 function Row({
@@ -115,12 +115,12 @@ function Row({
   onPlayRow,
   reordering,
   dragging,
-  dragOffset = 0,
+  shiftY = 0,
   onMove,
-  onGripPointerDown,
-  onGripPointerMove,
-  onGripPointerUp,
-  onGripPointerCancel,
+  onDragPointerDown,
+  onDragPointerMove,
+  onDragPointerUp,
+  onDragPointerCancel,
 }: RowProps) {
   const current = usePlayer((s) => s.nowPlaying?.videoId === track.videoId);
   const playing = usePlayer((s) => s.nowPlaying?.videoId === track.videoId && (s.status === 'playing' || s.status === 'buffering'));
@@ -146,12 +146,15 @@ function Row({
 
   return (
     <div
-      className={`${row} ${rowVariant[variant]}${dragging ? ' z-20 bg-[color-mix(in_srgb,var(--systemPrimary)_14%,rgb(24_24_28))] shadow-[0_10px_28px_rgb(0_0_0/0.45)] ring-1 ring-white/15' : ''}${reordering ? ' select-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-key/70' : ''}`}
+      className={`${row} ${rowVariant[variant]}${dragging ? ' z-30 bg-[color-mix(in_srgb,var(--systemPrimary)_14%,rgb(24_24_28))] shadow-[0_12px_30px_rgb(0_0_0/0.5)] ring-1 ring-white/20' : ''}${reordering ? ' cursor-grab active:cursor-grabbing select-none touch-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-key/70' : ''}`}
       style={
         dragging
-          ? { transform: `translateY(${dragOffset}px) scale(1.015)` }
+          ? { transform: `translateY(${shiftY}px) scale(1.015)` }
           : reordering
-            ? { transition: 'transform 140ms ease-out' }
+            ? {
+                transform: shiftY !== 0 ? `translateY(${shiftY}px)` : undefined,
+                transition: 'transform 160ms cubic-bezier(0.2, 0, 0, 1)',
+              }
             : undefined
       }
       data-variant={variant}
@@ -159,11 +162,31 @@ function Row({
       data-unavailable={unavailable}
       title={unavailable === 'matching' ? 'Looking for this on YouTube Music…' : unavailable === 'missing' ? 'Not found on YouTube Music' : undefined}
       tabIndex={reordering ? 0 : undefined}
+      onPointerDown={
+        reordering
+          ? (e) => {
+              const target = e.target as HTMLElement;
+              if (target.closest('button[data-arrow], a')) return;
+              onDragPointerDown?.(index, e);
+            }
+          : undefined
+      }
+      onPointerMove={reordering ? (e) => onDragPointerMove?.(e) : undefined}
+      onPointerUp={reordering ? (e) => onDragPointerUp?.(e) : undefined}
+      onPointerCancel={reordering ? () => onDragPointerCancel?.() : undefined}
       onKeyDown={handleArrowKey}
       onDoubleClick={reordering ? undefined : onPlay}
     >
       <div className={`${cell} gap-3`}>
-        <div className={`relative grid w-10 shrink-0 place-items-center${variant === 'playlist' ? ' ms-[7px]' : ''}`}>
+        {reordering && (
+          <span
+            className="ms-1.5 grid size-6 shrink-0 place-items-center text-secondary/80"
+            aria-hidden="true"
+          >
+            <GripVertical size={16} />
+          </span>
+        )}
+        <div className={`relative grid w-10 shrink-0 place-items-center${variant === 'playlist' && !reordering ? ' ms-[7px]' : ''}`}>
           {variant === 'playlist' ? (
             <>
               <Artwork src={track.thumbnail ?? fallbackArtwork ?? null} displayWidth={40} radius="var(--radius-artwork-small)" />
@@ -250,6 +273,7 @@ function Row({
           >
             <button
               type="button"
+              data-arrow="up"
               disabled={position <= 1}
               onClick={() => onMove(position - 1, position - 2)}
               aria-label={`Move ${track.title} up`}
@@ -259,25 +283,13 @@ function Row({
             </button>
             <button
               type="button"
+              data-arrow="down"
               disabled={position >= total}
               onClick={() => onMove(position - 1, position)}
               aria-label={`Move ${track.title} down`}
               className="grid size-7 place-items-center rounded-lg text-secondary transition hover:bg-quinary hover:text-primary disabled:opacity-30"
             >
               <ArrowDown size={14} />
-            </button>
-            <button
-              type="button"
-              aria-label={`Reorder ${track.title}`}
-              title="Drag to reorder, or use arrow keys"
-              onKeyDown={handleArrowKey}
-              onPointerDown={(e) => onGripPointerDown?.(index, e)}
-              onPointerMove={(e) => onGripPointerMove?.(index, e)}
-              onPointerUp={(e) => onGripPointerUp?.(index, e)}
-              onPointerCancel={() => onGripPointerCancel?.()}
-              className="grid size-7 touch-none cursor-grab place-items-center rounded-lg text-secondary transition hover:bg-quinary hover:text-primary active:cursor-grabbing"
-            >
-              <GripVertical size={15} />
             </button>
           </div>
         ) : (
@@ -317,8 +329,22 @@ function Header() {
  */
 export function TrackList({ tracks, variant, fallbackArtwork, fallbackArtists, onNearEnd, source, reordering, onMove }: TrackListProps) {
   const rowHeight = ROW_HEIGHT[variant];
-  const dragRef = useRef<{ origIdx: number; startPos: number; startY: number; order: number[] } | null>(null);
-  const [dragVisual, setDragVisual] = useState<{ origIdx: number; offset: number; order: number[] } | null>(null);
+  const container = useRef<HTMLDivElement>(null);
+  const [scrollElement, setScrollElement] = useState<HTMLElement | null>(null);
+  useEffect(() => setScrollElement(document.getElementById('scrollable-page')), []);
+
+  const dragRef = useRef<{
+    fromIndex: number;
+    startY: number;
+    startScrollTop: number;
+    hoverIndex: number;
+    dy: number;
+  } | null>(null);
+  const [dragVisual, setDragVisual] = useState<{
+    fromIndex: number;
+    hoverIndex: number;
+    dy: number;
+  } | null>(null);
 
   useEffect(() => {
     if (!reordering) {
@@ -327,54 +353,68 @@ export function TrackList({ tracks, variant, fallbackArtwork, fallbackArtists, o
     }
   }, [reordering]);
 
-  const handleGripPointerDown = (visualPos: number, e: PointerEvent<HTMLButtonElement>) => {
+  const handleDragPointerDown = (index: number, e: PointerEvent<HTMLElement>) => {
     if (!reordering || e.button !== 0) return;
     e.preventDefault();
-    e.stopPropagation();
     e.currentTarget.setPointerCapture(e.pointerId);
-    const order = dragVisual?.order ?? tracks.map((_, i) => i);
-    const origIdx = order[visualPos]!;
-    dragRef.current = { origIdx, startPos: visualPos, startY: e.clientY, order: [...order] };
-    setDragVisual({ origIdx, offset: 0, order: [...order] });
+    dragRef.current = {
+      fromIndex: index,
+      startY: e.clientY,
+      startScrollTop: scrollElement?.scrollTop ?? 0,
+      hoverIndex: index,
+      dy: 0,
+    };
+    setDragVisual({ fromIndex: index, hoverIndex: index, dy: 0 });
   };
 
-  const handleGripPointerMove = (_visualPos: number, e: PointerEvent<HTMLButtonElement>) => {
+  const handleDragPointerMove = (e: PointerEvent<HTMLElement>) => {
     const drag = dragRef.current;
     if (!drag) return;
-    let offset = e.clientY - drag.startY;
-    const at = drag.order.indexOf(drag.origIdx);
-    const steps = Math.round(offset / rowHeight);
-    const target = Math.max(0, Math.min(drag.order.length - 1, at + steps));
-    if (target !== at) {
-      drag.order.splice(at, 1);
-      drag.order.splice(target, 0, drag.origIdx);
-      drag.startY += (target - at) * rowHeight;
-      offset -= (target - at) * rowHeight;
+    if (scrollElement) {
+      const rect = scrollElement.getBoundingClientRect();
+      const edge = 72;
+      if (e.clientY < rect.top + edge) {
+        scrollElement.scrollTop = Math.max(0, scrollElement.scrollTop - 10);
+      } else if (e.clientY > rect.bottom - edge) {
+        scrollElement.scrollTop += 10;
+      }
     }
-    setDragVisual({ origIdx: drag.origIdx, offset, order: [...drag.order] });
+    const scrollDelta = (scrollElement?.scrollTop ?? 0) - drag.startScrollTop;
+    const dy = e.clientY - drag.startY + scrollDelta;
+    const rawTarget = drag.fromIndex + Math.round(dy / rowHeight);
+    const hoverIndex = Math.max(0, Math.min(tracks.length - 1, rawTarget));
+    drag.dy = dy;
+    drag.hoverIndex = hoverIndex;
+    setDragVisual({ fromIndex: drag.fromIndex, hoverIndex, dy });
   };
 
-  const handleGripPointerUp = (_visualPos: number, e: PointerEvent<HTMLButtonElement>) => {
+  const handleDragPointerUp = (e: PointerEvent<HTMLElement>) => {
     const drag = dragRef.current;
     if (!drag) return;
     if (e.currentTarget.hasPointerCapture(e.pointerId)) {
       e.currentTarget.releasePointerCapture(e.pointerId);
     }
-    const from = drag.startPos;
-    const to = drag.order.indexOf(drag.origIdx);
+    const { fromIndex, hoverIndex } = drag;
     dragRef.current = null;
     setDragVisual(null);
-    if (from >= 0 && to >= 0 && from !== to) {
-      onMove?.(from, to);
+    if (fromIndex !== hoverIndex) {
+      onMove?.(fromIndex, hoverIndex);
     }
   };
 
-  const handleGripPointerCancel = () => {
+  const handleDragPointerCancel = () => {
     dragRef.current = null;
     setDragVisual(null);
   };
 
-  const orderedIndices = dragVisual && dragVisual.order.length === tracks.length ? dragVisual.order : null;
+  const shiftForIndex = (i: number): number => {
+    if (!dragVisual) return 0;
+    const { fromIndex, hoverIndex, dy } = dragVisual;
+    if (i === fromIndex) return dy;
+    if (fromIndex < hoverIndex && i > fromIndex && i <= hoverIndex) return -rowHeight;
+    if (fromIndex > hoverIndex && i >= hoverIndex && i < fromIndex) return rowHeight;
+    return 0;
+  };
   const playRow = (i: number) => {
     // Rows from another catalogue that found no YouTube Music song stay out of the queue.
     if (source) {
@@ -384,9 +424,6 @@ export function TrackList({ tracks, variant, fallbackArtwork, fallbackArtists, o
     const track = tracks[i]!;
     playTrack(track.artists.length || !fallbackArtists ? track : { ...track, artists: fallbackArtists }, fallbackArtwork);
   };
-  const container = useRef<HTMLDivElement>(null);
-  const [scrollElement, setScrollElement] = useState<HTMLElement | null>(null);
-  useEffect(() => setScrollElement(document.getElementById('scrollable-page')), []);
   const virtual = tracks.length >= VIRTUALIZE_FROM;
 
   const virtualizer = useVirtualizer({
@@ -411,8 +448,7 @@ export function TrackList({ tracks, variant, fallbackArtwork, fallbackArtists, o
         {virtual ? (
           <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
             {items.map((item) => {
-              const origIdx = orderedIndices ? orderedIndices[item.index]! : item.index;
-              const isDragged = dragVisual?.origIdx === origIdx;
+              const isDragged = dragVisual?.fromIndex === item.index;
               return (
               <div
                 key={item.key}
@@ -421,25 +457,25 @@ export function TrackList({ tracks, variant, fallbackArtwork, fallbackArtists, o
                   top: 0,
                   left: 0,
                   right: 0,
-                  zIndex: isDragged ? 20 : undefined,
+                  zIndex: isDragged ? 30 : undefined,
                   transform: `translateY(${item.start - virtualizer.options.scrollMargin}px)`,
                 }}
               >
                 <Row
-                  track={tracks[origIdx]!}
+                  track={tracks[item.index]!}
                   variant={variant}
                   position={item.index + 1}
                   total={tracks.length}
                   fallbackArtwork={fallbackArtwork}
-                  onPlayRow={() => playRow(origIdx)}
+                  onPlayRow={() => playRow(item.index)}
                   reordering={reordering}
                   dragging={isDragged}
-                  dragOffset={isDragged ? dragVisual.offset : 0}
+                  shiftY={shiftForIndex(item.index)}
                   onMove={onMove}
-                  onGripPointerDown={handleGripPointerDown}
-                  onGripPointerMove={handleGripPointerMove}
-                  onGripPointerUp={handleGripPointerUp}
-                  onGripPointerCancel={handleGripPointerCancel}
+                  onDragPointerDown={handleDragPointerDown}
+                  onDragPointerMove={handleDragPointerMove}
+                  onDragPointerUp={handleDragPointerUp}
+                  onDragPointerCancel={handleDragPointerCancel}
                 />
               </div>
               );
@@ -448,33 +484,28 @@ export function TrackList({ tracks, variant, fallbackArtwork, fallbackArtists, o
         ) : (
           (() => {
             const seenCounts = new Map<string, number>();
-            const baseKeys = tracks.map((track) => {
+            return tracks.map((track, i) => {
               const base = track.videoId || `${track.title}::${track.artists.map((a) => a.name).join(',')}`;
               const occ = seenCounts.get(base) ?? 0;
               seenCounts.set(base, occ + 1);
-              return `${base}#${occ}`;
-            });
-            const indices = orderedIndices ?? tracks.map((_, i) => i);
-            return indices.map((origIdx, visualPos) => {
-              const track = tracks[origIdx]!;
-              const isDragged = dragVisual?.origIdx === origIdx;
+              const isDragged = dragVisual?.fromIndex === i;
               return (
                 <Row
-                  key={baseKeys[origIdx]!}
+                  key={`${base}#${occ}`}
                   track={track}
                   variant={variant}
-                  position={visualPos + 1}
+                  position={i + 1}
                   total={tracks.length}
                   fallbackArtwork={fallbackArtwork}
-                  onPlayRow={() => playRow(origIdx)}
+                  onPlayRow={() => playRow(i)}
                   reordering={reordering}
                   dragging={isDragged}
-                  dragOffset={isDragged ? dragVisual.offset : 0}
+                  shiftY={shiftForIndex(i)}
                   onMove={onMove}
-                  onGripPointerDown={handleGripPointerDown}
-                  onGripPointerMove={handleGripPointerMove}
-                  onGripPointerUp={handleGripPointerUp}
-                  onGripPointerCancel={handleGripPointerCancel}
+                  onDragPointerDown={handleDragPointerDown}
+                  onDragPointerMove={handleDragPointerMove}
+                  onDragPointerUp={handleDragPointerUp}
+                  onDragPointerCancel={handleDragPointerCancel}
                 />
               );
             });
