@@ -146,7 +146,7 @@ fun DownloadAllButton(songs: List<Song>, modifier: Modifier = Modifier, list: Do
     Row(
         modifier
             .height(44.dp)
-            .clip(RoundedCornerShape(12.dp))
+            .clip(CircleShape)
             .background(scheme.surfaceContainerHighest)
             .clickable(enabled = wanted.isNotEmpty()) {
                 haptics.press()
@@ -184,7 +184,7 @@ fun AddSongsButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
     Row(
         modifier
             .height(44.dp)
-            .clip(RoundedCornerShape(12.dp))
+            .clip(CircleShape)
             .background(MaterialTheme.colorScheme.surfaceContainerHighest)
             .clickable { haptics.tick(); onClick() }
             .padding(horizontal = 14.dp),
@@ -320,12 +320,12 @@ internal fun AddRow(song: Song, added: Boolean, progress: com.aura.data.spotify.
     }
 }
 
-/** A square-rounded button the height of the others in the row. */
+/** A round button the height of the others in the row. */
 @Composable
 private fun RoundToolButton(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, onClick: () -> Unit) {
     val haptics = rememberHaptics()
     Box(
-        Modifier.size(44.dp).clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceContainerHighest)
+        Modifier.size(44.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceContainerHighest)
             .clickable { haptics.tick(); onClick() },
         contentAlignment = Alignment.Center,
     ) { Icon(icon, label, Modifier.size(20.dp)) }
@@ -343,7 +343,7 @@ private fun ListHeart(saved: Boolean, onClick: () -> Unit) {
         pop.animateTo(1f, androidx.compose.animation.core.spring(dampingRatio = 0.4f, stiffness = 500f))
     }
     Box(
-        Modifier.size(44.dp).clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceContainerHighest)
+        Modifier.size(44.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceContainerHighest)
             .clickable {
                 haptics.pattern(if (saved) Haptics.Pattern.OFF else Haptics.Pattern.LIKE)
                 if (!saved) bursts++
