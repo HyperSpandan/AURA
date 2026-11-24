@@ -1,11 +1,12 @@
 import { create } from 'zustand';
 import type { Track } from '@/data/music/types';
-import { getAudio, partyPlayer, setConnectHooks, usePlayer } from '@/state/player';
+import { getAudio, partyPlayer, setConnectHooks, usePlayer, type NowPlaying } from '@/state/player';
 import { toRoomTrack } from '@/together/room';
 import { qualityLabel } from '@/shell/quality';
 import { ConnectGroup } from './group';
 import type { CTrack } from './messages';
 import { ConnectSession, controllingOf, type ConnectPlayer, type ConnectView, type Device, type Snapshot } from './session';
+import { remoteNowPlaying } from './shown';
 
 /**
  * Connect on the web: this browser is one of the person's devices, sees what
@@ -146,6 +147,7 @@ function queuedRow(at: number, id: string): number | null {
 
 const webPlayer: ConnectPlayer = {
   snapshot(): Snapshot | null {
+    if (controllingOf(useConnect.getState().view)) return null;
     const { queue, index, nowPlaying, volume, shuffle, repeat, status } = usePlayer.getState();
     if (!nowPlaying) return null;
     const entry = queue[index];
@@ -270,6 +272,34 @@ function stop(): void {
   useConnect.setState({ view: null });
 }
 
+function syncRemoteToPlayer(view: ConnectView | null): void {
+  const remote = controllingOf(view);
+  if (!remote) return;
+  const state = remote.state;
+  if (!state?.track) return;
+  const np = remoteNowPlaying(remote);
+  const player = usePlayer.getState();
+  const audio = getAudio();
+  if (player.status === 'playing' && audio && !audio.paused) return;
+
+  const playing = !!state.playing;
+  const status = playing ? 'playing' : 'paused';
+  if (
+    player.nowPlaying?.videoId !== np.videoId ||
+    player.nowPlaying?.title !== np.title ||
+    player.nowPlaying?.durationSec !== np.durationSec ||
+    player.status !== status ||
+    player.shuffle !== !!state.shuffle
+  ) {
+    usePlayer.setState({
+      nowPlaying: np,
+      status,
+      shuffle: !!state.shuffle,
+      repeat: (state.repeat as any) || 'off',
+    });
+  }
+}
+
 /** (Re)starts Connect from what's saved: on load, and after any change to the group or the switch. */
 function restart(): void {
   starting = starting.then(async () => {
@@ -282,7 +312,10 @@ function restart(): void {
     useConnect.setState({ link: { app: group.appLink, web: group.webLink } });
     if (!saved.enabled) return;
     const s = new ConnectSession(group, saved.id, saved.name, 'web', webPlayer, (view) => {
-      if (session === s) useConnect.setState({ view });
+      if (session === s) {
+        useConnect.setState({ view });
+        syncRemoteToPlayer(view);
+      }
     }, notice, undefined, undefined, undefined, (secret) => joinGroup(secret, false), former);
     session = s;
     s.start();
@@ -337,12 +370,39 @@ export function initConnect(): void {
           const ct = toCTrack(control.track);
           if (!ct) return false;
           s.playTrackOn(target.id, ct);
+          const np: NowPlaying = {
+            videoId: control.track.videoId,
+            title: control.track.title,
+            artist: control.track.artists?.map((a) => a.name).join(', ') || '',
+            artworkUrl: control.track.thumbnail || null,
+            durationSec: control.track.durationSec || 0,
+            streamInfo: null,
+          };
+          usePlayer.setState({
+            nowPlaying: np,
+            status: 'playing',
+          });
           return true;
         }
         case 'playTracks': {
           const cts = control.tracks.map((t) => toCTrack(t)).filter((t): t is CTrack => !!t);
           if (!cts.length) return false;
           s.playTracksOn(target.id, cts, control.startIndex);
+          const activeTrack = control.tracks[control.startIndex] ?? control.tracks[0];
+          if (activeTrack) {
+            const np: NowPlaying = {
+              videoId: activeTrack.videoId,
+              title: activeTrack.title,
+              artist: activeTrack.artists?.map((a) => a.name).join(', ') || '',
+              artworkUrl: activeTrack.thumbnail || null,
+              durationSec: activeTrack.durationSec || 0,
+              streamInfo: null,
+            };
+            usePlayer.setState({
+              nowPlaying: np,
+              status: 'playing',
+            });
+          }
           return true;
         }
         case 'playNext': {
@@ -469,6 +529,18 @@ export function playOnActiveRemote(track: Track): boolean {
   const ct = toCTrack(track);
   if (!ct) return false;
   session.playTrackOn(target.id, ct);
+  const np: NowPlaying = {
+    videoId: track.videoId,
+    title: track.title,
+    artist: track.artists?.map((a) => a.name).join(', ') || '',
+    artworkUrl: track.thumbnail || null,
+    durationSec: track.durationSec || 0,
+    streamInfo: null,
+  };
+  usePlayer.setState({
+    nowPlaying: np,
+    status: 'playing',
+  });
   return true;
 }
 
@@ -478,5 +550,20 @@ export function playListOnActiveRemote(tracks: Track[], startIndex = 0): boolean
   const cts = tracks.map((t) => toCTrack(t)).filter((t): t is CTrack => !!t);
   if (!cts.length) return false;
   session.playTracksOn(target.id, cts, startIndex);
+  const activeTrack = tracks[startIndex] ?? tracks[0];
+  if (activeTrack) {
+    const np: NowPlaying = {
+      videoId: activeTrack.videoId,
+      title: activeTrack.title,
+      artist: activeTrack.artists?.map((a) => a.name).join(', ') || '',
+      artworkUrl: activeTrack.thumbnail || null,
+      durationSec: activeTrack.durationSec || 0,
+      streamInfo: null,
+    };
+    usePlayer.setState({
+      nowPlaying: np,
+      status: 'playing',
+    });
+  }
   return true;
 }

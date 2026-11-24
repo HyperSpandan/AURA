@@ -111,7 +111,7 @@ export interface Timings {
 }
 /** How long a play or pause pressed here outlasts reports from before it landed. */
 const GUESS_MS = 1_500;
-interface Guess { until: number; playing?: boolean; shuffle?: boolean; repeat?: string }
+interface Guess { until: number; playing?: boolean; shuffle?: boolean; repeat?: string; trackId?: string }
 /** How often a device left in a former group is told again where the others went. */
 const FORWARD_MS = 60_000;
 const DEFAULT_TIMINGS: Timings = { presenceMs: 30_000, goneMs: 75_000, stateMs: 5_000, commandMs: 5_000, transferMs: 8_000, tickMs: 1_000 };
@@ -280,7 +280,7 @@ export class ConnectSession {
         since: now,
       };
       this.setDevice({ ...target, state: nextState, receivedAt: now, since: now });
-      this.guess(deviceId, { playing: true });
+      this.guess(deviceId, { playing: true, trackId: track.id });
     }
     this.command(deviceId, 'playTrack', { track });
   }
@@ -299,7 +299,7 @@ export class ConnectSession {
         since: now,
       };
       this.setDevice({ ...target, state: nextState, receivedAt: now, since: now });
-      this.guess(deviceId, { playing: true });
+      this.guess(deviceId, { playing: true, trackId: track.id });
     }
     this.command(deviceId, 'playTracks', { tracks, pos: startIndex });
   }
@@ -404,13 +404,16 @@ export class ConnectSession {
         return;
       }
       case 'state': {
-        // A play or pause pressed here a moment ago: a report from before it landed doesn't undo it on screen.
+        // A play, pause or track command pressed here a moment ago: an old report doesn't undo it on screen.
         const guess = this.guesses.get(msg.from);
         if (guess && now >= guess.until) this.guesses.delete(msg.from);
         else if (guess) {
+          if (guess.trackId && msg.track?.id !== guess.trackId) {
+            return this.touch(msg.from, now);
+          }
           if (guess.playing !== undefined && !!msg.playing !== guess.playing) return this.touch(msg.from, now);
           const confirmed = (guess.shuffle === undefined || !!msg.shuffle === guess.shuffle) && (guess.repeat === undefined || (msg.repeat ?? 'off') === guess.repeat);
-          if (confirmed) this.guesses.delete(msg.from);
+          if (confirmed && (!guess.trackId || msg.track?.id === guess.trackId)) this.guesses.delete(msg.from);
           else msg = { ...msg, ...(guess.shuffle !== undefined ? { shuffle: guess.shuffle } : {}), ...(guess.repeat !== undefined ? { repeat: guess.repeat } : {}) };
         }
         const base: Device = known ?? { id: msg.from, name: '', form: '', lastSeen: now, state: null, receivedAt: 0, since: 0 };

@@ -156,12 +156,12 @@ object ConnectManager {
         startSyncLoop()
     }
 
-    fun broadcastCurrentState(forcedPos: Long? = null) {
+    fun broadcastCurrentState(forcedPos: Long? = null, forcedPlaying: Boolean? = null) {
         val p = player ?: return
         val s = session ?: return
         scope.launch(Dispatchers.Default) {
             val song = p.currentSong.value
-            val isPlaying = p.isPlaying.value
+            val isPlaying = forcedPlaying ?: p.isPlaying.value
             val queue = p.queue.value
             val shuffle = p.shuffleEnabled.value
             val durMs = p.durationMs.value
@@ -186,6 +186,32 @@ object ConnectManager {
         }
     }
 
+    fun broadcastStateExplicit(
+        track: CTrack?,
+        playing: Boolean,
+        pos: Long,
+        queue: List<CTrack>? = null,
+    ) {
+        val s = session ?: return
+        scope.launch(Dispatchers.Default) {
+            val vol: Double = appContext?.let { ctx ->
+                val am = ctx.getSystemService(android.media.AudioManager::class.java)
+                val max = am?.getStreamMaxVolume(android.media.AudioManager.STREAM_MUSIC)?.coerceAtLeast(1) ?: 1
+                val cur = am?.getStreamVolume(android.media.AudioManager.STREAM_MUSIC) ?: max
+                (cur.toDouble() / max.toDouble()).coerceIn(0.0, 1.0)
+            } ?: 1.0
+
+            s.broadcastState(
+                track = track,
+                playing = playing,
+                pos = pos,
+                queue = queue ?: emptyList(),
+                volume = vol,
+                shuffle = player?.shuffleEnabled?.value ?: false,
+            )
+        }
+    }
+
     private fun startSyncLoop() {
         val p = player ?: return
 
@@ -201,14 +227,7 @@ object ConnectManager {
                     p.durationMs,
                 ) { song, isPlaying, queue, shuffle, durationMs ->
                     SyncSnapshot(song, isPlaying, queue, shuffle, durationMs)
-                }.distinctUntilChanged { old, new ->
-                    old.song?.videoId == new.song?.videoId &&
-                    old.isPlaying == new.isPlaying &&
-                    old.shuffle == new.shuffle &&
-                    old.queue.size == new.queue.size &&
-                    old.durationMs == new.durationMs
-                }.collectLatest {
-                    kotlinx.coroutines.delay(200)
+                }.distinctUntilChanged().collectLatest {
                     broadcastCurrentState()
                 }
             }
@@ -216,12 +235,11 @@ object ConnectManager {
             // Immediately broadcast on seeks and skips
             launch {
                 p.jumps.collect {
-                    kotlinx.coroutines.delay(80)
                     broadcastCurrentState()
                 }
             }
 
-            // Periodic heartbeat broadcast every 5s while playing so remote stay in lockstep
+            // Periodic heartbeat broadcast every 5s while playing so remotes stay in lockstep
             launch {
                 while (true) {
                     kotlinx.coroutines.delay(5000)
@@ -237,17 +255,24 @@ object ConnectManager {
         val p = player ?: return
         scope.launch(Dispatchers.Main) {
             when (cmd.action) {
-                "play" -> p.play()
-                "pause" -> p.pause()
-                "toggle" -> if (p.isPlaying.value) p.pause() else p.play()
+                "play" -> {
+                    p.play()
+                    broadcastCurrentState(forcedPlaying = true)
+                }
+                "pause" -> {
+                    p.pause()
+                    broadcastCurrentState(forcedPlaying = false)
+                }
+                "toggle" -> {
+                    val willPlay = !p.isPlaying.value
+                    if (willPlay) p.play() else p.pause()
+                    broadcastCurrentState(forcedPlaying = willPlay)
+                }
                 "next" -> p.skipNext()
                 "previous" -> p.skipPrevious()
                 "seek" -> cmd.pos?.let {
                     p.seekTo(it)
-                    scope.launch(Dispatchers.Default) {
-                        kotlinx.coroutines.delay(120)
-                        broadcastCurrentState(forcedPos = it)
-                    }
+                    broadcastCurrentState(forcedPos = it)
                 }
                 "shuffle" -> p.cycleShuffle()
                 "repeat" -> p.cycleRepeatMode()
@@ -258,20 +283,18 @@ object ConnectManager {
                             val max = am.getStreamMaxVolume(android.media.AudioManager.STREAM_MUSIC).coerceAtLeast(1)
                             val target = kotlin.math.round(vol * max).toInt().coerceIn(0, max)
                             am.setStreamVolume(android.media.AudioManager.STREAM_MUSIC, target, 0)
-                            scope.launch(Dispatchers.Default) {
-                                kotlinx.coroutines.delay(80)
-                                broadcastCurrentState()
-                            }
+                            broadcastCurrentState()
                         }
                     }
                 }
                 "playTrack" -> cmd.track?.let { ct ->
                     val song = cTrackToSong(ct)
                     p.play(song, "Connected device")
-                    scope.launch(Dispatchers.Default) {
-                        kotlinx.coroutines.delay(120)
-                        broadcastCurrentState()
-                    }
+                    broadcastStateExplicit(
+                        track = ct,
+                        playing = true,
+                        pos = 0L,
+                    )
                 }
                 "playTracks", "load" -> {
                     val tracks = cmd.tracks ?: cmd.track?.let { listOf(it) }
@@ -279,10 +302,13 @@ object ConnectManager {
                         val songs = tracks.map { cTrackToSong(it) }
                         val startIndex = cmd.pos?.toInt()?.coerceIn(0, songs.size - 1) ?: 0
                         p.playAll(songs, startIndex = startIndex, shuffle = false, source = "Connected device")
-                        scope.launch(Dispatchers.Default) {
-                            kotlinx.coroutines.delay(120)
-                            broadcastCurrentState()
-                        }
+                        val currentCTrack = tracks.getOrNull(startIndex) ?: tracks.first()
+                        broadcastStateExplicit(
+                            track = currentCTrack,
+                            playing = true,
+                            pos = 0L,
+                            queue = tracks.drop(startIndex + 1),
+                        )
                     }
                 }
                 "playNext" -> {
@@ -290,10 +316,7 @@ object ConnectManager {
                     if (!tracks.isNullOrEmpty()) {
                         val songs = tracks.map { cTrackToSong(it) }
                         songs.reversed().forEach { p.playNext(it) }
-                        scope.launch(Dispatchers.Default) {
-                            kotlinx.coroutines.delay(120)
-                            broadcastCurrentState()
-                        }
+                        broadcastCurrentState()
                     }
                 }
                 "addToQueue" -> {
@@ -301,28 +324,19 @@ object ConnectManager {
                     if (!tracks.isNullOrEmpty()) {
                         val songs = tracks.map { cTrackToSong(it) }
                         songs.forEach { p.addToQueue(it) }
-                        scope.launch(Dispatchers.Default) {
-                            kotlinx.coroutines.delay(120)
-                            broadcastCurrentState()
-                        }
+                        broadcastCurrentState()
                     }
                 }
                 "jump" -> {
                     cmd.pos?.toInt()?.let { index ->
                         p.playQueueItem(index)
-                        scope.launch(Dispatchers.Default) {
-                            kotlinx.coroutines.delay(120)
-                            broadcastCurrentState()
-                        }
+                        broadcastCurrentState()
                     }
                 }
                 "remove" -> {
                     cmd.pos?.toInt()?.let { index ->
                         p.removeQueueItem(index)
-                        scope.launch(Dispatchers.Default) {
-                            kotlinx.coroutines.delay(120)
-                            broadcastCurrentState()
-                        }
+                        broadcastCurrentState()
                     }
                 }
             }
