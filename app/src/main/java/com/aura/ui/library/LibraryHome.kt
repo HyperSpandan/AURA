@@ -3,9 +3,20 @@ package com.aura.ui.library
 import com.aura.data.library.LikedSync
 import com.aura.ui.components.pinnedToTop
 import com.aura.ui.components.menuClickable
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.zIndex
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.material.icons.rounded.DragHandle
+import androidx.compose.material.icons.rounded.Reorder
+import kotlin.math.roundToInt
 import androidx.compose.material.icons.rounded.PushPin
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.automirrored.rounded.PlaylistPlay
@@ -1108,6 +1119,20 @@ fun LocalPlaylistScreen(id: String, contentPadding: PaddingValues, actions: Song
     var order by remember(id) { mutableStateOf(com.aura.ui.browse.ListOrder.DEFAULT) }
     var sortOpen by remember { mutableStateOf(false) }
     var moreOpen by remember { mutableStateOf(false) }
+    var reordering by remember(id) { mutableStateOf(false) }
+    if ((searching || playlist.spotifyId != null || songs.size <= 1) && reordering) reordering = false
+    if (reordering && order != com.aura.ui.browse.ListOrder.DEFAULT) order = com.aura.ui.browse.ListOrder.DEFAULT
+    val haptics = com.aura.ui.components.rememberHaptics()
+    val dragOrder = remember { mutableStateListOf<Int>() }
+    var draggingKey by remember { mutableStateOf<String?>(null) }
+    var dragStartPos by remember { mutableIntStateOf(0) }
+    var dragOffset by remember { mutableFloatStateOf(0f) }
+    LaunchedEffect(songs, reordering) {
+        if (draggingKey == null) {
+            dragOrder.clear()
+            dragOrder.addAll(songs.indices)
+        }
+    }
     val listState = androidx.compose.foundation.lazy.rememberLazyListState()
     LaunchedEffect(searching, query) {
         if (searching) listState.scrollToItem(0)
@@ -1192,7 +1217,8 @@ fun LocalPlaylistScreen(id: String, contentPadding: PaddingValues, actions: Song
             if (playlist.spotifyId != null) scope.launch(kotlinx.coroutines.Dispatchers.IO) { com.aura.ui.spotify.SpotifyConnection.syncPlaylists(force = true) }
             else if (signedIn && remoteId != null) PlaylistSync.refresh(id)
         },
-        onAddSongs = { adding = true }, onRename = { renaming = true }, onDelete = { deleting = true },
+        onAddSongs = { adding = true }, onReorder = { order = com.aura.ui.browse.ListOrder.DEFAULT; reordering = true },
+        onRename = { renaming = true }, onDelete = { deleting = true },
         onShare = share, onDismiss = { moreOpen = false })
     // Where the playlist stands with YouTube Music, under its cover.
     val status: (@Composable () -> Unit)? = when {
@@ -1236,18 +1262,24 @@ fun LocalPlaylistScreen(id: String, contentPadding: PaddingValues, actions: Song
         com.aura.ui.browse.CollapsingBar(playlist.name, listState, onBack, forceCollapsed = searching,
             artworkBehind = !(playlist.coverUrl ?: songs.firstOrNull()?.thumbnailUrl).isNullOrBlank()) {
             Row(Modifier.height(48.dp).glass(androidx.compose.foundation.shape.CircleShape).padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = { if (searching) search.close() else search.open = true }) {
-                    Icon(if (searching) Icons.Rounded.Close else Icons.Rounded.Search, "Search this list")
-                }
-                Box {
-                    IconButton(onClick = { sortOpen = true }) { Icon(Icons.AutoMirrored.Filled.Sort, "Sort") }
-                    androidx.compose.material3.DropdownMenu(sortOpen, { sortOpen = false }) {
-                        com.aura.ui.browse.ListOrder.entries.forEach { value ->
-                            androidx.compose.material3.DropdownMenuItem(text = { Text(value.label) }, onClick = { order = value; sortOpen = false })
+                if (reordering) {
+                    IconButton(onClick = { reordering = false }) {
+                        Icon(Icons.Rounded.Check, "Done reordering")
+                    }
+                } else {
+                    IconButton(onClick = { if (searching) search.close() else search.open = true }) {
+                        Icon(if (searching) Icons.Rounded.Close else Icons.Rounded.Search, "Search this list")
+                    }
+                    Box {
+                        IconButton(onClick = { sortOpen = true }) { Icon(Icons.AutoMirrored.Filled.Sort, "Sort") }
+                        androidx.compose.material3.DropdownMenu(sortOpen, { sortOpen = false }) {
+                            com.aura.ui.browse.ListOrder.entries.forEach { value ->
+                                androidx.compose.material3.DropdownMenuItem(text = { Text(value.label) }, onClick = { order = value; sortOpen = false })
+                            }
                         }
                     }
+                    IconButton(onClick = { moreOpen = true }) { Icon(Icons.Rounded.MoreHoriz, "More") }
                 }
-                IconButton(onClick = { moreOpen = true }) { Icon(Icons.Rounded.MoreHoriz, "More") }
             }
         }
         }
@@ -1268,6 +1300,7 @@ fun LocalPlaylistScreen(id: String, contentPadding: PaddingValues, actions: Song
     }) {
     val tint = com.aura.ui.browse.rememberCoverTint((playlist.coverUrl ?: songs.firstOrNull()?.thumbnailUrl).artworkAt(CARD_ART_PX))
     val band = com.aura.ui.components.rememberRubberBand()
+    val rowPx = with(LocalDensity.current) { 72.dp.toPx() }
     LazyColumn(state = listState, contentPadding = if (searching) PaddingValues(bottom = 16.dp) else contentPadding,
         modifier = Modifier.fillMaxSize().coverWash(tint).playlistSearchResults(search), overscrollEffect = band) {
         if (!searching) item(key = "header") {
@@ -1301,20 +1334,94 @@ fun LocalPlaylistScreen(id: String, contentPadding: PaddingValues, actions: Song
         // alone and the rows below slide up rather than every row after it being redrawn.
         if (shown.isEmpty()) item { Text(com.aura.ui.theme.tr("No matching songs"), Modifier.padding(24.dp)) }
         val keys = songKeys(songs)
-        itemsIndexed(shown, key = { i, _ -> keys[matching[i]] }) { i, song ->
-            SongListItem(
-                song = song,
-                onClick = { actions.playAll(shown, i, false, playlist.name) },
-                modifier = Modifier.animateItem(),
-                isCurrent = song.videoId == actions.currentVideoId,
-                isPlaying = actions.isPlaying,
-                onPlayNext = { actions.playNext(song) },
-                onAddToQueue = { actions.addToQueue(song) },
-                onRemoveFromPlaylist = if (playlist.spotifyId == null) ({ removeWithUndo(id, matching[i]) }) else null,
-                // Swipe right to add to the queue, left to take it out of the playlist.
-                onSwipeRemove = if (playlist.spotifyId == null) ({ removeWithUndo(id, matching[i]) }) else null,
-                selectKey = keys[matching[i]],
-            )
+        if (reordering) {
+            itemsIndexed(dragOrder, key = { _, idx -> keys.getOrElse(idx) { "r$idx" } }) { _, idx ->
+                val song = songs.getOrNull(idx) ?: return@itemsIndexed
+                val rowKey = keys[idx]
+                val isDragged = draggingKey == rowKey
+                val lift by animateFloatAsState(if (isDragged) 1.02f else 1f, label = "playlistDragLift")
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .zIndex(if (isDragged) 1f else 0f)
+                        .graphicsLayer {
+                            translationY = if (isDragged) dragOffset else 0f
+                            scaleX = lift
+                            scaleY = lift
+                        }
+                        .then(if (isDragged) Modifier else Modifier.animateItem()),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        Icons.Rounded.DragHandle,
+                        contentDescription = "Drag to reorder",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier
+                            .padding(start = 16.dp, end = 4.dp)
+                            .size(24.dp)
+                            .pointerInput(rowKey, songs.size) {
+                                detectVerticalDragGestures(
+                                    onDragStart = {
+                                        haptics.press()
+                                        draggingKey = rowKey
+                                        dragStartPos = dragOrder.indexOf(idx)
+                                        dragOffset = 0f
+                                    },
+                                    onDragEnd = {
+                                        val from = dragStartPos
+                                        val to = dragOrder.indexOf(idx)
+                                        if (from >= 0 && to >= 0 && from != to) {
+                                            LibraryStore.movePlaylistItem(id, from, to)
+                                        }
+                                        draggingKey = null
+                                        dragOffset = 0f
+                                    },
+                                    onDragCancel = {
+                                        dragOrder.clear()
+                                        dragOrder.addAll(songs.indices)
+                                        draggingKey = null
+                                        dragOffset = 0f
+                                    },
+                                ) { change, dragAmount ->
+                                    change.consume()
+                                    dragOffset += dragAmount
+                                    val at = dragOrder.indexOf(idx)
+                                    val steps = (dragOffset / rowPx).roundToInt()
+                                    val target = (at + steps).coerceIn(0, dragOrder.lastIndex)
+                                    if (target != at) {
+                                        dragOrder.add(target, dragOrder.removeAt(at))
+                                        dragOffset -= (target - at) * rowPx
+                                        haptics.tick()
+                                    }
+                                }
+                            },
+                    )
+                    Box(Modifier.weight(1f)) {
+                        SongListItem(
+                            song = song,
+                            onClick = {},
+                            isCurrent = song.videoId == actions.currentVideoId,
+                            isPlaying = actions.isPlaying,
+                        )
+                    }
+                }
+            }
+        } else {
+            itemsIndexed(shown, key = { i, _ -> keys[matching[i]] }) { i, song ->
+                SongListItem(
+                    song = song,
+                    onClick = { actions.playAll(shown, i, false, playlist.name) },
+                    modifier = Modifier.animateItem(),
+                    isCurrent = song.videoId == actions.currentVideoId,
+                    isPlaying = actions.isPlaying,
+                    onPlayNext = { actions.playNext(song) },
+                    onAddToQueue = { actions.addToQueue(song) },
+                    onRemoveFromPlaylist = if (playlist.spotifyId == null) ({ removeWithUndo(id, matching[i]) }) else null,
+                    // Swipe right to add to the queue, left to take it out of the playlist.
+                    onSwipeRemove = if (playlist.spotifyId == null) ({ removeWithUndo(id, matching[i]) }) else null,
+                    selectKey = keys[matching[i]],
+                )
+            }
         }
     }
 }
@@ -1333,6 +1440,7 @@ private fun LocalListMoreSheet(
     actions: SongActions,
     onRefresh: () -> Unit,
     onAddSongs: () -> Unit,
+    onReorder: () -> Unit,
     onRename: () -> Unit,
     onDelete: () -> Unit,
     onShare: () -> Unit,
@@ -1372,6 +1480,9 @@ private fun LocalListMoreSheet(
             }
             if (!spotify) {
                 com.aura.ui.components.MenuRow(Icons.Rounded.Add, "Add songs") { close(); onAddSongs() }
+                if (songs.size > 1) {
+                    com.aura.ui.components.MenuRow(Icons.Rounded.Reorder, "Reorder songs") { close(); onReorder() }
+                }
                 com.aura.ui.components.MenuRow(Icons.Rounded.Edit, "Rename") { close(); onRename() }
             }
             com.aura.ui.components.MenuRow(Icons.Rounded.Share, "Share") { close(); onShare() }

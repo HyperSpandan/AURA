@@ -275,6 +275,25 @@ export async function addToPlaylist(playlistId: string, videoId: string): Promis
   });
 }
 
+export async function moveInPlaylist(
+  playlistId: string,
+  setVideoId: string,
+  successorSetVideoId: string | null,
+): Promise<void> {
+  const yt = await getSignedInnertube();
+  await yt.actions.execute('/browse/edit_playlist', {
+    playlistId: playlistId.replace(/^VL/, ''),
+    actions: [
+      {
+        action: 'ACTION_MOVE_VIDEO_BEFORE',
+        setVideoId,
+        ...(successorSetVideoId ? { movedSetVideoIdSuccessor: successorSetVideoId } : {}),
+      },
+    ],
+    client: 'YTMUSIC',
+  });
+}
+
 /**
  * A new private playlist holding [videoIds], as YtMusicRepository.createPlaylist
  * makes one (InnerTube `playlist/create`). Returns its id, without the VL.

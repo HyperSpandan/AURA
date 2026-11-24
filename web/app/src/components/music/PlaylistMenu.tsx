@@ -1,4 +1,5 @@
 import {
+  ArrowUpDown,
   Check,
   Download,
   Image as ImageIcon,
@@ -29,6 +30,7 @@ export interface PlaylistMenuProps {
   library?: { playlistId: string; saved: boolean } | null;
   className?: string;
   placement?: MenuPlacement;
+  onReorder?: () => void;
 }
 
 export function PlaylistMenu({
@@ -39,6 +41,7 @@ export function PlaylistMenu({
   library,
   className,
   placement,
+  onReorder,
 }: PlaylistMenuProps) {
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
   const [copied, setCopied] = useState(false);
@@ -187,6 +190,17 @@ export function PlaylistMenu({
               >
                 Shuffle
               </MenuItem>
+              {onReorder && (
+                <MenuItem
+                  icon={<ArrowUpDown size={15} />}
+                  onSelect={() => {
+                    close();
+                    onReorder();
+                  }}
+                >
+                  Reorder songs
+                </MenuItem>
+              )}
               <MenuSeparator />
             </>
           )}

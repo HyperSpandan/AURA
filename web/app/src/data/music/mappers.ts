@@ -164,6 +164,7 @@ export function mapTrack(node: unknown): Track | null {
     thumbnail: thumbnailOf(n),
     index: Number.isFinite(index) ? index : null,
     plays: plays ?? n.views ?? null,
+    setVideoId: (n as { playlist_item_data?: { playlist_set_video_id?: string | null } }).playlist_item_data?.playlist_set_video_id ?? null,
   };
 }
 

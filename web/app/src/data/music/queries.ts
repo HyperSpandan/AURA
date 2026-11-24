@@ -24,6 +24,7 @@ import {
   fetchLikeStatus,
   fetchPlaylist,
   fetchPlaylistOptions,
+  moveInPlaylist,
   fetchSearch,
   fetchSuggestions,
   setListSaved,
@@ -263,6 +264,47 @@ export function useAddToPlaylist() {
   return useMutation({
     mutationFn: ({ playlistId, videoId }: { playlistId: string; videoId: string }) => addToPlaylist(playlistId, videoId),
     onSettled: (_data, _error, { playlistId }) => {
+      void queryClient.invalidateQueries({ queryKey: ['music', 'playlist', playlistId] });
+      void queryClient.invalidateQueries({ queryKey: ['music', 'playlist', `VL${playlistId.replace(/^VL/, '')}`] });
+    },
+  });
+}
+
+export function useMoveInPlaylist() {
+  return useMutation({
+    mutationFn: ({
+      playlistId,
+      setVideoId,
+      successorSetVideoId,
+    }: {
+      playlistId: string;
+      fromIndex: number;
+      toIndex: number;
+      setVideoId: string;
+      successorSetVideoId: string | null;
+    }) => moveInPlaylist(playlistId, setVideoId, successorSetVideoId),
+    onMutate: async ({ playlistId, fromIndex, toIndex }) => {
+      const keys = [
+        ['music', 'playlist', playlistId],
+        ['music', 'playlist', `VL${playlistId.replace(/^VL/, '')}`],
+      ];
+      for (const key of keys) {
+        const prev = queryClient.getQueryData<{ pages: Array<{ tracks: import('./types').Track[] }>; pageParams: unknown[] }>(key);
+        if (!prev) continue;
+        const flat = prev.pages.flatMap((p) => p.tracks);
+        if (fromIndex < 0 || fromIndex >= flat.length || toIndex < 0 || toIndex >= flat.length) continue;
+        const [moved] = flat.splice(fromIndex, 1);
+        flat.splice(toIndex, 0, moved!);
+        let cursor = 0;
+        const nextPages = prev.pages.map((p) => {
+          const slice = flat.slice(cursor, cursor + p.tracks.length);
+          cursor += p.tracks.length;
+          return { ...p, tracks: slice };
+        });
+        queryClient.setQueryData(key, { ...prev, pages: nextPages });
+      }
+    },
+    onError: (_err, { playlistId }) => {
       void queryClient.invalidateQueries({ queryKey: ['music', 'playlist', playlistId] });
       void queryClient.invalidateQueries({ queryKey: ['music', 'playlist', `VL${playlistId.replace(/^VL/, '')}`] });
     },

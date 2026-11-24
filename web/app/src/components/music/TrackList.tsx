@@ -1,5 +1,5 @@
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { ArrowDownToLine } from 'lucide-react';
+import { ArrowDown, ArrowDownToLine, ArrowUp, GripVertical } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { PrefetchLink } from '@/components/PrefetchLink';
 import { PauseIcon, PlayIcon } from '@/components/icons/Transport';
@@ -29,6 +29,9 @@ interface TrackListProps {
   onNearEnd?: () => void;
   /** Where the list comes from: playing a row queues the list from there. Without it, a row plays alone. */
   source?: ListContext['source'];
+  /** Enables drag-and-drop / arrow reordering for editable playlists. */
+  reordering?: boolean;
+  onMove?: (fromIndex: number, toIndex: number) => void;
 }
 
 /* Track lists (report §3 album rows, §14 playlist rows). */
@@ -90,11 +93,27 @@ interface RowProps {
   track: Track;
   variant: Variant;
   position: number;
+  total: number;
   fallbackArtwork: string | null | undefined;
   onPlayRow: () => void;
+  reordering?: boolean;
+  onMove?: (fromIndex: number, toIndex: number) => void;
+  onDragStartIndex?: (index: number) => void;
+  onDropAtIndex?: (index: number) => void;
 }
 
-function Row({ track, variant, position, fallbackArtwork, onPlayRow }: RowProps) {
+function Row({
+  track,
+  variant,
+  position,
+  total,
+  fallbackArtwork,
+  onPlayRow,
+  reordering,
+  onMove,
+  onDragStartIndex,
+  onDropAtIndex,
+}: RowProps) {
   const current = usePlayer((s) => s.nowPlaying?.videoId === track.videoId);
   const playing = usePlayer((s) => s.nowPlaying?.videoId === track.videoId && (s.status === 'playing' || s.status === 'buffering'));
   const togglePlay = usePlayer((s) => s.togglePlay);
@@ -192,15 +211,43 @@ function Row({ track, variant, position, fallbackArtwork, onPlayRow }: RowProps)
         </>
       )}
       <div className={`${cell} ${time[variant]} ${dimmed}`}>
-        {/* The ⋯ button (TrackMenu) takes the time's place on hover, as Apple's rows do. */}
-        <span className={unavailable ? undefined : 'group-focus-within/row:invisible group-hover/row:invisible group-has-[[data-open]]/row:invisible'}>
-          {unavailable === 'missing' ? 'Not found' : formatDuration(track.durationSec)}
-        </span>
-        {!unavailable && (
-          <TrackMenu
-            track={track}
-            className="absolute end-2.5 hidden size-7 place-items-center rounded-full text-key group-focus-within/row:grid group-hover/row:grid hover:bg-quinary data-open:grid"
-          />
+        {reordering && onMove ? (
+          <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              disabled={position <= 1}
+              onClick={() => onMove(position - 1, position - 2)}
+              aria-label={`Move ${track.title} up`}
+              className="grid size-7 place-items-center rounded-lg text-secondary transition hover:bg-quinary hover:text-primary disabled:opacity-30"
+            >
+              <ArrowUp size={14} />
+            </button>
+            <button
+              type="button"
+              disabled={position >= total}
+              onClick={() => onMove(position - 1, position)}
+              aria-label={`Move ${track.title} down`}
+              className="grid size-7 place-items-center rounded-lg text-secondary transition hover:bg-quinary hover:text-primary disabled:opacity-30"
+            >
+              <ArrowDown size={14} />
+            </button>
+            <span className="grid size-7 cursor-grab place-items-center text-secondary" aria-hidden="true">
+              <GripVertical size={15} />
+            </span>
+          </div>
+        ) : (
+          <>
+            {/* The ⋯ button (TrackMenu) takes the time's place on hover, as Apple's rows do. */}
+            <span className={unavailable ? undefined : 'group-focus-within/row:invisible group-hover/row:invisible group-has-[[data-open]]/row:invisible'}>
+              {unavailable === 'missing' ? 'Not found' : formatDuration(track.durationSec)}
+            </span>
+            {!unavailable && (
+              <TrackMenu
+                track={track}
+                className="absolute end-2.5 hidden size-7 place-items-center rounded-full text-key group-focus-within/row:grid group-hover/row:grid hover:bg-quinary data-open:grid"
+              />
+            )}
+          </>
         )}
       </div>
     </div>
@@ -223,7 +270,8 @@ function Header() {
  * hover fill, the number (or artwork) turning into a play button. Long lists
  * are virtualized against the page's scroll container (prompt §3).
  */
-export function TrackList({ tracks, variant, fallbackArtwork, fallbackArtists, onNearEnd, source }: TrackListProps) {
+export function TrackList({ tracks, variant, fallbackArtwork, fallbackArtists, onNearEnd, source, reordering, onMove }: TrackListProps) {
+  const dragFrom = useRef<number | null>(null);
   const playRow = (i: number) => {
     // Rows from another catalogue that found no YouTube Music song stay out of the queue.
     if (source) {
@@ -274,22 +322,47 @@ export function TrackList({ tracks, variant, fallbackArtwork, fallbackArtists, o
                   track={tracks[item.index]!}
                   variant={variant}
                   position={item.index + 1}
+                  total={tracks.length}
                   fallbackArtwork={fallbackArtwork}
                   onPlayRow={() => playRow(item.index)}
+                  reordering={reordering}
+                  onMove={onMove}
+                  onDragStartIndex={(idx) => { dragFrom.current = idx; }}
+                  onDropAtIndex={(idx) => {
+                    const from = dragFrom.current;
+                    dragFrom.current = null;
+                    if (from !== null && from !== idx) onMove?.(from, idx);
+                  }}
                 />
               </div>
             ))}
           </div>
         ) : (
           tracks.map((track, i) => (
-            <Row
+            <div
               key={`${track.videoId}-${i}`}
-              track={track}
-              variant={variant}
-              position={i + 1}
-              fallbackArtwork={fallbackArtwork}
-              onPlayRow={() => playRow(i)}
-            />
+              draggable={Boolean(reordering)}
+              onDragStart={() => { dragFrom.current = i; }}
+              onDragOver={(e) => { if (reordering) e.preventDefault(); }}
+              onDrop={(e) => {
+                if (!reordering) return;
+                e.preventDefault();
+                const from = dragFrom.current;
+                dragFrom.current = null;
+                if (from !== null && from !== i) onMove?.(from, i);
+              }}
+            >
+              <Row
+                track={track}
+                variant={variant}
+                position={i + 1}
+                total={tracks.length}
+                fallbackArtwork={fallbackArtwork}
+                onPlayRow={() => playRow(i)}
+                reordering={reordering}
+                onMove={onMove}
+              />
+            </div>
           ))
         )}
       </div>
