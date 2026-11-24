@@ -1,6 +1,10 @@
 package com.aura.ui.components
 
+import android.graphics.Bitmap
 import android.graphics.BitmapShader
+import android.graphics.Canvas as AndroidCanvas
+import android.graphics.Matrix
+import android.graphics.Paint
 import android.graphics.RuntimeShader
 import android.graphics.Shader
 import android.os.Build
@@ -27,7 +31,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.ShaderBrush
-import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.graphics.asAndroidPath
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.graphicsLayer
@@ -47,7 +51,22 @@ object Opening {
 val OPENING_FIELD = Color.Black
 
 private val LOGO_SIZE = 240.dp
-private val CANVAS_SIZE = 380.dp
+
+/** Renders [markPath] cleanly as a pure-white transparent-background bitmap for AGSL refraction. */
+internal fun createAuraMarkBitmap(sizePx: Int = 512): Bitmap {
+    val bmp = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888)
+    val canvas = AndroidCanvas(bmp)
+    val path = markPath().asAndroidPath()
+    val scale = sizePx / MARK_VIEWPORT
+    val matrix = Matrix().apply { setScale(scale, scale) }
+    path.transform(matrix)
+    val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.WHITE
+        style = Paint.Style.FILL
+    }
+    canvas.drawPath(path, paint)
+    return bmp
+}
 
 private const val LIQUID_GLASS_LOGO_AGSL = """
 uniform shader uLogo;
@@ -56,7 +75,6 @@ uniform float2 uLogoRes;
 uniform float uUnit;
 uniform float uArtBox;
 uniform float uTime;
-uniform float uSettle;
 
 const float PI = 3.14159265359;
 const int BANDS = 12;
@@ -112,15 +130,14 @@ half4 sampleLogo(float2 p, float boxSize) {
 }
 
 half4 main(float2 fragCoord) {
-    // Center origin, Y-up to match optical light coordinates
     float2 p = float2(fragCoord.x - 0.5 * uResolution.x, 0.5 * uResolution.y - fragCoord.y);
     float t = uTime;
-    float settle = ease(0.0, 1.0, uSettle);
+    float settle = ease(1.36, 1.58, t);
     float enter = ease(0.025, 0.16, t);
     float artScale = mix(0.72, 1.0, ease(0.95, 1.48, t));
 
     half4 source = sampleLogo(p, uArtBox * artScale);
-    if (t > 1.58) return source;
+    if (t >= 1.58) return source;
     if (enter < 0.001) return half4(0.0);
 
     float shape = 2.0 + 3.0 * ease(0.29, 0.36, t);
@@ -133,8 +150,9 @@ half4 main(float2 fragCoord) {
     float aa = 1.25;
     float mask = 1.0 - smoothstep(-aa, aa, sd);
     float glass = (1.0 - ease(1.05, 1.40, t)) * collapse * (1.0 - settle);
+    float shown = ease(0.12, 0.165, t) * (1.0 - ease(1.39, 1.53, t));
 
-    if (sd > uUnit * 0.10) return half4(0.0);
+    if (sd > uUnit * 0.12) return half4(0.0);
 
     float2 outward = superNormal(p / halfSize, shape);
     float2 radial = normalize(p + float2(0.001));
@@ -212,7 +230,7 @@ half4 main(float2 fragCoord) {
     float plateFade = (1.0 - ease(1.08, 1.36, t)) * (1.0 - settle);
     float alpha = max(inkAlpha, plateFade);
 
-    // Broad softbox studio light reflected off the curved front face of the sphere
+    // Broad studio softbox reflection across the front face of the sphere
     float2 spherePoint = p / halfSize;
     float3 sphereNormal = normalize(float3(spherePoint, sqrt(max(0.001, 1.0 - dot(spherePoint, spherePoint)))));
     float3 sphereRay = reflect(float3(0.0, 0.0, -1.0), sphereNormal);
@@ -222,7 +240,7 @@ half4 main(float2 fragCoord) {
     color += float3(0.50, 0.61, 0.72) * sphericalLight * (1.0 - inkAlpha * 0.85);
     alpha = max(alpha, sphericalLight);
 
-    // Shimmering liquid rim lines & chromatic edge streaks
+    // Nested liquid rim & inner wall geometry
     float arc = atan(p.y, p.x) * uUnit * 0.5;
     float grainScale = uUnit * 0.03;
     float developed = ease(0.23, 0.48, t);
@@ -230,36 +248,94 @@ half4 main(float2 fragCoord) {
     float reliefScale = lensScale * developed * (0.2 + 0.8 * cornerExposure);
     float sharedWarp = edgeWarp(arc, 0.0) * reliefScale;
     float rimSd = sd + sharedWarp;
+    float innerSd = sd + sharedWarp * 0.7 + edgeWarp(arc, 41.0) * reliefScale * 0.4;
+    float inner2Sd = sd + sharedWarp * 0.45 + edgeWarp(arc, 83.0) * reliefScale * 0.6;
+    float thickness = 0.75 + 0.5 * contourNoise(arc / (uUnit * 0.013) + 13.0);
     float around = arc / (uUnit * 0.5);
     float rimBob = uUnit * 0.0025 * developed * (0.6 * sin(7.0 * around + 0.4) * sin(t * 6.3 + 1.0) + 0.4 * sin(3.0 * around + 2.0) * sin(t * 4.1));
+    float rimLineSd = rimSd + rimBob;
     float shimmer = mix(contourNoise(arc / grainScale), contourNoise(arc / grainScale + 211.0), 0.5 + 0.5 * sin(t * 5.0));
-    float rim = bell(rimSd + rimBob + uUnit * 0.002, uUnit * 0.0022 + aa * 0.3) * (0.6 + 0.8 * shimmer);
+    float rim = bell(rimLineSd + uUnit * 0.002, uUnit * 0.0018 * thickness + aa * 0.3) * (0.6 + 0.8 * shimmer);
+    float centerFade = 1.0 - ease(0.62, 0.92, t);
+    float inner = centerFade * bell(innerSd + uUnit * 0.012, uUnit * 0.0025 / thickness + aa * 0.2) * (0.55 + 0.9 * contourNoise(arc / grainScale + 41.0));
+    float inner2 = centerFade * bell(inner2Sd + uUnit * 0.022, uUnit * 0.0018 * thickness + aa * 0.1) * (0.5 + contourNoise(arc / grainScale + 83.0));
+
+    float illumination = 0.5 + 0.5 * dot(outward, normalize(float2(-0.5, 0.9)));
+    float key = pow(illumination, 5.0);
+    float rimVis = 1.0 - 0.55 * ease(0.75, 1.22, t);
+    float lowerRight = pow(0.5 + 0.5 * dot(outward, normalize(float2(0.8, -0.6))), 5.0);
+    lowerRight *= ease(-0.25, -0.05, p.x / uUnit) * (1.0 - ease(-0.22, -0.02, p.y / uUnit));
+
+    // Separated inner back wall
+    float2 insetPoint = p - float2(0.002, -0.002) * uUnit * lensScale;
+    float wallGap = (0.055 - 0.023 * ease(0.18, 0.34, t)) + 0.050 * ease(0.14, 0.50, t) * (1.0 - 0.5 * ease(0.80, 1.22, t));
+    float insetHalf = halfSize - wallGap * uUnit * lensScale;
+    float insetShape = max(2.0, 2.0 + (shape - 2.0) * ease(0.20, 0.55, t) - 0.45);
+    float insetRadius = superRadius(insetPoint / max(insetHalf, 1.0), insetShape);
+    float insetSd = (insetRadius - 1.0) * insetHalf + sharedWarp * 0.4 + edgeWarp(arc, 151.0) * reliefScale * 0.7;
+    float wallRim = centerFade * bell(insetSd, uUnit * 0.0028 + aa * 0.25);
 
     float angle = atan(p.y, p.x);
-    float key = pow(0.5 + 0.5 * dot(outward, normalize(float2(-0.5, 0.9))), 5.0);
     float upperSliver = 0.12 + 1.15 * bell(angle - 2.18, 0.32);
-    float rimVis = 1.0 - 0.55 * ease(0.75, 1.22, t);
-    float3 rimHighlight = float3(0.82, 0.90, 1.0) * rim * (0.35 + 0.95 * key * upperSliver) * glass * rimVis;
+    float lowerSliver = 0.12 + 1.10 * bell(angle + 0.85, 0.30);
+    float3 insetLight = float3(0.60, 0.78, 0.91) * wallRim * (key * key * 0.8 * upperSliver + lowerRight * lowerRight * 0.75 * lowerSliver + 0.005);
 
-    // Chromatic edge streaks around the squircle bevel
-    float streakAngle = -2.2 + t * 3.8;
-    float streakA = pow(max(0.0, cos(angle - streakAngle)), 6.0);
-    float streakB = pow(max(0.0, cos(angle - streakAngle + 2.8)), 5.0);
-    float bevelBand = bell(sd + uUnit * 0.012, uUnit * 0.018) * mask * glass;
-    float3 chromaticStreak = float3(
-        streakA * 0.55 + streakB * 0.25,
-        streakA * 0.72 + streakB * 0.50,
-        streakA * 1.00 + streakB * 0.85
-    ) * bevelBand * 0.85;
+    // Lower-right caustic filaments in blue-cyan
+    float drift = 0.7 + 0.6 * contourNoise(arc / (uUnit * 0.09) + 7.0);
+    float filaments = (bell(innerSd + uUnit * 0.021, uUnit * 0.0035 * thickness) * 0.9 + bell(inner2Sd + uUnit * 0.028, uUnit * 0.004 / thickness) * 0.7) * centerFade + bell(rimSd + uUnit * 0.035, uUnit * 0.003 * thickness) * 0.5;
+    float3 lowerRelief = (
+        float3(0.03, 0.32, 1.0) * bell(sd + uUnit * 0.038, uUnit * 0.022 + aa * 0.2) * 0.55 +
+        float3(0.22, 0.62, 1.0) * bell(sd + uUnit * 0.027, uUnit * 0.012 + aa * 0.1) * 0.70 +
+        float3(0.75, 0.97, 1.0) * filaments * 1.35
+    ) * drift * lowerRight * glass * (1.0 - 0.85 * ease(0.6, 1.0, t)) * (1.0 - settle);
 
-    // Faint outer echo ring
-    float echoSd = sd - uUnit * 0.014;
-    float echoRing = bell(echoSd, uUnit * 0.003 + aa * 0.25) * glass * 0.35;
+    color += lowerRelief + insetLight * glass * (1.0 - inkAlpha) * mix(rimVis, 0.9, key);
+    alpha = max(alpha, max(lowerRelief.r, max(lowerRelief.g, lowerRelief.b)));
 
-    color += (rimHighlight + chromaticStreak + float3(0.45, 0.65, 0.95) * echoRing) * mask;
-    alpha = clamp(max(alpha, max(rim * glass, echoRing)), 0.0, 1.0);
+    // Spectral rainbow rim dispersion + bright spherical cyan lip
+    float rimLight = rim * (0.07 + key * 0.55) + inner * (0.025 + key * 0.16) + inner2 * 0.025;
+    float3 spectralRim = float3(0.0);
+    float3 spectralWeights = float3(0.0);
+    for (int i = 0; i < BANDS; i++) {
+        float s = float(i) / float(BANDS - 1);
+        float3 w = spectrum(s);
+        spectralRim += w * bell(rimSd + (s - 0.5) * uUnit * 0.011 + uUnit * 0.003, uUnit * 0.002 * thickness);
+        spectralWeights += w;
+    }
+    spectralRim /= max(spectralWeights, float3(0.0001));
+    float3 reflection = (float3(0.6, 0.76, 0.9) * rimLight * 1.15 + spectralRim * (0.04 + inkAlpha * 0.35)) * glass * mix(rimVis, 1.2, key);
+    float sphericalRim = (
+        bell(sd + uUnit * lensScale * 0.008, uUnit * lensScale * 0.009) * 0.60 +
+        bell(insetSd, uUnit * lensScale * 0.008) * 0.40
+    ) * (0.25 + 0.75 * abs(outward.y)) * (1.0 - ease(0.235, 0.34, t));
+    reflection += float3(0.65, 0.80, 0.90) * sphericalRim * 1.4 * glass;
 
-    return half4(clamp(color, 0.0, 1.0), alpha);
+    float cyanKey = pow(max(0.0, -outward.x), 8.0) * (1.0 - ease(0.235, 0.34, t));
+    float cyanLip = bell(sd + uUnit * lensScale * 0.020, uUnit * lensScale * 0.009) + bell(insetSd, uUnit * lensScale * 0.005) * 0.35;
+    reflection += float3(0.015, 0.68, 1.0) * cyanLip * cyanKey * glass * 0.85;
+
+    float youth = 1.0 - ease(0.25, 0.37, t);
+    reflection += float3(0.78, 0.84, 0.9) * youth * 0.07 * (0.5 + 0.5 * radius) * (1.0 - inkAlpha) * glass;
+    color += reflection;
+    alpha = max(alpha, max(reflection.r, max(reflection.g, reflection.b)));
+
+    float3 resultRgb = color * mask;
+    float resultA = alpha * mask;
+
+    // Outer glass echo line + expanding subtle rim wave
+    float outer = bell(rimSd - uUnit * 0.012, uUnit * 0.0028 * thickness) * (0.04 + key * 0.2) * (0.5 + contourNoise(arc / grainScale + 131.0));
+    float waveAge = ease(0.36, 1.1, t);
+    float wave = bell(sd - uUnit * (0.014 + 0.03 * waveAge), uUnit * 0.004 + aa * 0.3) * 0.05 * ease(0.34, 0.42, t) * (1.0 - waveAge);
+    float waveSides = mix(1.0, 0.10, ease(0.25, 0.80, abs(outward.x)));
+    float3 echoTint = float3(0.43, 0.62, 0.79);
+    float3 ghost = (echoTint + inkColor * 0.6) * (outer + wave * waveSides) * glass * rimVis;
+    float exterior = max(ghost.r, max(ghost.g, ghost.b)) * 1.8;
+    resultRgb += ghost * 1.8;
+    resultA = max(resultA, exterior);
+
+    float3 finalRgb = mix(resultRgb * shown, float3(source.rgb), settle);
+    float finalA = mix(resultA * shown, float(source.a), settle);
+    return half4(clamp(finalRgb, 0.0, 1.0), clamp(finalA, 0.0, 1.0));
 }
 """
 
@@ -267,9 +343,9 @@ half4 main(float2 fragCoord) {
  * Liquid Glass Logo Opening Reveal:
  *
  * 1. On Android 13+, runs the full AGSL wavelength-dispersed sphere-to-tile glass shader,
- *    genuinely refracting the AURA logo bitmap behind a morphing superellipse lens with
- *    spectral chromatic dispersion, softbox front reflection, and shimmering liquid rim streaks.
- * 2. Dissolves the glass cleanly so the original AURA logo remains alone on pure OLED black (#000000).
+ *    genuinely refracting AURA's pure-white mark behind a morphing superellipse lens with
+ *    spectral chromatic dispersion, softbox reflection, caustic filaments, and shimmering liquid rim.
+ * 2. Smoothly settles into AURA's original logo alone on pure OLED black (#000000).
  * 3. Fluid spatial unveil into the app.
  */
 @Composable
@@ -294,16 +370,11 @@ fun OpeningReveal(onDive: (Float) -> Unit, onDone: () -> Unit) {
     }
 
     LaunchedEffect(Unit) {
-        // 1. Run the sphere-to-tile Liquid Glass timeline (0 -> 1.62)
         launch {
             elevation.animateTo(1f, tween(1400, easing = CubicBezierEasing(0.35f, 0f, 0.25f, 1f)))
         }
-        time.animateTo(1.62f, tween(2100, easing = LinearEasing))
-
-        // 2. Brief poise on the settled original logo on pure black
+        time.animateTo(1.62f, tween(2250, easing = LinearEasing))
         delay(140L)
-
-        // 3. Fluid spatial unveil into the app
         dive.animateTo(1f, tween(640, easing = CubicBezierEasing(0.16f, 1f, 0.3f, 1f))) { report(value) }
         report(1f)
         done()
@@ -318,11 +389,11 @@ fun OpeningReveal(onDive: (Float) -> Unit, onDone: () -> Unit) {
             },
         contentAlignment = Alignment.Center,
     ) {
-        val shader = remember(logoBitmap) {
+        val shader = remember {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 runCatching {
+                    val bmp = createAuraMarkBitmap(512)
                     RuntimeShader(LIQUID_GLASS_LOGO_AGSL).apply {
-                        val bmp = logoBitmap.asAndroidBitmap()
                         setInputShader("uLogo", BitmapShader(bmp, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP))
                         setFloatUniform("uLogoRes", bmp.width.toFloat(), bmp.height.toFloat())
                     }
@@ -336,7 +407,7 @@ fun OpeningReveal(onDive: (Float) -> Unit, onDone: () -> Unit) {
             val shaderBrush = remember(shader) { ShaderBrush(shader) }
             Canvas(
                 modifier = Modifier
-                    .size(CANVAS_SIZE)
+                    .fillMaxSize()
                     .graphicsLayer {
                         val d = dive.value
                         val s = 1f + 0.08f * d
@@ -345,16 +416,14 @@ fun OpeningReveal(onDive: (Float) -> Unit, onDone: () -> Unit) {
                     },
             ) {
                 if (drawContext.canvas.nativeCanvas.isHardwareAccelerated) {
-                    val unit = size.minDimension * 0.68f
+                    val unit = size.minDimension * 0.52f
                     shader.setFloatUniform("uResolution", size.width, size.height)
                     shader.setFloatUniform("uUnit", unit)
                     shader.setFloatUniform("uArtBox", unit)
                     shader.setFloatUniform("uTime", time.value)
-                    shader.setFloatUniform("uSettle", 0f)
                     drawRect(shaderBrush)
                 } else {
-                    // Software-rendering fallback (e.g., bitmap capture in host tests)
-                    val s = size.width / MARK_VIEWPORT
+                    val s = LOGO_SIZE.toPx() / MARK_VIEWPORT
                     translate(size.width / 2f - MARK_VIEWPORT / 2f * s, size.height / 2f - MARK_VIEWPORT / 2f * s) {
                         scale(s, s, pivot = Offset.Zero) {
                             drawPath(mark, Color.White)
@@ -363,7 +432,6 @@ fun OpeningReveal(onDive: (Float) -> Unit, onDone: () -> Unit) {
                 }
             }
         } else {
-            // Android < 13 fallback
             Box(
                 modifier = Modifier
                     .size(380.dp)
