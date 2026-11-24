@@ -263,7 +263,7 @@ fun GlassPage(modifier: Modifier = Modifier, overlay: @Composable BoxScope.() ->
 }
 
 /** How deep a lens may bend at the edge: [wanted], kept to under half the shape's short side. */
-private fun lensDepth(wanted: Float, shortSide: Float): Float = minOf(wanted, shortSide * 0.42f).coerceAtLeast(0f)
+internal fun lensDepth(wanted: Float, shortSide: Float): Float = minOf(wanted, shortSide * 0.42f).coerceAtLeast(0f)
 
 /** The numbers behind a [GlassStyle], for frosted glass and for Liquid Glass. */
 internal data class GlassLook(

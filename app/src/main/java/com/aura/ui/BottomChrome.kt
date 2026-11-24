@@ -1,6 +1,17 @@
 package com.aura.ui
 
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.awaitHorizontalTouchSlopOrCancellation
+import androidx.compose.foundation.gestures.horizontalDrag
+import androidx.compose.ui.input.pointer.pointerInput
+import com.kyant.backdrop.backdrops.layerBackdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import com.kyant.backdrop.drawBackdrop
+import com.kyant.backdrop.effects.lens
+import com.kyant.backdrop.highlight.Highlight
 import androidx.compose.animation.core.tween
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.animation.Crossfade
 import androidx.compose.runtime.LaunchedEffect
@@ -533,6 +544,54 @@ private fun DockPill(c: ChromeContent, full: Dp, folded: Boolean, fold: () -> Fl
     // The lens rests where it last was while Search is open, faded out.
     var resting by remember { mutableIntStateOf(shown ?: 0) }
     if (shown != null) resting = shown
+    val density = LocalDensity.current
+    var isDragging by remember { mutableStateOf(false) }
+    var dragLeftDp by remember { mutableFloatStateOf(slot.value * resting) }
+    var hoveredTab by remember { mutableIntStateOf(resting) }
+    if (folded && isDragging) isDragging = false
+    val activeTab = if (isDragging) hoveredTab else shown
+    val dragLift by animateFloatAsState(
+        if (isDragging) 1f else 0f,
+        spring(dampingRatio = 0.72f, stiffness = 460f),
+        label = "dockDragLift",
+    )
+    val itemsBackdrop = rememberLayerBackdrop()
+    val liquidEnabled = LocalBackdrop.current != null && liquidGlassOn()
+    val slotPx = with(density) { slot.toPx() }.coerceAtLeast(1f)
+    val maxLeftDp = (slot.value * (c.tabs.size - 1)).coerceAtLeast(0f)
+    val dragModifier = if (!folded && c.tabs.size > 1) {
+        Modifier.pointerInput(c.tabs.size, slotPx) {
+            awaitEachGesture {
+                val down = awaitFirstDown(requireUnconsumed = false)
+                val drag = awaitHorizontalTouchSlopOrCancellation(down.id) { change, _ ->
+                    change.consume()
+                }
+                if (drag != null) {
+                    isDragging = true
+                    fun updateAt(xPx: Float) {
+                        val xDp = with(density) { xPx.toDp().value }
+                        dragLeftDp = (xDp - slot.value / 2f).coerceIn(0f, maxLeftDp)
+                        val next = (xPx / slotPx).toInt().coerceIn(0, c.tabs.lastIndex)
+                        if (next != hoveredTab) {
+                            hoveredTab = next
+                            haptics.tick()
+                        }
+                    }
+                    hoveredTab = (drag.position.x / slotPx).toInt().coerceIn(0, c.tabs.lastIndex)
+                    if (hoveredTab != resting) haptics.tick()
+                    updateAt(drag.position.x)
+                    val finished = horizontalDrag(drag.id) { change ->
+                        change.consume()
+                        updateAt(change.position.x)
+                    }
+                    isDragging = false
+                    if (finished) {
+                        c.onSelect(hoveredTab)
+                    }
+                }
+            }
+        }
+    } else Modifier
     Box(
         modifier
             .dockShadow(pill)
@@ -540,10 +599,11 @@ private fun DockPill(c: ChromeContent, full: Dp, folded: Boolean, fold: () -> Fl
             .dockHighlight(pill)
             .clip(pill),
     ) {
-        val (left, right) = rememberStretchingLens(resting, slot, c.lens)
+        val (left, right) = rememberStretchingLens(resting, slot, c.lens, isDragging = isDragging, dragLeftDp = dragLeftDp)
         val lensAlpha by animateFloatAsState(if (shown != null) 1f else 0f, tween(260, easing = FastOutSlowInEasing), label = "lensAlpha")
         Box(
             Modifier
+                .then(dragModifier)
                 .layout { measurable, constraints ->
                     val inset = DOCK_INSET.roundToPx()
                     val w = (full - DOCK_INSET * 2).roundToPx()
@@ -556,23 +616,22 @@ private fun DockPill(c: ChromeContent, full: Dp, folded: Boolean, fold: () -> Fl
         ) {
             Box(
                 Modifier
-                    .offset { IntOffset(left().roundToPx(), 0) }
-                    .layout { measurable, constraints ->
-                        val w = (right() - left()).roundToPx().coerceAtLeast(0)
-                        val placeable = measurable.measure(constraints.copy(minWidth = w, maxWidth = w))
-                        layout(placeable.width, placeable.height) { placeable.place(0, 0) }
+                    .lensSpan(left, right)
+                    .graphicsLayer {
+                        val s = 1f + 0.07f * dragLift
+                        scaleX = s
+                        scaleY = s
+                        alpha = (lensAlpha + dragLift).coerceAtMost(1f) * (1f - fold()).coerceIn(0f, 1f)
                     }
-                    .fillMaxHeight()
-                    .graphicsLayer { alpha = lensAlpha * (1f - fold()).coerceIn(0f, 1f) }
                     .clip(LENS_SHAPE)
                     .background(Brush.verticalGradient(listOf(ink.lensTop, ink.lensBottom)))
                     .border(1.dp, Brush.verticalGradient(listOf(ink.rimTop, ink.rimBottom)), LENS_SHAPE),
             )
-            Row(Modifier.fillMaxSize()) {
+            Row(Modifier.fillMaxSize().then(if (liquidEnabled) Modifier.layerBackdrop(itemsBackdrop) else Modifier)) {
                 c.tabs.forEachIndexed { i, tab ->
                     DockItem(
                         tab,
-                        i == shown,
+                        i == activeTab,
                         Modifier
                             .width(slot)
                             .fillMaxHeight()
@@ -585,6 +644,28 @@ private fun DockPill(c: ChromeContent, full: Dp, folded: Boolean, fold: () -> Fl
                         c.onSelect(i)
                     }
                 }
+            }
+            if (liquidEnabled && dragLift > 0.01f) {
+                Box(
+                    Modifier
+                        .lensSpan(left, right)
+                        .graphicsLayer {
+                            val s = 1f + 0.07f * dragLift
+                            scaleX = s
+                            scaleY = s
+                            alpha = dragLift * (1f - fold()).coerceIn(0f, 1f)
+                        }
+                        .drawBackdrop(
+                            backdrop = itemsBackdrop,
+                            shape = { LENS_SHAPE },
+                            effects = {
+                                val depth = com.aura.ui.components.lensDepth(14.dp.toPx() * dragLift, size.minDimension)
+                                lens(depth, (26.dp.toPx() * dragLift).coerceAtLeast(1f), depthEffect = true, chromaticAberration = true)
+                            },
+                            highlight = { Highlight.Default },
+                            onDrawSurface = { drawRect(Color.White.copy(alpha = 0.06f * dragLift)) },
+                        ),
+                )
             }
         }
         if (folded) {
@@ -768,6 +849,16 @@ internal fun dockInk(): DockInk {
     )
 }
 
+/** Positions and sizes a dock lens between its animated [left] and [right] edges. */
+private fun Modifier.lensSpan(left: () -> Dp, right: () -> Dp): Modifier =
+    offset { IntOffset(left().roundToPx(), 0) }
+        .layout { measurable, constraints ->
+            val w = (right() - left()).roundToPx().coerceAtLeast(0)
+            val placeable = measurable.measure(constraints.copy(minWidth = w, maxWidth = w))
+            layout(placeable.width, placeable.height) { placeable.place(0, 0) }
+        }
+        .fillMaxHeight()
+
 /** A soft drop shadow so the dock floats over the page. */
 internal fun Modifier.dockShadow(shape: androidx.compose.ui.graphics.Shape): Modifier =
     shadow(18.dp, shape, clip = false, ambientColor = Color.Black.copy(alpha = 0.35f), spotColor = Color.Black.copy(alpha = 0.45f))
@@ -779,16 +870,31 @@ internal fun Modifier.dockShadow(shape: androidx.compose.ui.graphics.Shape): Mod
  * are critically damped, so it never overshoots.
  */
 @Composable
-internal fun rememberStretchingLens(index: Int, slot: Dp, style: DockLens = DockLens.STRETCH): Pair<() -> Dp, () -> Dp> {
+internal fun rememberStretchingLens(
+    index: Int,
+    slot: Dp,
+    style: DockLens = DockLens.STRETCH,
+    isDragging: Boolean = false,
+    dragLeftDp: Float = slot.value * index,
+): Pair<() -> Dp, () -> Dp> {
     val left = remember { Animatable(slot.value * index) }
     val right = remember { Animatable(slot.value * (index + 1)) }
-    LaunchedEffect(index, slot) {
-        val toLeft = slot.value * index
-        val toRight = slot.value * (index + 1)
+    LaunchedEffect(index, slot, isDragging, dragLeftDp) {
+        val toLeft = if (isDragging) dragLeftDp else slot.value * index
+        val toRight = if (isDragging) dragLeftDp + slot.value else slot.value * (index + 1)
         val movingRight = toLeft > left.value
-        val (lead, follow) = lensSprings(style)
-        launch { left.animateTo(toLeft, if (movingRight) follow else lead) }
-        launch { right.animateTo(toRight, if (movingRight) lead else follow) }
+        if (isDragging) {
+            // While sliding, the leading edge tracks the finger tightly while the trailing
+            // edge follows with elastic liquid lag, stretching the droplet in motion.
+            val lead = spring<Float>(dampingRatio = 0.85f, stiffness = 1400f)
+            val follow = spring<Float>(dampingRatio = 0.72f, stiffness = 420f)
+            launch { left.animateTo(toLeft, if (movingRight) follow else lead) }
+            launch { right.animateTo(toRight, if (movingRight) lead else follow) }
+        } else {
+            val (lead, follow) = lensSprings(style)
+            launch { left.animateTo(toLeft, if (movingRight) follow else lead) }
+            launch { right.animateTo(toRight, if (movingRight) lead else follow) }
+        }
     }
     return ({ left.value.dp } to { right.value.dp })
 }
