@@ -1,6 +1,6 @@
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { ArrowDown, ArrowDownToLine, ArrowUp, GripVertical } from 'lucide-react';
-import { type DragEvent, useEffect, useRef, useState } from 'react';
+import { type KeyboardEvent, type PointerEvent, useEffect, useRef, useState } from 'react';
 import { PrefetchLink } from '@/components/PrefetchLink';
 import { PauseIcon, PlayIcon } from '@/components/icons/Transport';
 import { useDownloads } from '@/data/download/useDownloads';
@@ -98,13 +98,12 @@ interface RowProps {
   onPlayRow: () => void;
   reordering?: boolean;
   dragging?: boolean;
-  dragOver?: boolean;
+  dragOffset?: number;
   onMove?: (fromIndex: number, toIndex: number) => void;
-  onDragStartIndex?: (index: number, e: DragEvent<HTMLDivElement>) => void;
-  onDragOverIndex?: (index: number) => void;
-  onDragLeaveIndex?: (index: number) => void;
-  onDropAtIndex?: (index: number, e: DragEvent<HTMLDivElement>) => void;
-  onDragEndIndex?: () => void;
+  onGripPointerDown?: (index: number, e: PointerEvent<HTMLButtonElement>) => void;
+  onGripPointerMove?: (index: number, e: PointerEvent<HTMLButtonElement>) => void;
+  onGripPointerUp?: (index: number, e: PointerEvent<HTMLButtonElement>) => void;
+  onGripPointerCancel?: () => void;
 }
 
 function Row({
@@ -116,13 +115,12 @@ function Row({
   onPlayRow,
   reordering,
   dragging,
-  dragOver,
+  dragOffset = 0,
   onMove,
-  onDragStartIndex,
-  onDragOverIndex,
-  onDragLeaveIndex,
-  onDropAtIndex,
-  onDragEndIndex,
+  onGripPointerDown,
+  onGripPointerMove,
+  onGripPointerUp,
+  onGripPointerCancel,
 }: RowProps) {
   const current = usePlayer((s) => s.nowPlaying?.videoId === track.videoId);
   const playing = usePlayer((s) => s.nowPlaying?.videoId === track.videoId && (s.status === 'playing' || s.status === 'buffering'));
@@ -133,7 +131,7 @@ function Row({
   const index = position - 1;
 
   const handleArrowKey = reordering && onMove
-    ? (e: React.KeyboardEvent<HTMLElement>) => {
+    ? (e: KeyboardEvent<HTMLElement>) => {
         if (e.key === 'ArrowUp' && index > 0) {
           e.preventDefault();
           e.stopPropagation();
@@ -148,18 +146,19 @@ function Row({
 
   return (
     <div
-      className={`${row} ${rowVariant[variant]}${dragging ? ' opacity-45' : ''}${dragOver ? ' bg-white/10 ring-1 ring-inset ring-key/70' : ''}${reordering ? ' cursor-grab active:cursor-grabbing select-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-key/70 [&_a]:[-webkit-user-drag:none]' : ''}`}
+      className={`${row} ${rowVariant[variant]}${dragging ? ' z-20 bg-[color-mix(in_srgb,var(--systemPrimary)_14%,rgb(24_24_28))] shadow-[0_10px_28px_rgb(0_0_0/0.45)] ring-1 ring-white/15' : ''}${reordering ? ' select-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-key/70' : ''}`}
+      style={
+        dragging
+          ? { transform: `translateY(${dragOffset}px) scale(1.015)` }
+          : reordering
+            ? { transition: 'transform 140ms ease-out' }
+            : undefined
+      }
       data-variant={variant}
       data-current={current || undefined}
       data-unavailable={unavailable}
       title={unavailable === 'matching' ? 'Looking for this on YouTube Music…' : unavailable === 'missing' ? 'Not found on YouTube Music' : undefined}
       tabIndex={reordering ? 0 : undefined}
-      draggable={Boolean(reordering)}
-      onDragStart={reordering ? (e) => onDragStartIndex?.(index, e) : undefined}
-      onDragOver={reordering ? (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; onDragOverIndex?.(index); } : undefined}
-      onDragLeave={reordering ? () => onDragLeaveIndex?.(index) : undefined}
-      onDrop={reordering ? (e) => { e.preventDefault(); onDropAtIndex?.(index, e); } : undefined}
-      onDragEnd={reordering ? () => onDragEndIndex?.() : undefined}
       onKeyDown={handleArrowKey}
       onDoubleClick={reordering ? undefined : onPlay}
     >
@@ -247,13 +246,10 @@ function Row({
         {reordering && onMove ? (
           <div
             className="flex items-center gap-0.5"
-            draggable={false}
-            onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
           >
             <button
               type="button"
-              draggable={false}
               disabled={position <= 1}
               onClick={() => onMove(position - 1, position - 2)}
               aria-label={`Move ${track.title} up`}
@@ -263,7 +259,6 @@ function Row({
             </button>
             <button
               type="button"
-              draggable={false}
               disabled={position >= total}
               onClick={() => onMove(position - 1, position)}
               aria-label={`Move ${track.title} down`}
@@ -276,7 +271,11 @@ function Row({
               aria-label={`Reorder ${track.title}`}
               title="Drag to reorder, or use arrow keys"
               onKeyDown={handleArrowKey}
-              className="grid size-7 cursor-grab place-items-center rounded-lg text-secondary transition hover:bg-quinary hover:text-primary active:cursor-grabbing"
+              onPointerDown={(e) => onGripPointerDown?.(index, e)}
+              onPointerMove={(e) => onGripPointerMove?.(index, e)}
+              onPointerUp={(e) => onGripPointerUp?.(index, e)}
+              onPointerCancel={() => onGripPointerCancel?.()}
+              className="grid size-7 touch-none cursor-grab place-items-center rounded-lg text-secondary transition hover:bg-quinary hover:text-primary active:cursor-grabbing"
             >
               <GripVertical size={15} />
             </button>
@@ -317,36 +316,65 @@ function Header() {
  * are virtualized against the page's scroll container (prompt §3).
  */
 export function TrackList({ tracks, variant, fallbackArtwork, fallbackArtists, onNearEnd, source, reordering, onMove }: TrackListProps) {
-  const dragFrom = useRef<number | null>(null);
-  const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
-  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const rowHeight = ROW_HEIGHT[variant];
+  const dragRef = useRef<{ origIdx: number; startPos: number; startY: number; order: number[] } | null>(null);
+  const [dragVisual, setDragVisual] = useState<{ origIdx: number; offset: number; order: number[] } | null>(null);
 
-  const handleDragStart = (idx: number, e: DragEvent<HTMLDivElement>) => {
-    dragFrom.current = idx;
-    setDraggingIndex(idx);
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', String(idx));
+  useEffect(() => {
+    if (!reordering) {
+      dragRef.current = null;
+      setDragVisual(null);
+    }
+  }, [reordering]);
+
+  const handleGripPointerDown = (visualPos: number, e: PointerEvent<HTMLButtonElement>) => {
+    if (!reordering || e.button !== 0) return;
+    e.preventDefault();
+    e.stopPropagation();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    const order = dragVisual?.order ?? tracks.map((_, i) => i);
+    const origIdx = order[visualPos]!;
+    dragRef.current = { origIdx, startPos: visualPos, startY: e.clientY, order: [...order] };
+    setDragVisual({ origIdx, offset: 0, order: [...order] });
   };
-  const handleDragOver = (idx: number) => {
-    setDragOverIndex((prev) => (prev === idx ? prev : idx));
+
+  const handleGripPointerMove = (_visualPos: number, e: PointerEvent<HTMLButtonElement>) => {
+    const drag = dragRef.current;
+    if (!drag) return;
+    let offset = e.clientY - drag.startY;
+    const at = drag.order.indexOf(drag.origIdx);
+    const steps = Math.round(offset / rowHeight);
+    const target = Math.max(0, Math.min(drag.order.length - 1, at + steps));
+    if (target !== at) {
+      drag.order.splice(at, 1);
+      drag.order.splice(target, 0, drag.origIdx);
+      drag.startY += (target - at) * rowHeight;
+      offset -= (target - at) * rowHeight;
+    }
+    setDragVisual({ origIdx: drag.origIdx, offset, order: [...drag.order] });
   };
-  const handleDragLeave = (idx: number) => {
-    setDragOverIndex((prev) => (prev === idx ? null : prev));
+
+  const handleGripPointerUp = (_visualPos: number, e: PointerEvent<HTMLButtonElement>) => {
+    const drag = dragRef.current;
+    if (!drag) return;
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
+    const from = drag.startPos;
+    const to = drag.order.indexOf(drag.origIdx);
+    dragRef.current = null;
+    setDragVisual(null);
+    if (from >= 0 && to >= 0 && from !== to) {
+      onMove?.(from, to);
+    }
   };
-  const handleDrop = (idx: number, e: DragEvent<HTMLDivElement>) => {
-    const raw = e.dataTransfer.getData('text/plain');
-    const parsed = raw !== '' ? Number(raw) : NaN;
-    const from = dragFrom.current ?? (Number.isInteger(parsed) ? parsed : null);
-    dragFrom.current = null;
-    setDraggingIndex(null);
-    setDragOverIndex(null);
-    if (from !== null && from !== idx) onMove?.(from, idx);
+
+  const handleGripPointerCancel = () => {
+    dragRef.current = null;
+    setDragVisual(null);
   };
-  const handleDragEnd = () => {
-    dragFrom.current = null;
-    setDraggingIndex(null);
-    setDragOverIndex(null);
-  };
+
+  const orderedIndices = dragVisual && dragVisual.order.length === tracks.length ? dragVisual.order : null;
   const playRow = (i: number) => {
     // Rows from another catalogue that found no YouTube Music song stay out of the queue.
     if (source) {
@@ -382,7 +410,10 @@ export function TrackList({ tracks, variant, fallbackArtwork, fallbackArtists, o
       <div ref={container}>
         {virtual ? (
           <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
-            {items.map((item) => (
+            {items.map((item) => {
+              const origIdx = orderedIndices ? orderedIndices[item.index]! : item.index;
+              const isDragged = dragVisual?.origIdx === origIdx;
+              return (
               <div
                 key={item.key}
                 style={{
@@ -390,54 +421,60 @@ export function TrackList({ tracks, variant, fallbackArtwork, fallbackArtists, o
                   top: 0,
                   left: 0,
                   right: 0,
+                  zIndex: isDragged ? 20 : undefined,
                   transform: `translateY(${item.start - virtualizer.options.scrollMargin}px)`,
                 }}
               >
                 <Row
-                  track={tracks[item.index]!}
+                  track={tracks[origIdx]!}
                   variant={variant}
                   position={item.index + 1}
                   total={tracks.length}
                   fallbackArtwork={fallbackArtwork}
-                  onPlayRow={() => playRow(item.index)}
+                  onPlayRow={() => playRow(origIdx)}
                   reordering={reordering}
-                  dragging={draggingIndex === item.index}
-                  dragOver={dragOverIndex === item.index && draggingIndex !== item.index}
+                  dragging={isDragged}
+                  dragOffset={isDragged ? dragVisual.offset : 0}
                   onMove={onMove}
-                  onDragStartIndex={handleDragStart}
-                  onDragOverIndex={handleDragOver}
-                  onDragLeaveIndex={handleDragLeave}
-                  onDropAtIndex={handleDrop}
-                  onDragEndIndex={handleDragEnd}
+                  onGripPointerDown={handleGripPointerDown}
+                  onGripPointerMove={handleGripPointerMove}
+                  onGripPointerUp={handleGripPointerUp}
+                  onGripPointerCancel={handleGripPointerCancel}
                 />
               </div>
-            ))}
+              );
+            })}
           </div>
         ) : (
           (() => {
             const seenCounts = new Map<string, number>();
-            return tracks.map((track, i) => {
+            const baseKeys = tracks.map((track) => {
               const base = track.videoId || `${track.title}::${track.artists.map((a) => a.name).join(',')}`;
               const occ = seenCounts.get(base) ?? 0;
               seenCounts.set(base, occ + 1);
+              return `${base}#${occ}`;
+            });
+            const indices = orderedIndices ?? tracks.map((_, i) => i);
+            return indices.map((origIdx, visualPos) => {
+              const track = tracks[origIdx]!;
+              const isDragged = dragVisual?.origIdx === origIdx;
               return (
                 <Row
-                  key={`${base}#${occ}`}
+                  key={baseKeys[origIdx]!}
                   track={track}
                   variant={variant}
-                  position={i + 1}
+                  position={visualPos + 1}
                   total={tracks.length}
                   fallbackArtwork={fallbackArtwork}
-                  onPlayRow={() => playRow(i)}
+                  onPlayRow={() => playRow(origIdx)}
                   reordering={reordering}
-                  dragging={draggingIndex === i}
-                  dragOver={dragOverIndex === i && draggingIndex !== i}
+                  dragging={isDragged}
+                  dragOffset={isDragged ? dragVisual.offset : 0}
                   onMove={onMove}
-                  onDragStartIndex={handleDragStart}
-                  onDragOverIndex={handleDragOver}
-                  onDragLeaveIndex={handleDragLeave}
-                  onDropAtIndex={handleDrop}
-                  onDragEndIndex={handleDragEnd}
+                  onGripPointerDown={handleGripPointerDown}
+                  onGripPointerMove={handleGripPointerMove}
+                  onGripPointerUp={handleGripPointerUp}
+                  onGripPointerCancel={handleGripPointerCancel}
                 />
               );
             });
