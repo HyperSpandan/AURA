@@ -324,8 +324,9 @@
   .ot-side-full { max-height: 80px; }
   .ot-side-compact { display: flex; max-height: 0; opacity: 0; }
 
-  .ot-side[data-folded='true'] .ot-side-top { padding-left: 20px; padding-right: 20px; }
-  .ot-side[data-folded='true'] .ot-side-scroll, .ot-side[data-folded='true'] .ot-side-bottom { padding-left: 20px; padding-right: 20px; }
+  .ot-side[data-folded='true'] .ot-side-top { padding-left: 12px; padding-right: 12px; justify-content: center; }
+  .ot-side[data-folded='true'] .ot-side-scroll { padding-left: 10px; padding-right: 10px; }
+  .ot-side[data-folded='true'] .ot-side-bottom { margin-left: 6px; margin-right: 6px; margin-bottom: 8px; padding: 8px 4px; }
   /* The names only fade: they stay readable to screen readers. The wordmark and the app link go out of
      reach as well, so the keyboard doesn't land on something that isn't there. */
   .ot-side[data-folded='true'] .ot-side-label { opacity: 0; transition: opacity .12s ease; }
