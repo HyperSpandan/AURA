@@ -132,19 +132,35 @@ function Row({
   const onPlay = () => (unavailable ? undefined : current ? togglePlay() : onPlayRow());
   const index = position - 1;
 
+  const handleArrowKey = reordering && onMove
+    ? (e: React.KeyboardEvent<HTMLElement>) => {
+        if (e.key === 'ArrowUp' && index > 0) {
+          e.preventDefault();
+          e.stopPropagation();
+          onMove(index, index - 1);
+        } else if (e.key === 'ArrowDown' && index < total - 1) {
+          e.preventDefault();
+          e.stopPropagation();
+          onMove(index, index + 1);
+        }
+      }
+    : undefined;
+
   return (
     <div
-      className={`${row} ${rowVariant[variant]}${dragging ? ' opacity-45' : ''}${dragOver ? ' bg-white/10 ring-1 ring-inset ring-key/70' : ''}${reordering ? ' cursor-grab active:cursor-grabbing select-none [&_a]:[-webkit-user-drag:none]' : ''}`}
+      className={`${row} ${rowVariant[variant]}${dragging ? ' opacity-45' : ''}${dragOver ? ' bg-white/10 ring-1 ring-inset ring-key/70' : ''}${reordering ? ' cursor-grab active:cursor-grabbing select-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-key/70 [&_a]:[-webkit-user-drag:none]' : ''}`}
       data-variant={variant}
       data-current={current || undefined}
       data-unavailable={unavailable}
       title={unavailable === 'matching' ? 'Looking for this on YouTube Music…' : unavailable === 'missing' ? 'Not found on YouTube Music' : undefined}
+      tabIndex={reordering ? 0 : undefined}
       draggable={Boolean(reordering)}
       onDragStart={reordering ? (e) => onDragStartIndex?.(index, e) : undefined}
       onDragOver={reordering ? (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; onDragOverIndex?.(index); } : undefined}
       onDragLeave={reordering ? () => onDragLeaveIndex?.(index) : undefined}
       onDrop={reordering ? (e) => { e.preventDefault(); onDropAtIndex?.(index, e); } : undefined}
       onDragEnd={reordering ? () => onDragEndIndex?.() : undefined}
+      onKeyDown={handleArrowKey}
       onDoubleClick={reordering ? undefined : onPlay}
     >
       <div className={`${cell} gap-3`}>
@@ -229,9 +245,15 @@ function Row({
       )}
       <div className={`${cell} ${reordering ? 'relative justify-end pe-2' : time[variant]} ${dimmed}`}>
         {reordering && onMove ? (
-          <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="flex items-center gap-0.5"
+            draggable={false}
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+          >
             <button
               type="button"
+              draggable={false}
               disabled={position <= 1}
               onClick={() => onMove(position - 1, position - 2)}
               aria-label={`Move ${track.title} up`}
@@ -241,6 +263,7 @@ function Row({
             </button>
             <button
               type="button"
+              draggable={false}
               disabled={position >= total}
               onClick={() => onMove(position - 1, position)}
               aria-label={`Move ${track.title} down`}
@@ -248,9 +271,15 @@ function Row({
             >
               <ArrowDown size={14} />
             </button>
-            <span className="grid size-7 cursor-grab place-items-center text-secondary" aria-hidden="true">
+            <button
+              type="button"
+              aria-label={`Reorder ${track.title}`}
+              title="Drag to reorder, or use arrow keys"
+              onKeyDown={handleArrowKey}
+              className="grid size-7 cursor-grab place-items-center rounded-lg text-secondary transition hover:bg-quinary hover:text-primary active:cursor-grabbing"
+            >
               <GripVertical size={15} />
-            </span>
+            </button>
           </div>
         ) : (
           <>
@@ -385,26 +414,34 @@ export function TrackList({ tracks, variant, fallbackArtwork, fallbackArtists, o
             ))}
           </div>
         ) : (
-          tracks.map((track, i) => (
-            <Row
-              key={`${track.videoId}-${i}`}
-              track={track}
-              variant={variant}
-              position={i + 1}
-              total={tracks.length}
-              fallbackArtwork={fallbackArtwork}
-              onPlayRow={() => playRow(i)}
-              reordering={reordering}
-              dragging={draggingIndex === i}
-              dragOver={dragOverIndex === i && draggingIndex !== i}
-              onMove={onMove}
-              onDragStartIndex={handleDragStart}
-              onDragOverIndex={handleDragOver}
-              onDragLeaveIndex={handleDragLeave}
-              onDropAtIndex={handleDrop}
-              onDragEndIndex={handleDragEnd}
-            />
-          ))
+          (() => {
+            const seenCounts = new Map<string, number>();
+            return tracks.map((track, i) => {
+              const base = track.videoId || `${track.title}::${track.artists.map((a) => a.name).join(',')}`;
+              const occ = seenCounts.get(base) ?? 0;
+              seenCounts.set(base, occ + 1);
+              return (
+                <Row
+                  key={`${base}#${occ}`}
+                  track={track}
+                  variant={variant}
+                  position={i + 1}
+                  total={tracks.length}
+                  fallbackArtwork={fallbackArtwork}
+                  onPlayRow={() => playRow(i)}
+                  reordering={reordering}
+                  dragging={draggingIndex === i}
+                  dragOver={dragOverIndex === i && draggingIndex !== i}
+                  onMove={onMove}
+                  onDragStartIndex={handleDragStart}
+                  onDragOverIndex={handleDragOver}
+                  onDragLeaveIndex={handleDragLeave}
+                  onDropAtIndex={handleDrop}
+                  onDragEndIndex={handleDragEnd}
+                />
+              );
+            });
+          })()
         )}
       </div>
     </div>
