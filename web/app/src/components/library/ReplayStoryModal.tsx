@@ -372,7 +372,7 @@ export function ReplayStoryModal({
           <button
             type="button"
             onClick={handleShare}
-            className="inline-flex h-8 items-center gap-1.5 rounded-full bg-white/15 px-3 text-xs font-semibold text-white transition-colors hover:bg-white/25"
+            className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-white/15 px-3 text-xs font-semibold text-white transition-colors hover:bg-white/25"
           >
             <Share2 size={14} />
             <span>{copied ? 'Copied!' : 'Share'}</span>

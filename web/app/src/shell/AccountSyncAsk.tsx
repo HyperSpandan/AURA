@@ -2,8 +2,8 @@ import { createPortal } from 'react-dom';
 import { setAccountSync, useConnect } from '@/connect/connect';
 import { useSignedIn } from '@/data/music/queries';
 
-const primary = 'flex-1 rounded-pill bg-key-bg px-5 py-2 type-body-emphasized text-white';
-const secondary = 'flex-1 rounded-pill bg-quaternary px-4 py-2 type-body-emphasized text-primary';
+const primary = 'flex-1 rounded-lg bg-key-bg px-5 py-2 type-body-emphasized text-white';
+const secondary = 'flex-1 rounded-lg bg-quaternary px-4 py-2 type-body-emphasized text-primary';
 
 /**
  * Asked once, after signing in to YouTube: may Connect keep its key in the

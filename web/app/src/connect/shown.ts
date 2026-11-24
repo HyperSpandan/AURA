@@ -23,12 +23,15 @@ export function remoteNowPlaying(device: Device): NowPlaying {
       streamInfo: null,
     };
   }
+  const reportedSec = lengthSec(t.length);
+  const local = usePlayer.getState().nowPlaying;
+  const durationSec = reportedSec > 0 ? reportedSec : (local?.videoId === t.id && (local.durationSec ?? 0) > 0 ? (local.durationSec ?? 0) : 0);
   return {
     videoId: t.id,
     title: t.title,
     artist: t.artist ?? '',
     artworkUrl: t.thumb ?? null,
-    durationSec: lengthSec(t.length),
+    durationSec,
     streamInfo: null,
   };
 }

@@ -9,8 +9,8 @@ import { DeviceIcon, doing } from '@/connect/parts';
 import { Toggle } from './IntegrationSettings';
 import { settingsUi } from './settingsStyles';
 
-const primary = 'flex-none rounded-pill bg-key-bg px-5 py-2 type-body-emphasized text-white disabled:opacity-45';
-const secondary = 'flex-none rounded-pill bg-quaternary px-4 py-2 type-body-emphasized text-primary disabled:opacity-45';
+const primary = 'flex-none rounded-lg bg-key-bg px-5 py-2 type-body-emphasized text-white disabled:opacity-45';
+const secondary = 'flex-none rounded-lg bg-quaternary px-4 py-2 type-body-emphasized text-primary disabled:opacity-45';
 const field = 'min-w-0 flex-1 rounded-[12px] border-0 bg-quaternary px-3 py-2.5 type-body text-primary';
 // A device, as in the player's Devices panel: its icon on a tile, its name over what it's doing,
 // the playing mark at the end. A click moves the music there.

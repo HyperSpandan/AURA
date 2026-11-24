@@ -1,5 +1,6 @@
 import { Maximize2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { usePlayer } from '@/state/player';
 import { useUi } from '@/state/ui';
 import { positionAt, type Device } from './session';
 
@@ -20,7 +21,11 @@ export function RemoteLcd({ device }: { device: Device }) {
   }, []);
   const s = device.state;
   const track = s?.track;
-  const total = seconds(track?.length) * 1000;
+  const reportedTotal = seconds(track?.length) * 1000;
+  const localNp = usePlayer((pl) => pl.nowPlaying);
+  const localDurationSec = localNp?.videoId === track?.id ? (localNp?.durationSec ?? 0) : 0;
+  const localTotal = localDurationSec > 0 ? localDurationSec * 1000 : 0;
+  const total = reportedTotal > 0 ? reportedTotal : localTotal;
   const done = total ? Math.min(1, positionAt(device, now) / total) : 0;
   const openFullScreen = useUi((s) => s.setFullScreen);
 

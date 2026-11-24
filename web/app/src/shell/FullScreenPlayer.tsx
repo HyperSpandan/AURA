@@ -152,7 +152,7 @@ class FullScreenErrorBoundary extends Component<{ children: ReactNode; onClose: 
           <p className="mt-2 text-center type-body text-secondary">The full screen interface encountered an issue, but your music is still playing.</p>
           <button
             onClick={this.props.onClose}
-            className="mt-6 rounded-full bg-white px-6 py-2.5 type-callout-emphasized text-black hover:bg-white/90"
+            className="mt-6 rounded-lg bg-white px-6 py-2.5 type-callout-emphasized text-black hover:bg-white/90"
           >
             Close Full Screen
           </button>

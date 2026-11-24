@@ -30,6 +30,9 @@ export function useScrubber() {
 
   const trackId = remote?.state?.track?.id;
   const reportedLen = remote?.state?.track?.length;
+  const localDuration = usePlayer((s) => s.nowPlaying?.durationSec ?? 0);
+  const reportedDur = remote ? lengthSec(reportedLen) : 0;
+  const dur = reportedDur > 0 ? reportedDur : (localDuration > 0 ? localDuration : resolvedDur);
 
   useEffect(() => {
     if (!remote || !trackId) {
@@ -39,6 +42,13 @@ export function useScrubber() {
     const reported = lengthSec(reportedLen);
     if (reported > 0) {
       setResolvedDur(reported);
+      return;
+    }
+    if (localDuration > 0) {
+      setResolvedDur(localDuration);
+      if (remote.state?.track && !remote.state.track.length) {
+        remote.state.track.length = clock(localDuration);
+      }
       return;
     }
     let cancelled = false;
@@ -53,10 +63,7 @@ export function useScrubber() {
     return () => {
       cancelled = true;
     };
-  }, [remote, trackId, reportedLen]);
-
-  const reportedDur = remote ? lengthSec(reportedLen) : 0;
-  const dur = reportedDur > 0 ? reportedDur : resolvedDur;
+  }, [remote, trackId, reportedLen, localDuration]);
 
   useEffect(() => {
     const element = bar.current;
@@ -116,7 +123,7 @@ export function useScrubber() {
       if (dragging === null) return;
       const frac = fractionAt(e);
       if (remote) {
-        const durToUse = reportedDur > 0 ? reportedDur : resolvedDur;
+        const durToUse = dur;
         if (durToUse > 0) seekRemote(frac * durToUse * 1000);
       } else {
         const audio = getAudio();

@@ -38,5 +38,5 @@ export function Banner({ title, detail, action, onDismiss }: BannerProps) {
 }
 
 export const bannerButtonClass =
-  'inline-flex h-8 items-center whitespace-nowrap rounded-pill bg-white px-4 type-body-emphasized text-black hover:bg-[#ffffffe0]';
+  'inline-flex h-8 items-center whitespace-nowrap rounded-lg bg-white px-4 type-body-emphasized text-black hover:bg-[#ffffffe0]';
 

@@ -76,7 +76,7 @@ export function AddonVerification() {
   };
 
   const isVerified = until > Date.now();
-  const buttonStyle = 'inline-flex items-center gap-1.5 rounded-pill bg-quinary px-4 py-2 font-medium text-primary hover:bg-quinary/80 transition-colors disabled:opacity-45';
+  const buttonStyle = 'inline-flex items-center gap-1.5 rounded-lg bg-quinary px-4 py-2 font-medium text-primary hover:bg-quinary/80 transition-colors disabled:opacity-45';
 
   return (
     <section className="mx-4 mb-4 rounded-2xl bg-secondary/10 p-5 border border-white/5" aria-label="AURA source verification">

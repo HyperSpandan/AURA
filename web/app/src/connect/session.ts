@@ -80,20 +80,25 @@ export interface ConnectView {
 export const controllingOf = (v: ConnectView | null): Device | null => {
   if (!v) return null;
 
-  // 1. Any other device currently playing?
+  // 1. If this local browser is actively playing audio locally, it is the active player
+  const audio = typeof document !== 'undefined' ? (document.querySelector('audio') as HTMLMediaElement | null) : null;
+  const isLocalAudioPlaying = !!audio && !audio.paused && (audio.readyState >= 2 || audio.currentTime > 0);
+  if (isLocalAudioPlaying) return null;
+
+  // 2. Any other device currently playing?
   const playingRemote = v.devices.find((d) => d.id !== v.myId && d.state?.playing);
   if (playingRemote) return playingRemote;
 
-  // 2. If this local device is explicitly the active device, we are not controlling a remote
+  // 3. If this local device is explicitly the active device, we are not controlling a remote
   if (v.activeId === v.myId) return null;
 
-  // 3. The explicitly active device according to the session view?
+  // 4. The explicitly active device according to the session view?
   if (v.activeId && v.activeId !== v.myId) {
     const active = v.devices.find((d) => d.id === v.activeId);
     if (active) return active;
   }
 
-  // 4. Fallback: any other device that has a track loaded?
+  // 5. Fallback: any other device that has a track loaded?
   const withTrack = v.devices
     .filter((d) => d.id !== v.myId && (d.state?.track || d.state?.private))
     .sort((a, b) => (b.since || b.receivedAt || b.state?.at || 0) - (a.since || a.receivedAt || a.state?.at || 0));
@@ -110,7 +115,7 @@ export interface Timings {
   tickMs: number;
 }
 /** How long a play or pause pressed here outlasts reports from before it landed. */
-const GUESS_MS = 1_500;
+const GUESS_MS = 2_500;
 interface Guess { until: number; playing?: boolean; shuffle?: boolean; repeat?: string; trackId?: string }
 /** How often a device left in a former group is told again where the others went. */
 const FORWARD_MS = 60_000;
@@ -279,8 +284,10 @@ export class ConnectSession {
         pos: 0,
         since: now,
       };
-      this.setDevice({ ...target, state: nextState, receivedAt: now, since: now });
+      this.devices.set(deviceId, { ...target, state: nextState, receivedAt: now, since: now });
+      this.view = { ...this.view, activeId: deviceId };
       this.guess(deviceId, { playing: true, trackId: track.id });
+      this.refresh();
     }
     this.command(deviceId, 'playTrack', { track });
   }
@@ -298,27 +305,72 @@ export class ConnectSession {
         pos: 0,
         since: now,
       };
-      this.setDevice({ ...target, state: nextState, receivedAt: now, since: now });
+      this.devices.set(deviceId, { ...target, state: nextState, receivedAt: now, since: now });
+      this.view = { ...this.view, activeId: deviceId };
       this.guess(deviceId, { playing: true, trackId: track.id });
+      this.refresh();
     }
     this.command(deviceId, 'playTracks', { tracks, pos: startIndex });
   }
 
   playNextOn(deviceId: string, tracks: CTrack[]): void {
+    const target = this.devices.get(deviceId);
+    if (target && target.state) {
+      const currentQueue = target.state.queue ?? [];
+      this.setDevice({
+        ...target,
+        state: { ...target.state, queue: [...tracks, ...currentQueue] },
+      });
+    }
     this.command(deviceId, 'playNext', { tracks });
   }
 
   addToQueueOn(deviceId: string, tracks: CTrack[]): void {
+    const target = this.devices.get(deviceId);
+    if (target && target.state) {
+      const currentQueue = target.state.queue ?? [];
+      this.setDevice({
+        ...target,
+        state: { ...target.state, queue: [...currentQueue, ...tracks] },
+      });
+    }
     this.command(deviceId, 'addToQueue', { tracks });
   }
 
   /** Plays entry [at] of [deviceId]'s Up Next ([track], so a queue changed meanwhile still finds it). */
   jumpOn(deviceId: string, at: number, track: CTrack): void {
+    const target = this.devices.get(deviceId);
+    if (target) {
+      const now = this.clock();
+      const queue = target.state?.queue ?? [];
+      const nextQueue = queue.filter((t, i) => i !== at && t.id !== track.id);
+      const nextState: StateMsg = {
+        ...(target.state ?? { type: 'state' as const, from: deviceId, seq: 0, at: now }),
+        track,
+        queue: nextQueue,
+        playing: true,
+        pos: 0,
+        since: now,
+      };
+      this.devices.set(deviceId, { ...target, state: nextState, receivedAt: now, since: now });
+      this.view = { ...this.view, activeId: deviceId };
+      this.guess(deviceId, { playing: true, trackId: track.id });
+      this.refresh();
+    }
     this.command(deviceId, 'jump', { pos: at, track });
   }
 
   /** Takes entry [at] ([track]) out of [deviceId]'s Up Next. */
   removeOn(deviceId: string, at: number, track: CTrack): void {
+    const target = this.devices.get(deviceId);
+    if (target && target.state) {
+      const queue = target.state.queue ?? [];
+      const nextQueue = queue.filter((t, i) => i !== at && t.id !== track.id);
+      this.setDevice({
+        ...target,
+        state: { ...target.state, queue: nextQueue },
+      });
+    }
     this.command(deviceId, 'remove', { pos: at, track });
   }
 
@@ -347,9 +399,25 @@ export class ConnectSession {
     if (deviceId === this.myId) {
       if (this.player.load(queue, 0, pos, playing)) {
         this.command(source.id, 'pause', { quiet: true });
-        this.mine = null;
+        this.devices.set(source.id, {
+          ...source,
+          state: source.state ? { ...source.state, playing: false } : null,
+        });
+        this.view = { ...this.view, activeId: this.myId };
+        this.mine = {
+          track: queue[0] ?? null,
+          private: false,
+          playing,
+          wants: playing,
+          pos,
+          queue: queue.slice(1),
+          volume: this.player.snapshot()?.volume ?? 1,
+          shuffle: false,
+          repeat: 'off',
+        };
         this.mineAt = this.clock();
-        this.localChanged();
+        this.sayState();
+        this.refresh();
       } else this.notice(CANT_PLAY, this.myName);
       return;
     }

@@ -65,7 +65,7 @@ export default function KeyboardShortcutsPage() {
           <button
             type="button"
             onClick={() => setShortcutsOpen(true)}
-            className="flex-none rounded-pill bg-quaternary px-4 py-2 type-body-emphasized text-primary hover:bg-white/15 transition-colors cursor-pointer"
+            className="flex-none rounded-lg bg-quaternary px-4 py-2 type-body-emphasized text-primary hover:bg-white/15 transition-colors cursor-pointer"
           >
             Open overlay
           </button>

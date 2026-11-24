@@ -101,7 +101,7 @@ export function SupportModal() {
               href={GITHUB_PROFILE}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1 rounded-pill bg-white/10 px-3 py-1.5 text-xs font-medium text-white hover:bg-white/20 transition-colors"
+              className="inline-flex items-center gap-1 rounded-lg bg-white/10 px-3 py-1.5 text-xs font-medium text-white hover:bg-white/20 transition-colors"
             >
               <SiGithub size={13} />
               <span>GitHub</span>
@@ -170,7 +170,7 @@ export function SupportModal() {
               href={GITHUB_REPO}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-pill bg-white/10 px-3.5 py-2 text-xs font-medium text-white hover:bg-white/20 transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-white/10 px-3.5 py-2 text-xs font-medium text-white hover:bg-white/20 transition-colors"
             >
               <SiGithub size={14} />
               <span>Star</span>
@@ -183,7 +183,7 @@ export function SupportModal() {
         <div className="px-6 py-4 bg-white/[0.02] border-t border-white/10 flex items-center justify-end">
           <button
             onClick={() => setOpen(false)}
-            className="rounded-pill bg-white/10 hover:bg-white/20 px-5 py-2 text-xs font-semibold text-white transition-colors"
+            className="rounded-lg bg-white/10 hover:bg-white/20 px-5 py-2 text-xs font-semibold text-white transition-colors"
           >
             Done
           </button>

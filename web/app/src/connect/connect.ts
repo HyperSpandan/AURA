@@ -147,11 +147,16 @@ function queuedRow(at: number, id: string): number | null {
 
 const webPlayer: ConnectPlayer = {
   snapshot(): Snapshot | null {
-    if (controllingOf(useConnect.getState().view)) return null;
+    const audio = getAudio();
+    const isPlayingAudio = !!audio && !audio.paused && (audio.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA || audio.currentTime > 0);
+    const view = useConnect.getState().view;
+    const isExplicitActive = view?.activeId === useConnect.getState().saved.id;
+
+    if (!isPlayingAudio && !isExplicitActive && controllingOf(view)) return null;
+
     const { queue, index, nowPlaying, volume, shuffle, repeat, status } = usePlayer.getState();
     if (!nowPlaying) return null;
     const entry = queue[index];
-    const audio = getAudio();
     const durationSec = nowPlaying.durationSec
       ?? entry?.track?.durationSec
       ?? (audio && Number.isFinite(audio.duration) && audio.duration > 0 ? Math.round(audio.duration) : null);
@@ -173,8 +178,8 @@ const webPlayer: ConnectPlayer = {
       private: !track,
       // Moving, not just meant to: other devices run this one's clock on from its last report
       // while it says it's playing, so a stall said as playing ran their timestamp ahead of it.
-      playing: !!audio && !audio.paused && (audio.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA || status === 'playing'),
-      wants: !!audio && !audio.paused,
+      playing: isPlayingAudio,
+      wants: isPlayingAudio,
       pos: Math.max(0, (audio?.currentTime ?? 0) * 1000),
       queue: queue.slice(index + 1).map((e) => toCTrack(e.track)).filter((t): t is CTrack => !!t),
       volume,
@@ -284,15 +289,19 @@ function syncRemoteToPlayer(view: ConnectView | null): void {
 
   const playing = !!state.playing;
   const status = playing ? 'playing' : 'paused';
+  const durationSec = np.durationSec > 0 ? np.durationSec : (player.nowPlaying?.durationSec || 0);
+  const mergedNp: NowPlaying = { ...np, durationSec };
+
   if (
-    player.nowPlaying?.videoId !== np.videoId ||
-    player.nowPlaying?.title !== np.title ||
-    player.nowPlaying?.durationSec !== np.durationSec ||
+    player.nowPlaying?.videoId !== mergedNp.videoId ||
+    player.nowPlaying?.title !== mergedNp.title ||
+    player.nowPlaying?.durationSec !== mergedNp.durationSec ||
     player.status !== status ||
-    player.shuffle !== !!state.shuffle
+    player.shuffle !== !!state.shuffle ||
+    player.repeat !== (state.repeat || 'off')
   ) {
     usePlayer.setState({
-      nowPlaying: np,
+      nowPlaying: mergedNp,
       status,
       shuffle: !!state.shuffle,
       repeat: (state.repeat as any) || 'off',
