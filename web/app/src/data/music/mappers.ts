@@ -146,6 +146,21 @@ export function mapItem(node: unknown): MusicItem | null {
   return null;
 }
 
+function setVideoIdOf(n: YTNodes.MusicResponsiveListItem): string | null {
+  const direct = (n as { playlist_item_data?: { playlist_set_video_id?: string | null } }).playlist_item_data?.playlist_set_video_id;
+  if (direct) return direct;
+  const items = (n.menu as { items?: Array<{ endpoint?: { payload?: { actions?: Array<{ setVideoId?: string }> } } }> } | undefined)?.items;
+  if (!Array.isArray(items)) return null;
+  for (const item of items) {
+    const actions = item?.endpoint?.payload?.actions;
+    if (!Array.isArray(actions)) continue;
+    for (const action of actions) {
+      if (typeof action?.setVideoId === 'string' && action.setVideoId) return action.setVideoId;
+    }
+  }
+  return null;
+}
+
 export function mapTrack(node: unknown): Track | null {
   const n = node as YTNodes.MusicResponsiveListItem;
   if ((n as unknown as AnyNode)?.type !== 'MusicResponsiveListItem' || !n.id) return null;
@@ -164,7 +179,7 @@ export function mapTrack(node: unknown): Track | null {
     thumbnail: thumbnailOf(n),
     index: Number.isFinite(index) ? index : null,
     plays: plays ?? n.views ?? null,
-    setVideoId: (n as { playlist_item_data?: { playlist_set_video_id?: string | null } }).playlist_item_data?.playlist_set_video_id ?? null,
+    setVideoId: setVideoIdOf(n),
   };
 }
 

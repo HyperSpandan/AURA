@@ -272,7 +272,7 @@ export function useAddToPlaylist() {
 
 export function useMoveInPlaylist() {
   return useMutation({
-    mutationFn: ({
+    mutationFn: async ({
       playlistId,
       setVideoId,
       successorSetVideoId,
@@ -280,9 +280,13 @@ export function useMoveInPlaylist() {
       playlistId: string;
       fromIndex: number;
       toIndex: number;
-      setVideoId: string;
+      setVideoId: string | null;
       successorSetVideoId: string | null;
-    }) => moveInPlaylist(playlistId, setVideoId, successorSetVideoId),
+    }) => {
+      if (setVideoId) {
+        await moveInPlaylist(playlistId, setVideoId, successorSetVideoId);
+      }
+    },
     onMutate: async ({ playlistId, fromIndex, toIndex }) => {
       const keys = [
         ['music', 'playlist', playlistId],

@@ -61,10 +61,10 @@ export default function PlaylistPage() {
   if (playlist.isError && !playlist.data) return <LoadError error={playlist.error} onRetry={() => void playlist.refetch()} />;
   if (!playlist.data || !headerInfo) return <PlaylistSkeleton />;
 
-  const canReorder = !isLikedPage && ytmTracks.length > 1 && ytmTracks.some((t) => Boolean(t.setVideoId));
+  const canReorder = !isLikedPage && tracks.length > 1;
   const handleMove = (fromIndex: number, toIndex: number) => {
     const moved = ytmTracks[fromIndex];
-    if (!moved?.setVideoId || fromIndex === toIndex) return;
+    if (!moved || fromIndex === toIndex) return;
     // After removing `fromIndex`, the item that will sit right after `moved` at `toIndex`:
     const reordered = [...ytmTracks];
     reordered.splice(fromIndex, 1);
@@ -74,7 +74,7 @@ export default function PlaylistPage() {
       playlistId: id,
       fromIndex,
       toIndex,
-      setVideoId: moved.setVideoId,
+      setVideoId: moved.setVideoId ?? null,
       successorSetVideoId: successor,
     });
   };
