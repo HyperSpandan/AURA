@@ -312,10 +312,10 @@ function FullScreenPlayerContent({ closing = false, onClosed }: { closing?: bool
     if (pathname !== openedAt.current) setFullScreen(false);
   }, [pathname, setFullScreen]);
 
-  // Nothing left to show once the queue ends.
+  // Nothing left to show once the queue ends and no device is active.
   useEffect(() => {
-    if (!nowPlaying) setFullScreen(false);
-  }, [nowPlaying, setFullScreen]);
+    if (!nowPlaying && !remote) setFullScreen(false);
+  }, [nowPlaying, remote, setFullScreen]);
 
   const toggleBrowserFullScreen = () => {
     if (document.fullscreenElement) {

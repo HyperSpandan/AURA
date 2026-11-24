@@ -12,6 +12,7 @@ import type { Track } from '@/data/music/types';
 import { usePlayer } from '@/state/player';
 import { useUi } from '@/state/ui';
 import { useHasVideo } from '@/state/video';
+import { useShownNowPlaying } from '@/connect/shown';
 import { albumPageFor, artistPageFor } from './nowPlayingLinks';
 import { useScrubber } from './useScrubber';
 
@@ -93,7 +94,9 @@ const titleClass = 'min-w-0 max-w-full self-start truncate type-body-emphasized'
 
 /** The now-playing tile inside the pill (report §1, "LCD"). */
 export function Lcd() {
-  const nowPlaying = usePlayer((s) => s.nowPlaying);
+  const localNowPlaying = usePlayer((s) => s.nowPlaying);
+  const shownNowPlaying = useShownNowPlaying();
+  const nowPlaying = shownNowPlaying ?? localNowPlaying;
   const status = usePlayer((s) => s.status);
   const error = usePlayer((s) => s.error);
   const openFullScreen = useUi((s) => s.setFullScreen);
