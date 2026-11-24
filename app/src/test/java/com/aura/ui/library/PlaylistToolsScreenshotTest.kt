@@ -64,17 +64,16 @@ class PlaylistToolsScreenshotTest {
         shoot("playlist/spotify") { LocalPlaylistScreen(spotify.id, PaddingValues(), SongActions(null, false, { _, _, _, _ -> }, {}, {}), onBack = {}) }
         compose.onNodeWithText("Spotify").assertExists()
         compose.onNodeWithText("Search this list").assertDoesNotExist()
-        compose.onNodeWithContentDescription("Add songs").assertDoesNotExist()
         compose.onNodeWithContentDescription("More").performClick()
-        compose.onNodeWithText("Add songs").assertDoesNotExist()
+        compose.onNodeWithText("Add songs").assertExists()
     }
 
-    @Test fun spotifyPlaylistsAreNotOfferedAsWriteTargets() {
+    @Test fun spotifyPlaylistsAreOfferedAsWriteTargets() {
         LibraryStore.putSpotifyPlaylist("1234567890123456789012", "Spotify collection", songs, "revision", null)
         compose.setContent { AuraTheme(ThemeSettings()) {
             com.aura.ui.components.AddToPlaylistDialog(songs.last(), onDone = {}, onDismiss = {})
         } }
-        compose.onNodeWithText("Spotify collection").assertDoesNotExist()
+        compose.onNodeWithText("Spotify collection").assertExists()
         compose.onNodeWithText("Late nights").assertExists()
     }
 

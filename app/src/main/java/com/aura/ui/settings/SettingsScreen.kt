@@ -418,6 +418,7 @@ private fun settingsSections(
     val done by Downloads.done.collectAsState(Downloads.doneNow())
     var downloadQualityDialog by remember { mutableStateOf(false) }
     var lyricsSourcesDialog by remember { mutableStateOf(false) }
+    var automixPerformanceDialog by remember { mutableStateOf(false) }
     var lastFmDialog by remember { mutableStateOf(false) }
     var serverDialog by remember { mutableStateOf(false) }
     var listenBrainzDialog by remember { mutableStateOf(false) }
@@ -530,6 +531,16 @@ private fun settingsSections(
     if (hiddenDialog) HiddenDialog(onDismiss = { hiddenDialog = false })
     if (appIconDialog) AppIconDialog { appIconDialog = false }
     if (fontDialog) com.aura.ui.theme.FontSettingsSheet { fontDialog = false }
+    if (automixPerformanceDialog) {
+        ChoiceSheet(
+            title = "Automix performance",
+            options = com.aura.data.settings.AutomixPerformance.entries,
+            selected = pb.automixPerformance,
+            label = { "${it.label} · ${it.summary}" },
+            onSelect = { v -> AppSettings.updatePlayback { it.copy(automixPerformance = v) } },
+            onDismiss = { automixPerformanceDialog = false },
+        )
+    }
     if (playerStyleDialog) {
         ChoiceSheet(
             title = "Player layout",
@@ -860,10 +871,28 @@ private fun settingsSections(
                 Entry("Upgrade quality while playing", "better stream premium 256 opus swap") {
                     ToggleRow("Upgrade quality while playing", pb.qualityUpgrade, { v -> AppSettings.updatePlayback { it.copy(qualityUpgrade = v) } }, summary = "If a clearly better stream turns up a few seconds in, switch to it without stopping", icon = Icons.Rounded.HighQuality, beta = true)
                 },
+                Entry("Automix", "auto mix dj blend beat transition seamless") {
+                    ToggleRow(
+                        "Automix",
+                        pb.automix,
+                        { v -> AppSettings.updatePlayback { it.copy(automix = v) } },
+                        summary = if (pb.automix) "Each song blends into the next where it suits them: across a fade-out, on the beat, trading the bass over"
+                        else "Off: songs end and start as set below",
+                        icon = Icons.Rounded.AutoAwesome,
+                        beta = true,
+                    )
+                },
+                if (pb.automix) Entry("Automix performance", "automix threads analysis speed battery heat efficient balanced performance") {
+                    NavRow("Automix performance", { automixPerformanceDialog = true }, summary = pb.automixPerformance.summary, icon = Icons.Rounded.Speed, value = pb.automixPerformance.label)
+                } else null,
                 Entry("Crossfade", "fade blend transition overlap") {
                     SettingRow(
                         "Crossfade",
-                        summary = if (pb.crossfadeSeconds == 0) "Off: songs play back to back" else "Blend each song into the next over ${pb.crossfadeSeconds} s",
+                        summary = when {
+                            pb.automix -> "Automix is choosing how long each blend lasts"
+                            pb.crossfadeSeconds == 0 -> "Off: songs play back to back"
+                            else -> "Blend each song into the next over ${pb.crossfadeSeconds} s"
+                        },
                         icon = Icons.Rounded.Animation,
                         below = {
                             Slider(
@@ -871,6 +900,7 @@ private fun settingsSections(
                                 onValueChange = { v -> AppSettings.updatePlayback { it.copy(crossfadeSeconds = v.toInt()) } },
                                 valueRange = 0f..12f,
                                 steps = 11,
+                                enabled = !pb.automix,
                             )
                         },
                     )

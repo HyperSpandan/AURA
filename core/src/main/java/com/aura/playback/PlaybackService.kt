@@ -130,10 +130,32 @@ class PlaybackService : MediaLibraryService() {
     private val dsp = DspAudioProcessor()
     /** The same effects, for the bridge player that carries a song across a quality swap. */
     private val bridgeDsp = DspAudioProcessor()
+    /** And for the crossfade's tail, which plays out the old song while the next one comes in. */
+    private val tailDsp = DspAudioProcessor()
     private var audioManager: AudioManager? = null
     private val startupSelections = ConcurrentHashMap<String, StartupSelection>()
 
     private fun selectedUri(uri: Uri): Uri = startupToken(uri)?.let { startupSelections[it]?.selected } ?: uri
+
+    /**
+     * [item] pointed at exactly the stream the main player chose for it, so a
+     * second player plays the same file (and reads it from the cache) rather
+     * than choosing again; null while the choice is still being made.
+     */
+    private fun sameStream(item: MediaItem): MediaItem? {
+        val raw = item.localConfiguration?.uri ?: return null
+        val token = startupToken(raw)
+        if (token != null && startupSelections[token]?.selected == null) return null
+        var uri = withoutStartup(selectedUri(raw))
+        val id = videoIdOf(uri)
+        if (id != null && isYouTubeId(id) && !Podcasts.isEpisode(id) && externalStreamKeyOf(uri) == null && uri.getQueryParameter("fallback") == null) {
+            uri = uri.buildUpon().appendQueryParameter("fallback", "youtube").build()
+        }
+        return item.buildUpon().setUri(uri).build()
+    }
+
+    /** The stream to read [item]'s sound from for a mix: the one chosen, or its plain address before that. */
+    private fun analysisUri(item: MediaItem): Uri? = item.localConfiguration?.uri?.let { withoutStartup(selectedUri(it)) }
 
     override fun onCreate() {
         super.onCreate()
@@ -193,7 +215,7 @@ class PlaybackService : MediaLibraryService() {
         // The main player and the bridge decode the same way: the bridge used to
         // take the phone's default FLAC decoder, which some phones can't play
         // add-on FLAC with, so the swap to it failed and the song stayed on YouTube.
-        fun renderersFor(effects: DspAudioProcessor, exclusive: Boolean) = object : DefaultRenderersFactory(context) {
+        fun renderersFor(effects: DspAudioProcessor, exclusive: Boolean, allowFloat: Boolean = true) = object : DefaultRenderersFactory(context) {
             init {
                 setEnableDecoderFallback(true)
                 setMediaCodecSelector { mime, secure, tunneling ->
@@ -228,7 +250,7 @@ class PlaybackService : MediaLibraryService() {
                 // silence and nudges a listening room's sync only on 16-bit output, and on float
                 // it quietly plays at normal speed. The effects still run on float before that.
                 floatWanted = { source ->
-                    !stretching() && (
+                    allowFloat && !stretching() && (
                         AppSettings.playback.value.floatOutput ||
                             (BitPerfectUsb.wanted && source != C.ENCODING_PCM_16BIT && source != C.ENCODING_PCM_8BIT)
                         )
@@ -299,7 +321,7 @@ class PlaybackService : MediaLibraryService() {
                 } else {
                     DspParams(eq, sound.bassBoost, pb.spatialAudio, pb.clarity, eightDPeriod = sound.eightD.periodSeconds, spacePeriod = sound.space.periodSeconds)
                 }
-            }.distinctUntilChanged().collect { dsp.params = it; bridgeDsp.params = it }
+            }.distinctUntilChanged().collect { dsp.params = it; bridgeDsp.params = it; tailDsp.params = it }
         }
         scope.launch {
             AppSettings.playback.map { it.skipSilence }.distinctUntilChanged().collect { player.skipSilenceEnabled = it }
@@ -358,7 +380,85 @@ class PlaybackService : MediaLibraryService() {
         scope.launch {
             AppSettings.playback.map { it.systemEffects }.distinctUntilChanged().collect { openEffectSession(player.audioSessionId) }
         }
-        crossfade = Crossfade(context, scope, sources, player).also { it.start() }
+        crossfade = Crossfade(
+            scope = scope,
+            main = player,
+            newTail = {
+                // 16-bit, so the tempo matching a mix asks of it is heard (float output ignores speed).
+                val tail = ExoPlayer.Builder(context, renderersFor(tailDsp, exclusive = false, allowFloat = false))
+                    .setMediaSourceFactory(qualitySources)
+                    .setAudioAttributes(
+                        AudioAttributes.Builder().setUsage(C.USAGE_MEDIA).setContentType(C.AUDIO_CONTENT_TYPE_MUSIC).build(),
+                        /* handleAudioFocus= */ false,
+                    )
+                    .build()
+                tailDsp.lowCutHz = 0f
+                // Its own audio session, with the loudness gain of the song it carries in: the
+                // same gain the main player gives that song, so the level holds at the hand-over.
+                val session = androidx.media3.common.util.Util.generateAudioSessionIdV21(context)
+                tail.setAudioSessionId(session)
+                var enhancer: LoudnessEnhancer? = null
+                val level = {
+                    val mb = tail.currentMediaItem?.let(::loudnessMbFor)
+                    if (mb != null) {
+                        val e = enhancer ?: runCatching { LoudnessEnhancer(session) }.getOrNull()?.also { enhancer = it }
+                        e?.let { runCatching { it.setTargetGain(mb); it.enabled = true } }
+                    } else {
+                        enhancer?.let { runCatching { it.enabled = false } }
+                    }
+                    Unit
+                }
+                val effects = AppSettings.playback.value.systemEffects && effectSession != C.AUDIO_SESSION_ID_UNSET
+                if (effects) sendBroadcast(
+                    Intent(AudioEffect.ACTION_OPEN_AUDIO_EFFECT_CONTROL_SESSION)
+                        .putExtra(AudioEffect.EXTRA_AUDIO_SESSION, session)
+                        .putExtra(AudioEffect.EXTRA_PACKAGE_NAME, packageName)
+                        .putExtra(AudioEffect.EXTRA_CONTENT_TYPE, AudioEffect.CONTENT_TYPE_MUSIC),
+                )
+                Crossfade.Tail(tail, lowCut = { tailDsp.lowCutHz = it }, level = level) {
+                    tail.release()
+                    tailDsp.lowCutHz = 0f
+                    runCatching { enhancer?.release() }
+                    if (effects) sendBroadcast(
+                        Intent(AudioEffect.ACTION_CLOSE_AUDIO_EFFECT_CONTROL_SESSION)
+                            .putExtra(AudioEffect.EXTRA_AUDIO_SESSION, session)
+                            .putExtra(AudioEffect.EXTRA_PACKAGE_NAME, packageName),
+                    )
+                }
+            },
+            sameStream = ::sameStream,
+            analysisUri = ::analysisUri,
+            analyzer = com.aura.playback.mix.MixAnalyzer({ AppSettings.playback.value.automixPerformance }) { uri, network ->
+                val id = videoIdOf(uri)
+                if (id == null) listOf(direct)
+                else buildList {
+                    // The song cache only: what's been played or preloaded is all there.
+                    for (key in listOfNotNull(cacheKeyOf(uri), uri.toString()).distinct()) {
+                        add(
+                            androidx.media3.datasource.cache.CacheDataSource.Factory()
+                                .setCache(AudioCache.get(context))
+                                .setCacheKeyFactory { key }
+                                .setUpstreamDataSourceFactory(null),
+                        )
+                    }
+                    // The next song's first seconds from YouTube, when they aren't in yet.
+                    if (network && externalStreamKeyOf(uri) == null && isYouTubeId(id) && !Podcasts.isEpisode(id)) add(cached)
+                }
+            },
+            mainLowCut = { dsp.lowCutHz = it },
+            // Only a swap under way holds a mix back; a search for a better stream doesn't.
+            busy = { swapRamping || swappingTo != null },
+            silentMs = { dsp.meterRate.takeIf { it > 0 }?.let { rate -> dsp.silentFrames * 1000 / rate } ?: 0L },
+            levelled = { a, b -> loudnessMbFor(a) != null && loudnessMbFor(b) != null },
+            durationOf = { it.toSong().durationMillis() },
+            beforeMix = {
+                if (upgradeJob?.isActive == true && !swapRamping && swappingTo == null) {
+                    upgradeJob?.cancel()
+                    NerdStats.onUpgrade(null)
+                }
+            },
+        ).also { it.start() }
+        dsp.meter = true
         // Casting: the device follows this player while one is connected.
         castMirror = CastMirror(context, player, scope)
         scope.launch {
@@ -1116,6 +1216,24 @@ class PlaybackService : MediaLibraryService() {
     }
 
     private var loudnessRetry: Job? = null
+    /** The loudness gain on the playing song, for a crossfade tail playing it out. */
+    private var appliedLoudnessMb: Int? = null
+
+    /**
+     * The loudness gain, in millibels, normalization gives [item] when it plays, or null
+     * when it gets none (normalization off, bit-perfect, a lossless file, or YouTube's
+     * figure for it not known yet). The same reckoning as [applyLoudness].
+     */
+    private fun loudnessMbFor(item: MediaItem): Int? {
+        val pb = AppSettings.playback.value
+        if (!pb.loudnessNormalization || BitPerfectUsb.active) return null
+        val lossless = item.localConfiguration?.uri?.let(::selectedUri)?.let(::externalStreamKeyOf) != null
+        if (lossless) return null
+        val id = item.mediaId
+        val db = StreamResolver.loudnessDbFor(id) ?: Downloads.loudnessFor(id) ?: return null
+        val speakerHold = !pb.normalizeOnSpeaker && onPhoneSpeaker()
+        return (loudnessGainDb(db, pb.volumeLevel, speakerHold) * 100).roundToInt().coerceIn(MIN_LOUDNESS_GAIN_MB, MAX_LOUDNESS_GAIN_MB)
+    }
 
     private fun applyLoudness() {
         val player = mediaSession?.player as? ExoPlayer ?: return
@@ -1159,10 +1277,12 @@ class PlaybackService : MediaLibraryService() {
                 val gainMb = (loudnessGainDb(db!!, pb.volumeLevel, speakerHold) * 100).roundToInt().coerceIn(MIN_LOUDNESS_GAIN_MB, MAX_LOUDNESS_GAIN_MB)
                 enhancer.setTargetGain(gainMb)
                 enhancer.enabled = true
+                appliedLoudnessMb = gainMb
                 NerdStats.onLoudnessGain(gainMb / 100f)
             } else {
                 enhancer.setTargetGain(0)
                 enhancer.enabled = false
+                appliedLoudnessMb = null
                 NerdStats.onLoudnessGain(null)
             }
         }.onFailure { Log.w(TAG, "Couldn't apply loudness gain", it) }
