@@ -39,7 +39,10 @@ internal class SpotifyRateLimit(
                 }
                 val reply = request()
                 nextRequestAt = now() + 250
-                if (reply.code != 429) return@withLock reply
+                if (reply.code != 429) {
+                    limitedUntil = Long.MIN_VALUE
+                    return@withLock reply
+                }
                 val pauseMs = retryAfterMs(reply.retryAfter, wallTime(), retries)
                 limitedUntil = runCatching { Math.addExact(now(), pauseMs) }.getOrDefault(Long.MAX_VALUE)
                 nextRequestAt = limitedUntil

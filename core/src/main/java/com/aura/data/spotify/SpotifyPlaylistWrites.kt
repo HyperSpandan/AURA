@@ -64,10 +64,17 @@ object SpotifyPlaylistWrites {
                         }
                         if (SpotifyWebPlayer.account() != cookie) throw SpotifyWebPlayer.SignedOut("Spotify account changed. Try saving again.")
                         val matches = batch.map { song ->
-                            val hit = SpotifyWebPlayer.findTrack(song.title, Recommendations.mainArtist(song.artist),
-                                song.albumName, Recommendations.durationMs(song.durationText), cookie, waiting)
-                                ?: throw IOException("Couldn't find the same recording of ${song.title} on Spotify")
-                            song to hit.uri
+                            val cachedUri = SpotifySync.spotifyUriFor(song.videoId)
+                            val uri = if (cachedUri != null) {
+                                cachedUri
+                            } else {
+                                val hit = SpotifyWebPlayer.findTrack(song.title, Recommendations.mainArtist(song.artist),
+                                    song.albumName, Recommendations.durationMs(song.durationText), cookie, waiting)
+                                    ?: throw IOException("Couldn't find the same recording of \"${song.title}\" on Spotify")
+                                SpotifySync.recordMatch(hit.uri, song)
+                                hit.uri
+                            }
+                            song to uri
                         }
                         val uris = matches.map { it.second }.distinct()
                         if (remote == SpotifyLibrary.LIKED_ID) {

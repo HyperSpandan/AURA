@@ -87,6 +87,15 @@ object SpotifySync {
     /** Spotify's mixes for the listener, in Spotify's order, as last brought over. */
     val mixes: StateFlow<List<Mix>> = _mixes.asStateFlow()
 
+    /** Returns the known Spotify track URI for a YouTube Music video ID, if matched. */
+    fun spotifyUriFor(videoId: String): String? =
+        found.entries.firstOrNull { it.value.videoId == videoId }?.key
+
+    /** Records a known mapping from a Spotify track URI to a Song. */
+    fun recordMatch(spotifyUri: String, song: com.aura.data.model.Song) {
+        found[spotifyUri] = SongRef.of(song)
+    }
+
     fun init(context: Context) {
         val f = File(context.applicationContext.filesDir, "spotify-sync.json")
         file = f

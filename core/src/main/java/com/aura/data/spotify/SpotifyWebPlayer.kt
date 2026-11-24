@@ -21,6 +21,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
@@ -74,6 +75,8 @@ object SpotifyWebPlayer {
         "home" to "5fb7da7a03ee2776c0670856609cb85a189a3cecc36cc160b91cde79063b9cf1",
         "addToLibrary" to "896ebcb47815681340860d121cb5d494e157e2a78d3950385cd54e0393c67148",
         "removeFromLibrary" to "896ebcb47815681340860d121cb5d494e157e2a78d3950385cd54e0393c67148",
+        "addToPlaylist" to "b907ad6b088d5bf7680fa81198996d58398c2d55dfcdf59fcc959e0be98a418a",
+        "removeFromPlaylist" to "b907ad6b088d5bf7680fa81198996d58398c2d55dfcdf59fcc959e0be98a418a",
     )
     /** The fallback secret, from the extension's table (DesktopSpotifyToken.TOTP_SECRETS). */
     private val KNOWN_SECRET = Secret(12, listOf(107, 81, 49, 57, 67, 93, 87, 81, 69, 67, 40, 93, 48, 50, 46, 91, 94, 113, 41, 47))
@@ -217,23 +220,33 @@ object SpotifyWebPlayer {
 
     // ---- Matching -------------------------------------------------------------------
 
-    /** A real account write. Only an acknowledged snapshot may update the local copy. */
-    internal suspend fun appendPlaylist(cookie: String, id: String, uris: List<String>, retried: Boolean = false, onRateWait: (Long) -> Unit = {}): String {
-        require(id.matches(Regex("[A-Za-z0-9]{22}"))) { "Invalid Spotify playlist" }
+    /** A real account write using Spotify Web Player's Pathfinder GraphQL mutation. */
+    internal suspend fun appendPlaylist(cookie: String, id: String, uris: List<String>, onRateWait: (Long) -> Unit = {}): JsonObject {
+        val cleanId = id.substringAfterLast(':')
+        require(cleanId.matches(Regex("[A-Za-z0-9]{22}"))) { "Invalid Spotify playlist" }
         require(uris.isNotEmpty() && uris.size <= 100 && uris.all { it.matches(Regex("spotify:track:[A-Za-z0-9]{22}")) })
-        val bearer = accessToken(cookie)
-        val body = buildJsonObject { putJsonArray("uris") { uris.forEach { add(JsonPrimitive(it)) } } }
-        val request = Request.Builder().url("https://api.spotify.com/v1/playlists/$id/items")
-            .header("Authorization", "Bearer ${bearer.token}")
-            .post(body.toString().toRequestBody("application/json".toMediaType())).build()
-        val (code, text) = send(request, onRateWait) {
-            if (account() != cookie) throw SignedOut("Spotify account changed. Try saving again.")
+        val playlistUri = "spotify:playlist:$cleanId"
+        val answer = query("addToPlaylist", cookie, buildJsonObject {
+            put("playlistUri", playlistUri)
+            putJsonArray("playlistItemUris") { uris.forEach { add(JsonPrimitive(it)) } }
+            putJsonObject("newPosition") {
+                put("moveType", "BOTTOM_OF_PLAYLIST")
+                put("fromUid", JsonNull)
+            }
+            put("interactionId", JsonNull)
+        }, onRateWait = onRateWait)
+        val errors = (answer["errors"] as? JsonArray).orEmpty().mapNotNull { (it as? JsonObject)?.text("message") }
+        if (errors.isNotEmpty()) {
+            val message = errors.joinToString(", ")
+            if (message.contains("permission", ignoreCase = true) || message.contains("403") || message.contains("Forbidden", ignoreCase = true)) {
+                throw IOException("You don't have permission to edit this playlist on Spotify")
+            }
+            if (message.contains("unauthorized", ignoreCase = true) || message.contains("401")) {
+                throw SignedOut("Reconnect Spotify to edit playlists")
+            }
+            throw IOException(message)
         }
-        if (code == 401 && !retried) {
-            access = null
-            return appendPlaylist(cookie, id, uris, true, onRateWait)
-        }
-        return playlistWriteSnapshot(code, text)
+        return answer
     }
 
     internal fun playlistWriteSnapshot(code: Int, text: String): String {
@@ -269,13 +282,22 @@ object SpotifyWebPlayer {
         val wantTitle = fold(title)
         val wantArtist = fold(artist)
         if (wantTitle.isEmpty() || wantArtist.isEmpty()) return null
-        val same = hits.filter { h ->
+        val sameExact = hits.filter { h ->
             fold(TrackNameCleaner.clean(h.title, h.artists.firstOrNull().orEmpty()).title) == wantTitle &&
                 h.artists.any { fold(it) == wantArtist } &&
                 (durationMs <= 0 || (h.durationMs > 0 && kotlin.math.abs(h.durationMs - durationMs) <= 3_000))
         }
         val wantAlbum = album?.let(::fold)?.takeIf { it.isNotEmpty() }
-        return same.firstOrNull { wantAlbum != null && fold(it.album.orEmpty()) == wantAlbum } ?: same.firstOrNull()
+        val exactMatch = sameExact.firstOrNull { wantAlbum != null && fold(it.album.orEmpty()) == wantAlbum } ?: sameExact.firstOrNull()
+        if (exactMatch != null) return exactMatch
+
+        // Relaxed match for tracks where YouTube Music video length differs slightly (e.g. music video intro/outro)
+        val sameRelaxed = hits.filter { h ->
+            fold(TrackNameCleaner.clean(h.title, h.artists.firstOrNull().orEmpty()).title) == wantTitle &&
+                h.artists.any { fold(it) == wantArtist } &&
+                (durationMs <= 0 || (h.durationMs > 0 && kotlin.math.abs(h.durationMs - durationMs) <= 8_000))
+        }
+        return sameRelaxed.firstOrNull { wantAlbum != null && fold(it.album.orEmpty()) == wantAlbum } ?: sameRelaxed.firstOrNull()
     }
 
     /** The clip in a `canvas` answer, when it's an MP4 on Spotify's own CDN. */
@@ -316,7 +338,7 @@ object SpotifyWebPlayer {
             .header("User-Agent", USER_AGENT)
             .apply { if (clientToken != null) header("Client-Token", clientToken) }
             .build()
-        val writing = operation == "addToLibrary" || operation == "removeFromLibrary"
+        val writing = operation in setOf("addToLibrary", "removeFromLibrary", "addToPlaylist", "removeFromPlaylist")
         val (code, text) = send(request, onRateWait) {
             if (writing && account() != cookie) throw SignedOut("Spotify account changed. Try saving again.")
         }
