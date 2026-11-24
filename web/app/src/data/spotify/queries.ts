@@ -115,10 +115,13 @@ class PlaylistJob {
 
 const jobs = new Map<string, PlaylistJob>();
 
+const emptyRows: SpotifyRows = { status: 'ready', error: null, rows: [], total: 0, matching: 0 };
+
 /** Per account and playlist: another account's rows are never shown. */
 export function useSpotifyRows(playlistId: string): SpotifyRows & { retry: () => void } {
   const auth = useSpotifyAuth();
   const account = auth.state === 'ready' && auth.auth.signedIn ? (auth.auth.user?.name ?? '?') : null;
+  const enabled = !!account && !!playlistId;
   const key = `${account}|${playlistId}`;
   let job = jobs.get(key);
   if (!job) {
@@ -126,7 +129,7 @@ export function useSpotifyRows(playlistId: string): SpotifyRows & { retry: () =>
     jobs.set(key, job);
   }
   const current = job;
-  const state = useSyncExternalStore(account ? current.subscribe : noSubscribe, () => current.state);
+  const state = useSyncExternalStore(enabled ? current.subscribe : noSubscribe, () => (playlistId ? current.state : emptyRows));
   return { ...state, retry: () => current.retry() };
 }
 

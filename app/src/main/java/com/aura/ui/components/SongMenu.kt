@@ -126,7 +126,7 @@ fun SongMenuSheet(
 ) {
     val actions = LocalSongMenu.current
     val context = LocalContext.current
-    val liked by LibraryStore.liked.collectAsState()
+    val liked by LibraryStore.allLiked.collectAsState()
     val downloads by Downloads.entries.collectAsState()
     val isLiked = liked.any { it.videoId == song.videoId }
     val hidden by LibraryStore.hidden.collectAsState()
@@ -354,7 +354,7 @@ fun MenuRow(icon: ImageVector, label: String, onClick: () -> Unit) {
 fun AddToPlaylistDialog(song: Song, onDone: () -> Unit, onDismiss: () -> Unit) {
     val context = LocalContext.current.applicationContext
     val allPlaylists by LibraryStore.playlists.collectAsState()
-    val playlists = remember(allPlaylists) { allPlaylists.filter { it.spotifyId == null } }
+    val playlists = remember(allPlaylists) { allPlaylists.filter { it.spotifyId != com.aura.data.spotify.SpotifyLibrary.LIKED_ID } }
     val signedIn by com.aura.data.account.AccountStore.signedIn.collectAsState()
     val account by com.aura.data.library.LibraryCache.playlists.collectAsState()
     val owned by com.aura.data.library.LibraryCache.owned.collectAsState()

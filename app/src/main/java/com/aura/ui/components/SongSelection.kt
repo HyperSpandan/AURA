@@ -135,7 +135,7 @@ fun SongSelectionBar(
         exit = slideOutVertically { -it } + fadeOut(),
     ) {
         val scheme = MaterialTheme.colorScheme
-        val liked by LibraryStore.liked.collectAsState()
+        val liked by LibraryStore.allLiked.collectAsState()
         val inOrder = rows.filter { selection.picked.containsKey(it.first) }.map { it.second }
         val count = selection.picked.size
         val allLiked = inOrder.isNotEmpty() && inOrder.all { s -> liked.any { it.videoId == s.videoId } }
@@ -207,7 +207,7 @@ private fun androidx.compose.foundation.layout.RowScope.BarAction(icon: ImageVec
 internal fun AddAllToPlaylistDialog(songs: List<Song>, onDismiss: () -> Unit, onDone: () -> Unit) {
     val context = LocalContext.current.applicationContext
     val all by LibraryStore.playlists.collectAsState()
-    val playlists = remember(all) { all.filter { it.spotifyId == null } }
+    val playlists = remember(all) { all.filter { it.spotifyId != com.aura.data.spotify.SpotifyLibrary.LIKED_ID } }
     // Signed in, the account's own playlists on YouTube Music are offered too, as for one song:
     // without them, someone whose playlists are all there was sent straight to naming a new one.
     val signedIn by com.aura.data.account.AccountStore.signedIn.collectAsState()

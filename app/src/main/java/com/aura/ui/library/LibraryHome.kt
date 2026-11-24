@@ -228,7 +228,7 @@ private fun rememberPlaylistRows(nav: LibraryNav): List<LibraryPlaylistRow> {
 @Composable
 fun LibraryScreen(contentPadding: PaddingValues, actions: SongActions, nav: LibraryNav) {
     val records by History.records.collectAsState()
-    val liked by LibraryStore.liked.collectAsState()
+    val liked by LibraryStore.allLiked.collectAsState()
     val finished by Downloads.done.collectAsState(Downloads.doneNow())
     val signedIn by AccountStore.signedIn.collectAsState()
     val account by AccountStore.account.collectAsState()
@@ -408,7 +408,7 @@ private enum class PlaylistOrder(val label: String) {
 /** Every playlist, two to a row, from "Show all" on Library. */
 @Composable
 fun AllPlaylistsScreen(contentPadding: PaddingValues, nav: LibraryNav, onBack: () -> Unit) {
-    val liked by LibraryStore.liked.collectAsState()
+    val liked by LibraryStore.allLiked.collectAsState()
     val signedIn by AccountStore.signedIn.collectAsState()
     val pinned = AppSettings.ui.collectAsState().value.pinnedPlaylists
     var order by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(PlaylistOrder.LIBRARY) }
@@ -1011,7 +1011,7 @@ private enum class DownloadsTab {
 /** Songs liked in the app (and on YouTube Music, when signed in). */
 @Composable
 fun LikedScreen(contentPadding: PaddingValues, actions: SongActions, onBack: () -> Unit, onOpenYouTubeLikes: () -> Unit) {
-    val liked by LibraryStore.liked.collectAsState()
+    val liked by LibraryStore.allLiked.collectAsState()
     val likedSync by LikedSync.status.collectAsState()
     val signedIn by AccountStore.signedIn.collectAsState()
     LaunchedEffect(signedIn) { if (signedIn) LikedSync.sync() }
@@ -1090,7 +1090,7 @@ fun LocalPlaylistScreen(id: String, contentPadding: PaddingValues, actions: Song
     var savingOnline by remember { mutableStateOf(false) }
     var choosingPrivacy by remember { mutableStateOf(false) }
     var privateShare by remember { mutableStateOf(false) }
-    if (adding && playlist != null && playlist.spotifyId == null) AddSongsSheet(id, onDismiss = { adding = false })
+    if (adding && playlist != null) AddSongsSheet(id, onDismiss = { adding = false })
     // Changes made on YouTube Music since, once this page's own have gone.
     val remoteId = playlist?.remoteId
     LaunchedEffect(id, signedIn, remoteId) {
@@ -1179,7 +1179,7 @@ fun LocalPlaylistScreen(id: String, contentPadding: PaddingValues, actions: Song
     val tools: @Composable (Modifier) -> Unit = { modifier ->
         ListTools(
             songs,
-            onAddSongs = if (playlist.spotifyId == null) ({ adding = true }) else null,
+            onAddSongs = { adding = true },
             onShare = share,
             modifier = modifier,
             privacy = playlist.privacy,

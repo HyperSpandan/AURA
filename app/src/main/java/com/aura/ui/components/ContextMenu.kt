@@ -331,7 +331,7 @@ fun SongContextMenu(
 ) {
     val actions = LocalSongMenu.current
     val context = LocalContext.current
-    val liked by LibraryStore.liked.collectAsState()
+    val liked by LibraryStore.allLiked.collectAsState()
     val downloads by Downloads.entries.collectAsState()
     val isLiked = liked.any { it.videoId == song.videoId }
     val download = downloads[song.videoId]

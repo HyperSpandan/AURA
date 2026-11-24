@@ -124,8 +124,12 @@ object LibraryStore {
     private val doc = MutableStateFlow(LibraryDocument())
 
     private val _liked = MutableStateFlow<List<SongRef>>(emptyList())
-    /** Newest like first. */
+    /** Newest like first (AURA local + YouTube Music). */
     val liked: StateFlow<List<SongRef>> = _liked.asStateFlow()
+
+    private val _allLiked = MutableStateFlow<List<SongRef>>(emptyList())
+    /** All liked songs combined (AURA local + YouTube Music + Spotify liked songs). */
+    val allLiked: StateFlow<List<SongRef>> = _allLiked.asStateFlow()
 
     private val _ready = MutableStateFlow(false)
     /**
@@ -226,14 +230,33 @@ object LibraryStore {
         _hidden.value = HiddenList(d.hiddenSongs, d.hiddenArtists)
         _disliked.value = d.disliked
         _smart.value = d.smartPlaylists
+        recomputeAllLiked(d.liked, d.playlists)
         LibraryArtwork.keep(d.liked.map { it.thumbnailUrl } + d.playlists.flatMap { p -> p.songs.map { it.thumbnailUrl } })
+    }
+
+    private fun recomputeAllLiked(likedSongs: List<SongRef>, localPlaylists: List<LocalPlaylist>) {
+        val spotifyPlaylist = localPlaylists.firstOrNull { it.spotifyId == com.aura.data.spotify.SpotifyLibrary.LIKED_ID }
+        val spotifySongs = spotifyPlaylist?.songs.orEmpty()
+        if (spotifySongs.isEmpty()) {
+            _allLiked.value = likedSongs
+        } else {
+            val seen = HashSet<String>()
+            val result = ArrayList<SongRef>(likedSongs.size + spotifySongs.size)
+            for (s in likedSongs) {
+                if (seen.add(s.videoId)) result.add(s)
+            }
+            for (s in spotifySongs) {
+                if (seen.add(s.videoId)) result.add(s)
+            }
+            _allLiked.value = result
+        }
     }
 
     // Locked: the playlist sync writes back from its own thread.
     @Synchronized
     private fun update(t: (LibraryDocument) -> LibraryDocument) = publish(t(doc.value))
 
-    fun isLiked(videoId: String): Boolean = _liked.value.any { it.videoId == videoId }
+    fun isLiked(videoId: String): Boolean = _allLiked.value.any { it.videoId == videoId }
 
     fun isDisliked(videoId: String): Boolean = videoId in doc.value.disliked
 
@@ -254,7 +277,18 @@ object LibraryStore {
     fun setLiked(song: Song, liked: Boolean) {
         update { d ->
             val rest = d.liked.filterNot { it.videoId == song.videoId }
-            d.copy(liked = if (liked) listOf(SongRef.of(song)) + rest else rest, disliked = if (liked) d.disliked - song.videoId else d.disliked)
+            val updatedPlaylists = if (!liked) {
+                d.playlists.map { p ->
+                    if (p.spotifyId == com.aura.data.spotify.SpotifyLibrary.LIKED_ID) {
+                        p.copy(songs = p.songs.filterNot { it.videoId == song.videoId })
+                    } else p
+                }
+            } else d.playlists
+            d.copy(
+                liked = if (liked) listOf(SongRef.of(song)) + rest else rest,
+                disliked = if (liked) d.disliked - song.videoId else d.disliked,
+                playlists = updatedPlaylists,
+            )
         }
         if (AccountStore.signedIn.value && !song.videoId.startsWith("local:")) {
             scope.launch {
@@ -295,15 +329,27 @@ object LibraryStore {
     /** Adds [songs] in order, skipping any already there; one write for the lot. */
     @Synchronized
     fun addAllToPlaylist(id: String, songs: List<Song>) {
-        if (playlist(id)?.spotifyId != null) {
-            com.aura.data.Pills.info("Edit this playlist in Spotify")
+        val p = playlist(id) ?: return
+        if (p.spotifyId != null) {
+            if (com.aura.data.spotify.SpotifyWebPlayer.account() != null) {
+                com.aura.data.spotify.SpotifyPlaylistWrites.add(id, songs)
+                return
+            }
+            // Even without active Spotify Web Player cookie, add directly to local playlist copy
+            var added = emptyList<SongRef>()
+            editPlaylist(id) { pl ->
+                val have = pl.songs.mapTo(HashSet()) { it.videoId }
+                added = songs.filter { have.add(it.videoId) }.map(SongRef::of)
+                pl.copy(songs = pl.songs + added)
+            }
+            com.aura.data.Pills.done("Added to ${p.name}")
             return
         }
         var added = emptyList<SongRef>()
-        editPlaylist(id) { p ->
-            val have = p.songs.mapTo(HashSet()) { it.videoId }
+        editPlaylist(id) { pl ->
+            val have = pl.songs.mapTo(HashSet()) { it.videoId }
             added = songs.filter { have.add(it.videoId) }.map(SongRef::of)
-            p.copy(songs = p.songs + added)
+            pl.copy(songs = pl.songs + added)
         }
         mirror(id) { remote -> PlaylistEdit(PlaylistEdit.Kind.ADD, id, remote, videoIds = added.map { it.videoId }.filter(::isYouTubeId)) }
     }

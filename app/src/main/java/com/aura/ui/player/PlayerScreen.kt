@@ -409,7 +409,7 @@ fun PlayerLayout(
         }
     }
     val controlsHidden = controlsAway || (scrolledAway && pane == Pane.LYRICS)
-    val liked by LibraryStore.liked.collectAsState()
+    val liked by LibraryStore.allLiked.collectAsState()
     val isLiked = liked.any { it.videoId == current.videoId }
     val device = rememberOutputDeviceName()
     val outputRoute = rememberOutputRoute()

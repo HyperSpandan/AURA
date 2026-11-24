@@ -23,6 +23,9 @@ import { LIKED_MUSIC_PLAYLIST } from '@/data/music/library';
 import { useLibrary, useLibraryPlaylists, usePlaylist, useSignedIn } from '@/data/music/queries';
 import { usePinnedStore } from '@/data/pinned/pinnedStore';
 import type { MusicItem, Track } from '@/data/music/types';
+import { LIKED_ID } from '@/data/spotify/api';
+import { useSpotifyPlaylists, useSpotifyRows } from '@/data/spotify/queries';
+import { useSpotifySignedIn } from '@/extension/useSpotifyAuth';
 import { useYtAuth } from '@/extension/useYtAuth';
 
 export default function LibraryHomePage() {
@@ -36,6 +39,9 @@ export default function LibraryHomePage() {
   const recentQuery = useLibrary('recent');
   const likedPlaylistQuery = usePlaylist(LIKED_MUSIC_PLAYLIST);
   const playlistsQuery = useLibraryPlaylists();
+  const spotifySignedIn = useSpotifySignedIn();
+  const spotifyRows = useSpotifyRows(spotifySignedIn ? LIKED_ID : '');
+  const spotifyPlaylistsQuery = useSpotifyPlaylists();
   const pinnedItems = usePinnedStore((s) => s.items);
 
   const recentTracks: Track[] = useMemo(() => {
@@ -45,10 +51,12 @@ export default function LibraryHomePage() {
   const likedTracksCount = useMemo(() => {
     const meta = likedPlaylistQuery.data?.pages[0]?.header?.meta;
     const match = meta?.match(/(\d+)\s+(?:tracks|songs)/i);
-    if (match?.[1]) return parseInt(match[1], 10);
-    const list = likedPlaylistQuery.data?.pages.flatMap((page) => page.tracks) ?? [];
-    return list.length || 71;
-  }, [likedPlaylistQuery.data]);
+    let count = match?.[1] ? parseInt(match[1], 10) : (likedPlaylistQuery.data?.pages.flatMap((page) => page.tracks).length || 71);
+    if (spotifySignedIn && spotifyRows.rows.length > 0) {
+      count += spotifyRows.rows.filter((t) => !t.unavailable).length;
+    }
+    return count;
+  }, [likedPlaylistQuery.data, spotifySignedIn, spotifyRows.rows]);
 
   const userName = useMemo(() => {
     if (ytAuth.state === 'ready' && ytAuth.auth.active?.name) {
@@ -65,22 +73,43 @@ export default function LibraryHomePage() {
   const memberSince = '11/26';
 
   const userPlaylists: MusicItem[] = useMemo(() => {
+    const lists: MusicItem[] = [];
     if (playlistsQuery.data && playlistsQuery.data.length > 0) {
-      return playlistsQuery.data.slice(0, 8).map((p) => ({
-        kind: 'playlist',
-        id: p.id,
-        title: p.title,
-        subtitle: 'Playlist',
-        thumbnail: p.thumbnail,
-        artists: [],
-        album: null,
-        wide: false,
-        durationSec: null,
-        explicit: false,
-      }));
+      lists.push(
+        ...playlistsQuery.data.map((p) => ({
+          kind: 'playlist' as const,
+          id: p.id,
+          title: p.title,
+          subtitle: 'Playlist',
+          thumbnail: p.thumbnail,
+          artists: [],
+          album: null,
+          wide: false,
+          durationSec: null,
+          explicit: false,
+        }))
+      );
     }
-    return [];
-  }, [playlistsQuery.data]);
+    if (spotifyPlaylistsQuery.data && spotifyPlaylistsQuery.data.length > 0) {
+      lists.push(
+        ...spotifyPlaylistsQuery.data
+          .filter((p) => p.id !== LIKED_ID)
+          .map((p) => ({
+            kind: 'spotify-playlist' as const,
+            id: p.id,
+            title: p.name,
+            subtitle: p.owner ?? 'Spotify',
+            artists: [],
+            album: null,
+            thumbnail: p.imageUrl,
+            wide: false,
+            durationSec: null,
+            explicit: false,
+          }))
+      );
+    }
+    return lists.slice(0, 12);
+  }, [playlistsQuery.data, spotifyPlaylistsQuery.data]);
 
   const shortcutTiles = [
     {
