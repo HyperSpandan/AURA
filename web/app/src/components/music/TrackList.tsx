@@ -1,6 +1,6 @@
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { ArrowDown, ArrowDownToLine, ArrowUp, GripVertical } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { type DragEvent, useEffect, useRef, useState } from 'react';
 import { PrefetchLink } from '@/components/PrefetchLink';
 import { PauseIcon, PlayIcon } from '@/components/icons/Transport';
 import { useDownloads } from '@/data/download/useDownloads';
@@ -97,9 +97,14 @@ interface RowProps {
   fallbackArtwork: string | null | undefined;
   onPlayRow: () => void;
   reordering?: boolean;
+  dragging?: boolean;
+  dragOver?: boolean;
   onMove?: (fromIndex: number, toIndex: number) => void;
-  onDragStartIndex?: (index: number) => void;
-  onDropAtIndex?: (index: number) => void;
+  onDragStartIndex?: (index: number, e: DragEvent<HTMLDivElement>) => void;
+  onDragOverIndex?: (index: number) => void;
+  onDragLeaveIndex?: (index: number) => void;
+  onDropAtIndex?: (index: number, e: DragEvent<HTMLDivElement>) => void;
+  onDragEndIndex?: () => void;
 }
 
 function Row({
@@ -110,9 +115,14 @@ function Row({
   fallbackArtwork,
   onPlayRow,
   reordering,
+  dragging,
+  dragOver,
   onMove,
   onDragStartIndex,
+  onDragOverIndex,
+  onDragLeaveIndex,
   onDropAtIndex,
+  onDragEndIndex,
 }: RowProps) {
   const current = usePlayer((s) => s.nowPlaying?.videoId === track.videoId);
   const playing = usePlayer((s) => s.nowPlaying?.videoId === track.videoId && (s.status === 'playing' || s.status === 'buffering'));
@@ -120,15 +130,22 @@ function Row({
   const isDownloaded = useDownloads((s) => s.isDownloaded(track.videoId));
   const unavailable = track.unavailable;
   const onPlay = () => (unavailable ? undefined : current ? togglePlay() : onPlayRow());
+  const index = position - 1;
 
   return (
     <div
-      className={`${row} ${rowVariant[variant]}`}
+      className={`${row} ${rowVariant[variant]}${dragging ? ' opacity-45' : ''}${dragOver ? ' bg-white/10 ring-1 ring-inset ring-key/70' : ''}${reordering ? ' cursor-grab active:cursor-grabbing select-none [&_a]:[-webkit-user-drag:none]' : ''}`}
       data-variant={variant}
       data-current={current || undefined}
       data-unavailable={unavailable}
       title={unavailable === 'matching' ? 'Looking for this on YouTube Music…' : unavailable === 'missing' ? 'Not found on YouTube Music' : undefined}
-      onDoubleClick={onPlay}
+      draggable={Boolean(reordering)}
+      onDragStart={reordering ? (e) => onDragStartIndex?.(index, e) : undefined}
+      onDragOver={reordering ? (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; onDragOverIndex?.(index); } : undefined}
+      onDragLeave={reordering ? () => onDragLeaveIndex?.(index) : undefined}
+      onDrop={reordering ? (e) => { e.preventDefault(); onDropAtIndex?.(index, e); } : undefined}
+      onDragEnd={reordering ? () => onDragEndIndex?.() : undefined}
+      onDoubleClick={reordering ? undefined : onPlay}
     >
       <div className={`${cell} gap-3`}>
         <div className={`relative grid w-10 shrink-0 place-items-center${variant === 'playlist' ? ' ms-[7px]' : ''}`}>
@@ -210,9 +227,9 @@ function Row({
           </div>
         </>
       )}
-      <div className={`${cell} ${time[variant]} ${dimmed}`}>
+      <div className={`${cell} ${reordering ? 'relative justify-end pe-2' : time[variant]} ${dimmed}`}>
         {reordering && onMove ? (
-          <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
             <button
               type="button"
               disabled={position <= 1}
@@ -272,6 +289,35 @@ function Header() {
  */
 export function TrackList({ tracks, variant, fallbackArtwork, fallbackArtists, onNearEnd, source, reordering, onMove }: TrackListProps) {
   const dragFrom = useRef<number | null>(null);
+  const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+
+  const handleDragStart = (idx: number, e: DragEvent<HTMLDivElement>) => {
+    dragFrom.current = idx;
+    setDraggingIndex(idx);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', String(idx));
+  };
+  const handleDragOver = (idx: number) => {
+    setDragOverIndex((prev) => (prev === idx ? prev : idx));
+  };
+  const handleDragLeave = (idx: number) => {
+    setDragOverIndex((prev) => (prev === idx ? null : prev));
+  };
+  const handleDrop = (idx: number, e: DragEvent<HTMLDivElement>) => {
+    const raw = e.dataTransfer.getData('text/plain');
+    const parsed = raw !== '' ? Number(raw) : NaN;
+    const from = dragFrom.current ?? (Number.isInteger(parsed) ? parsed : null);
+    dragFrom.current = null;
+    setDraggingIndex(null);
+    setDragOverIndex(null);
+    if (from !== null && from !== idx) onMove?.(from, idx);
+  };
+  const handleDragEnd = () => {
+    dragFrom.current = null;
+    setDraggingIndex(null);
+    setDragOverIndex(null);
+  };
   const playRow = (i: number) => {
     // Rows from another catalogue that found no YouTube Music song stay out of the queue.
     if (source) {
@@ -326,43 +372,38 @@ export function TrackList({ tracks, variant, fallbackArtwork, fallbackArtists, o
                   fallbackArtwork={fallbackArtwork}
                   onPlayRow={() => playRow(item.index)}
                   reordering={reordering}
+                  dragging={draggingIndex === item.index}
+                  dragOver={dragOverIndex === item.index && draggingIndex !== item.index}
                   onMove={onMove}
-                  onDragStartIndex={(idx) => { dragFrom.current = idx; }}
-                  onDropAtIndex={(idx) => {
-                    const from = dragFrom.current;
-                    dragFrom.current = null;
-                    if (from !== null && from !== idx) onMove?.(from, idx);
-                  }}
+                  onDragStartIndex={handleDragStart}
+                  onDragOverIndex={handleDragOver}
+                  onDragLeaveIndex={handleDragLeave}
+                  onDropAtIndex={handleDrop}
+                  onDragEndIndex={handleDragEnd}
                 />
               </div>
             ))}
           </div>
         ) : (
           tracks.map((track, i) => (
-            <div
+            <Row
               key={`${track.videoId}-${i}`}
-              draggable={Boolean(reordering)}
-              onDragStart={() => { dragFrom.current = i; }}
-              onDragOver={(e) => { if (reordering) e.preventDefault(); }}
-              onDrop={(e) => {
-                if (!reordering) return;
-                e.preventDefault();
-                const from = dragFrom.current;
-                dragFrom.current = null;
-                if (from !== null && from !== i) onMove?.(from, i);
-              }}
-            >
-              <Row
-                track={track}
-                variant={variant}
-                position={i + 1}
-                total={tracks.length}
-                fallbackArtwork={fallbackArtwork}
-                onPlayRow={() => playRow(i)}
-                reordering={reordering}
-                onMove={onMove}
-              />
-            </div>
+              track={track}
+              variant={variant}
+              position={i + 1}
+              total={tracks.length}
+              fallbackArtwork={fallbackArtwork}
+              onPlayRow={() => playRow(i)}
+              reordering={reordering}
+              dragging={draggingIndex === i}
+              dragOver={dragOverIndex === i && draggingIndex !== i}
+              onMove={onMove}
+              onDragStartIndex={handleDragStart}
+              onDragOverIndex={handleDragOver}
+              onDragLeaveIndex={handleDragLeave}
+              onDropAtIndex={handleDrop}
+              onDragEndIndex={handleDragEnd}
+            />
           ))
         )}
       </div>

@@ -1,6 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
 import { ListPlus } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { DetailHeader, detailButton } from '@/components/music/DetailHeader';
 import { PlaylistMenu } from '@/components/music/PlaylistMenu';
@@ -9,7 +9,7 @@ import { EmptyState, LoadError, NeedsExtension } from '@/components/music/States
 import { TrackList } from '@/components/music/TrackList';
 import { createPlaylist } from '@/data/music/api';
 import { useSignedIn } from '@/data/music/queries';
-import type { HeaderInfo } from '@/data/music/types';
+import type { HeaderInfo, Track } from '@/data/music/types';
 import { useSpotifyPlaylistInfo, useSpotifyRows } from '@/data/spotify/queries';
 import { useExtension } from '@/extension/useExtension';
 import { useSpotifySignedIn } from '@/extension/useSpotifyAuth';
@@ -24,37 +24,88 @@ import { detailFooter } from './pageStyles';
  * match arrives. Import keeps the result as a YouTube Music playlist
  * (SpotifyImportAlert), with the songs that found nothing left out and named.
  */
+function buildTrackKeys(tracks: Track[]): string[] {
+  const counts = new Map<string, number>();
+  return tracks.map((t) => {
+    const base = `${t.title}::${t.artists.map((a) => a.name).join(',')}`;
+    const n = counts.get(base) ?? 0;
+    counts.set(base, n + 1);
+    return `${base}#${n}`;
+  });
+}
+
+function readStoredOrder(storageKey: string): string[] | null {
+  try {
+    const raw = localStorage.getItem(storageKey);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) && parsed.every((x) => typeof x === 'string') ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
 export default function SpotifyPlaylistPage() {
   const id = decodeURIComponent(useParams().id ?? '');
+  const orderStorageKey = `aura.spotifyOrder.${id}`;
   const extension = useExtension();
   const signedIn = useSpotifySignedIn();
   const info = useSpotifyPlaylistInfo(id);
   const rows = useSpotifyRows(id);
   const [reordering, setReordering] = useState(false);
-  const [orderedRows, setOrderedRows] = useState(rows.rows);
+  const [customOrder, setCustomOrder] = useState<string[] | null>(() => readStoredOrder(orderStorageKey));
   useEffect(() => {
-    setOrderedRows(rows.rows);
-  }, [rows.rows]);
+    setCustomOrder(readStoredOrder(orderStorageKey));
+  }, [orderStorageKey]);
   usePageTint(useArtworkColor(info.data?.imageUrl));
+
+  const { displayRows, displayKeys } = useMemo(() => {
+    const keys = buildTrackKeys(rows.rows);
+    if (!customOrder?.length || !rows.rows.length) {
+      return { displayRows: rows.rows, displayKeys: keys };
+    }
+    const byKey = new Map<string, Track>();
+    rows.rows.forEach((t, i) => byKey.set(keys[i]!, t));
+    const orderedRows: Track[] = [];
+    const orderedKeys: string[] = [];
+    const seen = new Set<string>();
+    for (const k of customOrder) {
+      const match = byKey.get(k);
+      if (match) {
+        orderedRows.push(match);
+        orderedKeys.push(k);
+        seen.add(k);
+      }
+    }
+    rows.rows.forEach((t, i) => {
+      const k = keys[i]!;
+      if (!seen.has(k)) {
+        orderedRows.push(t);
+        orderedKeys.push(k);
+      }
+    });
+    return { displayRows: orderedRows, displayKeys: orderedKeys };
+  }, [rows.rows, customOrder]);
 
   if (extension.state === 'missing') return <NeedsExtension what="your Spotify playlists" />;
   if (!signedIn) return <EmptyState title="Sign in to Spotify" detail="Open Spotify in the sidebar to connect your account." />;
   if (rows.status === 'error' && !rows.rows.length) return <LoadError error={rows.error} onRetry={rows.retry} />;
   if (!info.data || (rows.status === 'loading' && !rows.rows.length)) return <PlaylistSkeleton />;
 
-  const displayRows = orderedRows.length === rows.rows.length ? orderedRows : rows.rows;
   const playable = displayRows.filter((t) => !t.unavailable);
   const missing = displayRows.filter((t) => t.unavailable === 'missing');
   const canReorder = displayRows.length > 1;
   const handleMove = (fromIndex: number, toIndex: number) => {
-    if (fromIndex === toIndex) return;
-    setOrderedRows((prev) => {
-      const base = prev.length === rows.rows.length ? [...prev] : [...rows.rows];
-      if (fromIndex < 0 || fromIndex >= base.length || toIndex < 0 || toIndex >= base.length) return base;
-      const [moved] = base.splice(fromIndex, 1);
-      base.splice(toIndex, 0, moved!);
-      return base;
-    });
+    if (fromIndex === toIndex || fromIndex < 0 || fromIndex >= displayKeys.length || toIndex < 0 || toIndex >= displayKeys.length) return;
+    const nextOrder = [...displayKeys];
+    const [movedKey] = nextOrder.splice(fromIndex, 1);
+    nextOrder.splice(toIndex, 0, movedKey!);
+    setCustomOrder(nextOrder);
+    try {
+      localStorage.setItem(orderStorageKey, JSON.stringify(nextOrder));
+    } catch {
+      // Ignore storage quota errors
+    }
   };
   const total = Math.max(rows.total, info.data.total);
   const meta = [
