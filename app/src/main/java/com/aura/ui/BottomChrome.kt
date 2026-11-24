@@ -1,5 +1,7 @@
 package com.aura.ui
 
+import androidx.compose.runtime.withFrameNanos
+import kotlinx.coroutines.isActive
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.awaitHorizontalTouchSlopOrCancellation
@@ -546,7 +548,7 @@ private fun DockPill(c: ChromeContent, full: Dp, folded: Boolean, fold: () -> Fl
     if (shown != null) resting = shown
     val density = LocalDensity.current
     var isDragging by remember { mutableStateOf(false) }
-    var dragLeftDp by remember { mutableFloatStateOf(slot.value * resting) }
+    val dragLeftState = remember { mutableFloatStateOf(slot.value * resting) }
     var hoveredTab by remember { mutableIntStateOf(resting) }
     if (folded && isDragging) isDragging = false
     val activeTab = if (isDragging) hoveredTab else shown
@@ -570,7 +572,7 @@ private fun DockPill(c: ChromeContent, full: Dp, folded: Boolean, fold: () -> Fl
                     isDragging = true
                     fun updateAt(xPx: Float) {
                         val xDp = with(density) { xPx.toDp().value }
-                        dragLeftDp = (xDp - slot.value / 2f).coerceIn(0f, maxLeftDp)
+                        dragLeftState.floatValue = (xDp - slot.value / 2f).coerceIn(0f, maxLeftDp)
                         val next = (xPx / slotPx).toInt().coerceIn(0, c.tabs.lastIndex)
                         if (next != hoveredTab) {
                             hoveredTab = next
@@ -599,7 +601,7 @@ private fun DockPill(c: ChromeContent, full: Dp, folded: Boolean, fold: () -> Fl
             .dockHighlight(pill)
             .clip(pill),
     ) {
-        val (left, right) = rememberStretchingLens(resting, slot, c.lens, isDragging = isDragging, dragLeftDp = dragLeftDp)
+        val (left, right) = rememberStretchingLens(resting, slot, c.lens, isDragging = isDragging) { dragLeftState.floatValue }
         val lensAlpha by animateFloatAsState(if (shown != null) 1f else 0f, tween(260, easing = FastOutSlowInEasing), label = "lensAlpha")
         Box(
             Modifier
@@ -660,7 +662,7 @@ private fun DockPill(c: ChromeContent, full: Dp, folded: Boolean, fold: () -> Fl
                             shape = { LENS_SHAPE },
                             effects = {
                                 val depth = com.aura.ui.components.lensDepth(14.dp.toPx() * dragLift, size.minDimension)
-                                lens(depth, (26.dp.toPx() * dragLift).coerceAtLeast(1f), depthEffect = true, chromaticAberration = true)
+                                lens(depth, (22.dp.toPx() * dragLift).coerceAtLeast(1f), depthEffect = true, chromaticAberration = false)
                             },
                             highlight = { Highlight.Default },
                             onDrawSurface = { drawRect(Color.White.copy(alpha = 0.06f * dragLift)) },
@@ -875,25 +877,54 @@ internal fun rememberStretchingLens(
     slot: Dp,
     style: DockLens = DockLens.STRETCH,
     isDragging: Boolean = false,
-    dragLeftDp: Float = slot.value * index,
+    dragLeftDp: () -> Float = { slot.value * index },
 ): Pair<() -> Dp, () -> Dp> {
     val left = remember { Animatable(slot.value * index) }
     val right = remember { Animatable(slot.value * (index + 1)) }
-    LaunchedEffect(index, slot, isDragging, dragLeftDp) {
-        val toLeft = if (isDragging) dragLeftDp else slot.value * index
-        val toRight = if (isDragging) dragLeftDp + slot.value else slot.value * (index + 1)
-        val movingRight = toLeft > left.value
+    val velocities = remember { floatArrayOf(0f, 0f) }
+    LaunchedEffect(isDragging, index, slot) {
         if (isDragging) {
-            // While sliding, the leading edge tracks the finger tightly while the trailing
-            // edge follows with elastic liquid lag, stretching the droplet in motion.
-            val lead = spring<Float>(dampingRatio = 0.85f, stiffness = 1400f)
-            val follow = spring<Float>(dampingRatio = 0.72f, stiffness = 420f)
-            launch { left.animateTo(toLeft, if (movingRight) follow else lead) }
-            launch { right.animateTo(toRight, if (movingRight) lead else follow) }
+            var prevNanos = 0L
+            var vLeft = velocities[0]
+            var vRight = velocities[1]
+            while (isActive) {
+                val nanos = withFrameNanos { it }
+                val dt = if (prevNanos == 0L) 1f / 60f else ((nanos - prevNanos) / 1_000_000_000f).coerceIn(0.001f, 0.033f)
+                prevNanos = nanos
+                val toLeft = dragLeftDp()
+                val toRight = toLeft + slot.value
+                val movingRight = toLeft >= left.value
+                // Tight critically-damped spring for the leading edge, elastic spring for the trailing edge.
+                val kLead = 1600f
+                val cLead = 2f * kotlin.math.sqrt(kLead) * 0.92f
+                val kFollow = 520f
+                val cFollow = 2f * kotlin.math.sqrt(kFollow) * 0.78f
+                val kL = if (movingRight) kFollow else kLead
+                val cL = if (movingRight) cFollow else cLead
+                val kR = if (movingRight) kLead else kFollow
+                val cR = if (movingRight) cLead else cFollow
+                val aL = kL * (toLeft - left.value) - cL * vLeft
+                val aR = kR * (toRight - right.value) - cR * vRight
+                vLeft += aL * dt
+                vRight += aR * dt
+                val nextL = left.value + vLeft * dt
+                val nextR = (right.value + vRight * dt).coerceAtLeast(nextL + slot.value * 0.65f)
+                velocities[0] = vLeft
+                velocities[1] = vRight
+                left.snapTo(nextL)
+                right.snapTo(nextR)
+            }
         } else {
+            val toLeft = slot.value * index
+            val toRight = slot.value * (index + 1)
+            val movingRight = toLeft > left.value
             val (lead, follow) = lensSprings(style)
-            launch { left.animateTo(toLeft, if (movingRight) follow else lead) }
-            launch { right.animateTo(toRight, if (movingRight) lead else follow) }
+            val vL = velocities[0]
+            val vR = velocities[1]
+            velocities[0] = 0f
+            velocities[1] = 0f
+            launch { left.animateTo(toLeft, if (movingRight) follow else lead, initialVelocity = vL) }
+            launch { right.animateTo(toRight, if (movingRight) lead else follow, initialVelocity = vR) }
         }
     }
     return ({ left.value.dp } to { right.value.dp })
