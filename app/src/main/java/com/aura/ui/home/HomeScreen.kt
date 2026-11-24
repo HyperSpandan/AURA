@@ -157,18 +157,6 @@ fun HomeScreen(
     val hidden by com.aura.data.library.LibraryStore.hidden.collectAsState()
     val more = remember(moreAll, hideExplicit, hidden) { hidden.shelves(ContentFilter.shelves(moreAll, hideExplicit)) }
     val records by History.records.collectAsState()
-    val newestListen = records.firstOrNull()?.playedAt
-    var shownListen by remember { mutableStateOf(newestListen) }
-    var lastListeningRefresh by remember { mutableStateOf(0L) }
-    LaunchedEffect(newestListen, covered) {
-        if (!covered && newestListen != shownListen) {
-            val wait = (60_000L - (android.os.SystemClock.elapsedRealtime() - lastListeningRefresh)).coerceAtLeast(0)
-            kotlinx.coroutines.delay(wait)
-            shownListen = newestListen
-            lastListeningRefresh = android.os.SystemClock.elapsedRealtime()
-            refreshHome()
-        }
-    }
     val recents = remember(records, hideExplicit) { ContentFilter.songs(History.recents(records, 100), hideExplicit) }
     // Not saved with the page: a page opened from inside it (an artist, from a
     // song's menu) is left with one back press, not one that brings the list up again.

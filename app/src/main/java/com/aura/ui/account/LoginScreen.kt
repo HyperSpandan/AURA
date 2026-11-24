@@ -137,14 +137,8 @@ fun LoginScreen(onDone: () -> Unit) {
                         }
                     }
                     web.set(this)
-                    com.aura.ui.spotify.SpotifyConnection.keepingSpotify { cb ->
-                        CookieManager.getInstance().removeAllCookies { result ->
-                            cb.onReceiveValue(result)
-                            android.webkit.WebStorage.getInstance().deleteAllData()
-                            post {
-                                if (!gone.get()) loadUrl(SIGN_IN_URL)
-                            }
-                        }
+                    post {
+                        if (!gone.get()) loadUrl(SIGN_IN_URL)
                     }
                 }
             },
