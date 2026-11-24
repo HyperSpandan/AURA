@@ -48,6 +48,7 @@ export const pages: PageRoute[] = [
   { path: '/watch', load: () => import('@/pages/WatchPage'), skeleton: <AlbumSkeleton /> },
   { path: '/track/:id', load: () => import('@/pages/WatchPage'), skeleton: <AlbumSkeleton /> },
   { path: '/extension', load: () => import('@/pages/ExtensionPage'), skeleton: <PlainSkeleton /> },
+  { path: '/logo', load: () => import('@/pages/LiquidLogoPage'), skeleton: <PlainSkeleton /> },
   { path: '/debug', load: () => import('@/pages/DebugPage'), skeleton: <PlainSkeleton /> },
 ];
 
