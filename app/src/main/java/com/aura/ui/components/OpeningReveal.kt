@@ -1,10 +1,6 @@
 package com.aura.ui.components
 
-import android.graphics.Bitmap
 import android.graphics.BitmapShader
-import android.graphics.Canvas as AndroidCanvas
-import android.graphics.Matrix
-import android.graphics.Paint
 import android.graphics.RuntimeShader
 import android.graphics.Shader
 import android.os.Build
@@ -26,14 +22,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.ShaderBrush
-import androidx.compose.ui.graphics.asAndroidPath
-import androidx.compose.ui.graphics.drawscope.scale
-import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.res.imageResource
@@ -51,22 +44,6 @@ object Opening {
 val OPENING_FIELD = Color.Black
 
 private val LOGO_SIZE = 240.dp
-
-/** Renders [markPath] cleanly as a pure-white transparent-background bitmap for AGSL refraction. */
-internal fun createAuraMarkBitmap(sizePx: Int = 512): Bitmap {
-    val bmp = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888)
-    val canvas = AndroidCanvas(bmp)
-    val path = markPath().asAndroidPath()
-    val scale = sizePx / MARK_VIEWPORT
-    val matrix = Matrix().apply { setScale(scale, scale) }
-    path.transform(matrix)
-    val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = android.graphics.Color.WHITE
-        style = Paint.Style.FILL
-    }
-    canvas.drawPath(path, paint)
-    return bmp
-}
 
 private const val LIQUID_GLASS_LOGO_AGSL = """
 uniform shader uLogo;
@@ -351,7 +328,6 @@ half4 main(float2 fragCoord) {
 @Composable
 fun OpeningReveal(onDive: (Float) -> Unit, onDone: () -> Unit) {
     val logoBitmap = ImageBitmap.imageResource(id = R.drawable.splash_logo)
-    val mark = remember { markPath() }
     val time = remember { Animatable(0f) }
     val elevation = remember { Animatable(0f) }
     val dive = remember { Animatable(0f) }
@@ -389,10 +365,10 @@ fun OpeningReveal(onDive: (Float) -> Unit, onDone: () -> Unit) {
             },
         contentAlignment = Alignment.Center,
     ) {
-        val shader = remember {
+        val shader = remember(logoBitmap) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 runCatching {
-                    val bmp = createAuraMarkBitmap(512)
+                    val bmp = logoBitmap.asAndroidBitmap()
                     RuntimeShader(LIQUID_GLASS_LOGO_AGSL).apply {
                         setInputShader("uLogo", BitmapShader(bmp, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP))
                         setFloatUniform("uLogoRes", bmp.width.toFloat(), bmp.height.toFloat())
@@ -405,30 +381,33 @@ fun OpeningReveal(onDive: (Float) -> Unit, onDone: () -> Unit) {
 
         if (shader != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             val shaderBrush = remember(shader) { ShaderBrush(shader) }
-            Canvas(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .graphicsLayer {
-                        val d = dive.value
-                        val s = 1f + 0.08f * d
-                        scaleX = s
-                        scaleY = s
-                    },
-            ) {
-                if (drawContext.canvas.nativeCanvas.isHardwareAccelerated) {
-                    val unit = size.minDimension * 0.52f
-                    shader.setFloatUniform("uResolution", size.width, size.height)
-                    shader.setFloatUniform("uUnit", unit)
-                    shader.setFloatUniform("uArtBox", unit)
-                    shader.setFloatUniform("uTime", time.value)
-                    drawRect(shaderBrush)
-                } else {
-                    val s = LOGO_SIZE.toPx() / MARK_VIEWPORT
-                    translate(size.width / 2f - MARK_VIEWPORT / 2f * s, size.height / 2f - MARK_VIEWPORT / 2f * s) {
-                        scale(s, s, pivot = Offset.Zero) {
-                            drawPath(mark, Color.White)
-                        }
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Canvas(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .graphicsLayer {
+                            val d = dive.value
+                            val s = 1f + 0.08f * d
+                            scaleX = s
+                            scaleY = s
+                        },
+                ) {
+                    if (drawContext.canvas.nativeCanvas.isHardwareAccelerated) {
+                        val unit = size.minDimension * 0.52f
+                        shader.setFloatUniform("uResolution", size.width, size.height)
+                        shader.setFloatUniform("uUnit", unit)
+                        shader.setFloatUniform("uArtBox", unit)
+                        shader.setFloatUniform("uTime", time.value)
+                        drawRect(shaderBrush)
                     }
+                }
+                // Software-rendering fallback (e.g., bitmap capture in host tests)
+                if (!androidx.compose.ui.platform.LocalView.current.isHardwareAccelerated) {
+                    Image(
+                        bitmap = logoBitmap,
+                        contentDescription = "AURA",
+                        modifier = Modifier.size(LOGO_SIZE),
+                    )
                 }
             }
         } else {

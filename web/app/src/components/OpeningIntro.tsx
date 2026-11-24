@@ -57,7 +57,8 @@ export function OpeningIntro() {
     >
       <div className="w-full max-w-[520px] px-6">
         <LiquidGlassLogo
-          logo={`${import.meta.env.BASE_URL}logo.svg`}
+          logo={`${import.meta.env.BASE_URL}splash-logo.png`}
+          logoColor="original"
           ending="logo"
           style={{ height: 420 }}
           aria-label="AURA"

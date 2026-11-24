@@ -16,7 +16,6 @@ import { LIBRARY_SECTIONS } from '@/data/music/library';
 import { useLibraryPlaylists, useSignedIn } from '@/data/music/queries';
 import { useSpotifyPlaylists } from '@/data/spotify/queries';
 import { useSpotifySignedIn } from '@/extension/useSpotifyAuth';
-import { useLiquidGlass } from '@/lib/liquidGlass';
 import { useUi } from '@/state/ui';
 import { AccountButton } from './AccountButton';
 
@@ -24,18 +23,6 @@ interface NavItem {
   to: string;
   label: string;
   Icon: (props: NavIconProps) => React.ReactNode;
-}
-
-function LiquidLogoTile() {
-  const glass = useLiquidGlass<HTMLSpanElement>(10, 10);
-  return (
-    <span
-      ref={glass}
-      className="glass-pill relative inline-grid size-8 place-items-center overflow-hidden rounded-lg border border-white/15 bg-white/5 shadow-sm"
-    >
-      <LogoMark size={18} className="relative z-10 text-primary" />
-    </span>
-  );
 }
 
 const PRIMARY: NavItem[] = [
@@ -162,8 +149,9 @@ export function Sidebar() {
         aria-label="Main"
       >
         <div className="ot-side-top flex h-16 items-center justify-between pr-3 pl-7">
-          <PrefetchLink to="/home" className="ot-side-wordmark inline-flex items-center gap-2 rounded-lg" aria-label="AURA, Home" onClick={close}>
-            <LiquidLogoTile />
+          <PrefetchLink to="/home" className="ot-side-wordmark inline-flex items-center gap-2 rounded-[6px]" aria-label="AURA, Home" onClick={close}>
+            {/* White on dark, as Apple's own wordmark; it follows the label colour so it stays visible in light. */}
+            <LogoMark size={22} className="text-primary" />
             <span className="type-[700_19px/24px] tracking-[-0.01em]">AURA</span>
           </PrefetchLink>
           {/* Folds the sidebar to a rail of icons and back. Phones have the drawer instead. */}

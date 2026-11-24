@@ -309,12 +309,7 @@ fun HomeScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        Row(
-                            Modifier.weight(1f),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        ) {
-                            com.aura.ui.components.LiquidAuraLogo(size = 38.dp)
+                        Box(Modifier.weight(1f)) {
                             com.aura.ui.components.RefractedBrandText(
                                 height = 44.dp,
                             )

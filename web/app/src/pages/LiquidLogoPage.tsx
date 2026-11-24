@@ -11,7 +11,8 @@ export default function LiquidLogoPage() {
       <div className="w-full max-w-[640px] overflow-hidden rounded-2xl bg-black">
         <LiquidGlassLogo
           ref={logoRef}
-          logo={`${import.meta.env.BASE_URL}logo.svg`}
+          logo={`${import.meta.env.BASE_URL}splash-logo.png`}
+          logoColor="original"
           ending="logo"
           style={{ height: 480 }}
           aria-label="AURA"
