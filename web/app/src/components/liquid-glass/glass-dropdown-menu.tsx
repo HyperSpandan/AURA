@@ -103,7 +103,7 @@ export function GlassDropdownMenuContent({ children, className = '', sideOffset,
       data-glass-skip=""
       sideOffset={sideOffset ?? (over ? 0 : 12)}
       align={align}
-      className={`group/glass min-w-44 rounded-3xl p-1.5 text-[15px] text-neutral-900 outline-none data-[glass-tone=dark]:text-white data-[glass-tone=light]:text-neutral-900 ${over && sideOffset === undefined ? (centered ? OVER_CENTER : OVER_EDGE) : ''} ${className}`}
+      className={`group/glass min-w-44 rounded-3xl p-1.5 text-[15px] text-neutral-900 outline-none dark:text-white data-[glass-tone=dark]:text-white data-[glass-tone=light]:text-neutral-900 ${over && sideOffset === undefined ? (centered ? OVER_CENTER : OVER_EDGE) : ''} ${className}`}
       {...rest}
       {...(centered ? { side: 'bottom' as const } : null)}
     >

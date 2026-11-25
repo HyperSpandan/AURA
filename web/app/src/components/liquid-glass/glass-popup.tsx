@@ -1301,7 +1301,7 @@ function createMorph(matchWidth: boolean, opening: GlassPopupOpening, from: Glas
     const ctx = canvas?.getContext('2d')
     if (!canvas || !el || !ctx) return () => {}
     const e = getGlassEngine()
-    if (!e) {
+    if (!e || !host) {
       el.dataset.glassOff = ''
       return () => {}
     }

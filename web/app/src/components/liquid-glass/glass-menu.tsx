@@ -86,7 +86,7 @@ export type GlassMenuSubTriggerProps = { children?: ReactNode; className?: strin
 const ROW =
   'relative flex h-10 cursor-pointer items-center gap-2.5 rounded-2xl px-3.5 font-medium whitespace-nowrap outline-none select-none transition-colors duration-100 data-[disabled]:cursor-not-allowed data-[highlighted]:bg-current/10 [&_svg]:size-4 [&_svg]:shrink-0'
 /** The surface's own words: the menu's, and a submenu's. */
-const SURFACE = 'min-w-44 rounded-3xl p-1.5 text-[15px] text-neutral-900 outline-none data-[glass-tone=dark]:text-white data-[glass-tone=light]:text-neutral-900'
+const SURFACE = 'min-w-44 rounded-3xl p-1.5 text-[15px] text-neutral-900 outline-none dark:text-white data-[glass-tone=dark]:text-white data-[glass-tone=light]:text-neutral-900'
 
 const icon = { 'aria-hidden': true, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' } as const
 
