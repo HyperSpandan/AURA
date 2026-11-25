@@ -145,7 +145,6 @@ export function PlayerBar() {
       data-panel-open={sidePanel !== null}
     >
       <GlassCard
-        live
         blur={6}
         tint={0.62}
         data-player-origin
