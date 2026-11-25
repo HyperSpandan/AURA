@@ -6,6 +6,9 @@ import { EmptyState, LoadError, LoadMoreError, NeedsExtension } from '@/componen
 import { TrackList } from '@/components/music/TrackList';
 import { isLibrarySection, LIBRARY_SECTIONS, LIKED_MUSIC_PLAYLIST } from '@/data/music/library';
 import { useLibrary, useSignedIn, useYouTubeReady } from '@/data/music/queries';
+import { LIKED_ID } from '@/data/spotify/api';
+import { useSpotifyPlaylists } from '@/data/spotify/queries';
+import { useSpotifySignedIn } from '@/extension/useSpotifyAuth';
 import { useYtAuth } from '@/extension/useYtAuth';
 import { PlainSkeleton } from '@/skeletons/PageSkeletons';
 import { seeAllGrid, seeAllTracks } from './pageStyles';
@@ -31,6 +34,9 @@ export default function LibraryPage() {
   const { missing } = useYouTubeReady();
   const auth = useYtAuth();
   const signedIn = useSignedIn();
+  const spotifySignedIn = useSpotifySignedIn();
+  const isPlaylists = section === 'playlists';
+  const spotifyPlaylists = useSpotifyPlaylists();
   const library = useLibrary(isLibrarySection(section) ? section : 'playlists');
   const loadMore = useLoadMore(
     library.hasNextPage && !library.isFetchingNextPage && !library.isFetchNextPageError
@@ -56,7 +62,25 @@ export default function LibraryPage() {
   if (library.isError && !library.data) return <LoadError error={library.error} onRetry={() => void library.refetch()} />;
   if (!library.data) return <PlainSkeleton />;
 
-  const grid = library.data.pages.flatMap((page) => page.data.grid);
+  const ytGrid = library.data.pages.flatMap((page) => page.data.grid);
+  const spotifyGrid =
+    isPlaylists && spotifySignedIn && spotifyPlaylists.data
+      ? spotifyPlaylists.data
+          .filter((p) => p.id !== LIKED_ID)
+          .map((p) => ({
+            kind: 'spotify-playlist' as const,
+            id: p.id,
+            title: p.name,
+            subtitle: p.owner ?? 'Spotify',
+            artists: [],
+            album: null,
+            thumbnail: p.imageUrl,
+            wide: false,
+            durationSec: null,
+            explicit: false,
+          }))
+      : [];
+  const grid = [...ytGrid, ...spotifyGrid];
   const tracks = library.data.pages.flatMap((page) => page.data.tracks);
   return (
     <>
