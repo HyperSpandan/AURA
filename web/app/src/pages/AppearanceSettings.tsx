@@ -17,7 +17,6 @@ function Segmented<T extends string>({ title, value, options, onChange }: { titl
         aria-label={title}
         size="sm"
         value={value}
-        highlightClassName="bg-white shadow-sm dark:bg-white/20"
         onValueChange={(v) => onChange(v as T)}
         options={options.map(([v, name]) => ({ value: v, label: name }))}
       />
