@@ -147,8 +147,9 @@ export function Sidebar() {
       <GlassCard
         role="navigation"
         aria-label="Main"
-        blur={6}
-        tint={0.68}
+        live
+        blur={8}
+        tint={0.36}
         className="ot-side absolute top-2.5 bottom-2.5 left-2.5 z-(--z-web-chrome) flex w-[calc(var(--web-navigation-width)-14px)] flex-col rounded-[24px] max-sm:inset-y-0 max-sm:left-0 max-sm:w-[min(300px,82vw)] max-sm:rounded-none max-sm:-translate-x-full max-sm:transition-transform max-sm:duration-(--duration-panel) max-sm:ease-panel max-sm:data-[open=true]:translate-none"
         data-open={drawerOpen}
         data-folded={folded}
@@ -177,7 +178,7 @@ export function Sidebar() {
           {signedIn && <PlaylistsNav onNavigate={close} />}
           {spotifySignedIn && <SpotifyNav onNavigate={close} />}
         </div>
-        <div className="ot-side-bottom mx-2.5 mb-2.5 flex flex-col gap-2 rounded-[18px] bg-white/[0.06] p-2.5">
+        <div className="ot-side-bottom mx-2.5 mb-2.5 flex flex-col gap-2 rounded-[18px] bg-white/[0.08] p-2.5">
           <div className="ot-side-full flex flex-col">
             <AccountButton />
           </div>
