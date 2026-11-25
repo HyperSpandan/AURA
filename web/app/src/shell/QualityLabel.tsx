@@ -1,7 +1,7 @@
 import { AudioLines, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { GlassCard } from '@/components/liquid-glass/glass-card';
+import { GlassButtonGroup, GlassButtonGroupItem } from '@/components/liquid-glass/glass-button-group';
 import { useAddons } from '@/addons/client';
 import { usePlayer } from '@/state/player';
 import { useControlling } from '@/connect/connect';
@@ -23,12 +23,17 @@ export function QualityLabel() {
     ? (remote.state?.quality ? /flac|lossless|hi-res|master/i.test(remote.state.quality) : false)
     : quality.lossless;
   return <>
-    <button className="ot-quality" data-lossless={lossless} onClick={() => setDetails(true)} aria-label={`Audio details: ${text}`}>
-      <GlassCard blur={3} tint={0.35} className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5">
+    <GlassButtonGroup material="clear" size="sm" className="justify-self-center">
+      <GlassButtonGroupItem
+        className="ot-quality"
+        data-lossless={lossless}
+        onClick={() => setDetails(true)}
+        aria-label={`Audio details: ${text}`}
+      >
         {lossless ? <AudioLines size={15} /> : <span className="ot-hq" aria-hidden="true">HQ</span>}
         <span>{text}</span>
-      </GlassCard>
-    </button>
+      </GlassButtonGroupItem>
+    </GlassButtonGroup>
     {/* In the body, not inside the player: the player's idle fade and drag handling would reach it there. */}
     {details && createPortal(<dialog
       ref={dialog}

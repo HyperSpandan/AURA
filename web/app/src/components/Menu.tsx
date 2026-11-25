@@ -96,13 +96,15 @@ export function Menu({ anchor, placement = 'below-end', onClose, label, children
       <div className="fixed inset-0 z-[calc(var(--z-contextual-menus)-1)]" onPointerDown={onClose} aria-hidden="true" />
       <div
         ref={panel}
-        className="fixed z-(--z-contextual-menus) max-w-[320px] min-w-[200px] animate-menu-in"
+        className="fixed z-(--z-contextual-menus) flex max-w-[320px] min-w-[200px] animate-menu-in flex-col"
         style={position}
         role="menu"
         aria-label={label}
       >
-        <GlassCard blur={6} tint={0.68} className="max-h-[inherit] overflow-y-auto rounded-[14px] p-[5px]">
-          {children}
+        <GlassCard blur={6} tint={0.68} className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[14px]">
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-[5px]">
+            {children}
+          </div>
         </GlassCard>
       </div>
     </>,
