@@ -25,6 +25,7 @@ export function SidePanel() {
   return (
     <GlassCard
       role="complementary"
+      live
       blur={6}
       tint={0.68}
       className={`absolute top-2.5 right-2.5 bottom-2.5 z-(--z-web-chrome) flex w-(--side-panel-width) flex-col rounded-[24px] max-sm:inset-0 max-sm:w-full max-sm:rounded-none ${leaving ? 'pointer-events-none animate-slide-out' : 'animate-slide-in'}`}

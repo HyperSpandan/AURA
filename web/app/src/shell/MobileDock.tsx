@@ -19,7 +19,7 @@ export function MobileDock() {
   const { pathname } = useLocation();
   const tab = TABS.findIndex(([, to]) => pathname === to || pathname.startsWith(to + '/'));
   return <div className={`ot-mobile-dock ${fullScreen ? 'opacity-0 pointer-events-none invisible transition-opacity duration-300' : ''}`}>
-    {track && <GlassCard blur={6} tint={0.65} className="ot-mini rounded-[22px]" aria-label="Mini player" data-player-origin>
+    {track && <GlassCard live blur={6} tint={0.65} className="ot-mini rounded-[22px]" aria-label="Mini player" data-player-origin>
       <button className="ot-mini-track" onClick={() => useUi.getState().setFullScreen(true)} aria-label={`Open player: ${track.title}`}>
         {track.artworkUrl && <img src={sizedArtwork(track.artworkUrl, 96)} alt="" data-cover-origin />}
         <span key={track.videoId} className="ot-swap-in"><strong>{track.title}</strong><small>{track.artist}</small></span>
@@ -27,7 +27,7 @@ export function MobileDock() {
       <button className="ot-press" aria-label={playing ? 'Pause' : 'Play'} onClick={togglePlay}>{playing ? <PauseIcon size={26} /> : <PlayIcon size={26} />}</button>
       <button className="ot-press" aria-label="Next" onClick={next}><ForwardIcon size={24} /></button>
     </GlassCard>}
-    <GlassCard blur={6} tint={0.65} role="navigation" className="ot-bottom-nav rounded-[36px]" aria-label="Main navigation">
+    <GlassCard live blur={6} tint={0.65} role="navigation" className="ot-bottom-nav rounded-[36px]" aria-label="Main navigation">
       <span className="ot-dock-pill" style={{ '--i': Math.max(0, tab) } as React.CSSProperties} data-none={tab < 0 || undefined} aria-hidden="true" />
       {TABS.map(([Glyph, to, name]) => <NavLink key={to} to={to}><Glyph size={21} /><span>{name}</span></NavLink>)}
     </GlassCard>
