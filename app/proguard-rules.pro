@@ -48,3 +48,10 @@
 -dontwarn com.google.re2j.**
 -dontwarn jdk.dynalink.**
 -dontwarn java.lang.management.**
+
+# Strip verbose/debug Log calls in release builds while keeping i/w/e for diagnostics.
+-assumenosideeffects class android.util.Log {
+    public static boolean isLoggable(java.lang.String, int);
+    public static int v(...);
+    public static int d(...);
+}
