@@ -15,7 +15,9 @@ function Segmented<T extends string>({ title, value, options, onChange }: { titl
       <span>{title}</span>
       <GlassTabs
         aria-label={title}
+        size="sm"
         value={value}
+        highlightClassName="bg-white shadow-sm dark:bg-white/20"
         onValueChange={(v) => onChange(v as T)}
         options={options.map(([v, name]) => ({ value: v, label: name }))}
       />
@@ -58,6 +60,7 @@ export function AppearanceSettings() {
           <span>Player style</span>
           <GlassSelect
             label=""
+            className="!w-48 [&>label]:hidden [&_button]:!h-9 [&_button]:!px-3.5 [&_button]:!text-[13px]"
             value={a.playerStyle}
             onValueChange={(v) => v && a.update({ playerStyle: v as typeof a.playerStyle })}
             options={PLAYER_STYLES.map((v) => ({ value: v, label: label(v) }))}
