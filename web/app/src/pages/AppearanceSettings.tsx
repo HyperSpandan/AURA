@@ -59,13 +59,13 @@ export function AppearanceSettings() {
         </fieldset>
       </section>
       <h3 className={settingsUi.sectionHeader}>Now Playing</h3>
-      <section className="rounded-[18px] bg-quinary" aria-label="Now Playing">
+      <section className={settingsUi.group} aria-label="Now Playing">
         <Segmented title="Background" value={a.playerBackground} options={[['mesh', 'Mesh'], ['gradient', 'Gradient'], ['echo', 'Echo glow']]} onChange={(playerBackground) => a.update({ playerBackground })} />
         <div className={settingsUi.controlRow}>
           <span>Player style</span>
           <GlassSelect
             label=""
-            className="w-48 [&>label]:hidden"
+            className="w-40 [&>label]:hidden [&_button]:!h-9 [&_button]:!px-3.5 [&_button]:!text-[13px]"
             value={a.playerStyle}
             onValueChange={(v) => v && a.update({ playerStyle: v as typeof a.playerStyle })}
             options={PLAYER_STYLES.map((v) => ({ value: v, label: label(v) }))}
