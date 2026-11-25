@@ -106,15 +106,15 @@ export function DetailHeader({ info, onPlay, onShuffle, canPlay, extra, menu, mo
           </div>
         )}
         <div className="ot-detail-actions mt-3.5 flex items-center gap-3.5 self-end [grid-area:actions]">
+          <button className={detailButton.circle} aria-label="Shuffle" onClick={onShuffle} disabled={!canPlay}>
+            <Shuffle size={18} strokeWidth={2.2} />
+          </button>
           <GlassButtonGroup material="clear" size="lg">
-            <GlassButtonGroupItem className="!px-2.5" aria-label="Shuffle" onClick={onShuffle} disabled={!canPlay}>
-              <Shuffle size={18} strokeWidth={2.2} />
+            <GlassButtonGroupItem className="min-w-[150px]" onClick={onPlay} disabled={!canPlay}>
+              <PlayIcon size={18} />
+              <span>Play</span>
             </GlassButtonGroupItem>
           </GlassButtonGroup>
-          <button className={detailButton.pill} onClick={onPlay} disabled={!canPlay}>
-            <PlayIcon size={18} />
-            <span>Play</span>
-          </button>
           {library && (
             <GlassButtonGroup material="clear" size="lg">
               <GlassButtonGroupItem
