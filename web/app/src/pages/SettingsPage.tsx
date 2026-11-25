@@ -4,6 +4,7 @@ import { MdOutlineExtension } from 'react-icons/md';
 import { SiApplemusic, SiDiscord, SiGithub, SiSpotify, SiYoutubemusic } from 'react-icons/si';
 import { PageHeader } from '@/components/PageHeader';
 import { PrefetchLink } from '@/components/PrefetchLink';
+import { GlassSelect } from '@/components/liquid-glass/glass-select';
 import { LogoMark } from '@/components/icons/LogoMark';
 import { config } from '@/config';
 import { useRemoteConfig } from '@/config/remote';
@@ -244,19 +245,22 @@ export default function SettingsPage() {
           <Section id="playback" title="Playback">
             <section className={settingsUi.group}>
               <Toggle label="AutoPlay" detail="When the queue ends, keep playing similar music." checked={autoplay} onChange={setAutoplay} />
-              <label className={settingsUi.controlRow}>
+              <div className={settingsUi.controlRow}>
                 <span className={settingsUi.rowText}>
                   <span>Crossfade</span>
                   <span className={settingsUi.rowDetail}>Blend the end of one song into the next.</span>
                 </span>
-                <select className={settingsUi.select} value={crossfadeSec} onChange={(e) => setCrossfade(Number(e.currentTarget.value))}>
-                  {CROSSFADE_CHOICES.map((seconds) => (
-                    <option key={seconds} value={seconds}>
-                      {seconds === 0 ? 'Off' : `${seconds} seconds`}
-                    </option>
-                  ))}
-                </select>
-              </label>
+                <GlassSelect
+                  label=""
+                  className="w-36 shrink-0 [&>label]:hidden [&_button]:!h-9 [&_button]:!px-3.5 [&_button]:!text-[13px]"
+                  value={String(crossfadeSec)}
+                  onValueChange={(v) => v !== null && setCrossfade(Number(v))}
+                  options={CROSSFADE_CHOICES.map((seconds) => ({
+                    value: String(seconds),
+                    label: seconds === 0 ? 'Off' : `${seconds} seconds`,
+                  }))}
+                />
+              </div>
               <LinkRow
                 to="/settings/shortcuts"
                 icon={<Glyph Icon={Keyboard} color="#30b0c7" />}

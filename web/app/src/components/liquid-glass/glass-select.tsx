@@ -11,11 +11,11 @@
 // Without WebGL2 it is a plain frosted list.
 
 import { Select, SelectContent, SelectItem, SelectLabel, SelectList, SelectTrigger, SelectValue } from '@ui-sdk/react/select'
-import type { CSSProperties, ReactNode } from 'react'
+import { Fragment, type CSSProperties, type ReactNode } from 'react'
 
 import { GlassPopupAnchor, GlassPopupSurface, useGlassPopup } from './glass-popup'
 
-export type GlassSelectOption = { value: string; label: ReactNode; disabled?: boolean }
+export type GlassSelectOption = { value: string; label: ReactNode; disabled?: boolean; separatorBefore?: boolean; destructive?: boolean }
 
 export type GlassSelectProps = {
   label: ReactNode
@@ -65,15 +65,18 @@ export function GlassSelect({ label, options, value, defaultValue, onValueChange
         <GlassPopupSurface popup={popup} />
         <SelectList className="max-h-72 overflow-y-auto rounded-[18px] outline-none">
           {options.map((o, i) => (
-            <SelectItem
-              key={o.value}
-              value={o.value}
-              disabled={o.disabled}
-              style={{ '--glass-i': i } as CSSProperties}
-              className="relative flex h-10 cursor-pointer items-center rounded-2xl px-3.5 font-medium outline-none select-none data-[disabled]:cursor-not-allowed data-[disabled]:opacity-40 data-[highlighted]:bg-black/8 data-[selected]:font-semibold dark:data-[highlighted]:bg-white/12"
-            >
-              {o.label}
-            </SelectItem>
+            <Fragment key={o.value}>
+              {o.separatorBefore && <div aria-hidden className="mx-3.5 my-1 h-px shrink-0 bg-current/15" />}
+              <SelectItem
+                value={o.value}
+                disabled={o.disabled}
+                data-destructive={o.destructive || undefined}
+                style={{ '--glass-i': i } as CSSProperties}
+                className="relative flex h-10 cursor-pointer items-center rounded-2xl px-3.5 font-medium outline-none select-none data-[disabled]:cursor-not-allowed data-[disabled]:opacity-40 data-[destructive]:!text-red-600 data-[highlighted]:bg-black/8 data-[selected]:font-semibold dark:data-[destructive]:!text-red-400 dark:data-[highlighted]:bg-white/12"
+              >
+                {o.label}
+              </SelectItem>
+            </Fragment>
           ))}
         </SelectList>
       </SelectContent>

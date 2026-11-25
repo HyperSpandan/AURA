@@ -90,8 +90,9 @@ export function AccountButton({ compact = false }: { compact?: boolean }) {
       ),
       {
         value: '__add_account__',
+        separatorBefore: true,
         label: (
-          <span className="inline-flex items-center gap-2">
+          <span className="inline-flex items-center gap-2 whitespace-nowrap">
             <ArrowUpRight size={14} />
             Add Account
           </span>
@@ -99,7 +100,8 @@ export function AccountButton({ compact = false }: { compact?: boolean }) {
       },
       {
         value: '__disconnect__',
-        label: <span className="text-red-400">Disconnect from AURA</span>,
+        destructive: true,
+        label: <span className="whitespace-nowrap !text-red-400">Disconnect from AURA</span>,
       },
     ];
 
