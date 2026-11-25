@@ -388,12 +388,16 @@ function TrackMenuItems({ track, onClose }: { track: Track; onClose: () => void 
 }
 
 const compactMenuClasses =
-  '!min-w-[185px] !rounded-2xl !p-1.5 !text-[13px] [&_[role=menuitem]]:!h-8 [&_[role=menuitem]]:!rounded-xl [&_[role=menuitem]]:!px-2.5 [&_[role=separator]]:!mx-2.5 [&_[role=separator]]:!my-1';
+  '!min-w-[165px] !rounded-xl !p-1 !text-[12px] [&_[role=menuitem]]:!h-7 [&_[role=menuitem]]:!gap-2 [&_[role=menuitem]]:!rounded-lg [&_[role=menuitem]]:!px-2 [&_svg]:!size-3.5 [&_[role=separator]]:!mx-2 [&_[role=separator]]:!my-0.5';
 
-function TrackMenuButton({ children, ...props }: ComponentProps<'button'>) {
+function TrackMenuButton({ className = '', children, ...props }: ComponentProps<'button'>) {
   const popup = useContext(GlassPopupContext);
   return (
-    <button data-glass-host="" {...props}>
+    <button
+      data-glass-host=""
+      {...props}
+      className={`${className} [&:not([data-open])>canvas]:!opacity-0`}
+    >
       {popup && <GlassPopupAnchor popup={popup} />}
       <span className="inline-flex items-center justify-center">{children}</span>
     </button>
@@ -435,7 +439,7 @@ export function TrackMenu({
         side={side}
         align={align}
         aria-label={track.title}
-        className={`${compactMenuClasses} [&_[data-glass-list]]:max-h-[70vh] [&_[data-glass-list]]:overflow-y-auto`}
+        className={`${compactMenuClasses} [&_[data-glass-list]]:!max-h-[min(340px,60vh)] [&_[data-glass-list]]:!overflow-y-auto [&_[data-glass-list]]:overscroll-contain`}
       >
         <TrackMenuItems track={track} onClose={close} />
       </GlassMenuContent>
