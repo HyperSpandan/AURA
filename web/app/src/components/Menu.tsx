@@ -1,6 +1,7 @@
 import { Check } from 'lucide-react';
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
+import { GlassCard } from '@/components/liquid-glass/glass-card';
 
 export type MenuPlacement = 'above-start' | 'below-end';
 
@@ -95,13 +96,14 @@ export function Menu({ anchor, placement = 'below-end', onClose, label, children
       <div className="fixed inset-0 z-[calc(var(--z-contextual-menus)-1)]" onPointerDown={onClose} aria-hidden="true" />
       <div
         ref={panel}
-        // Apple's amp-contextual-menu (report §8).
-        className="fixed z-(--z-contextual-menus) max-w-[320px] min-w-[200px] animate-menu-in overflow-y-auto rounded-[10px] bg-thick-material p-[5px] shadow-[0_0_0_0.5px_var(--vibrantDivider),0_10px_40px_var(--glassMaterialShadowColor)] [backdrop-filter:saturate(2.2)_blur(32px)]"
+        className="fixed z-(--z-contextual-menus) max-w-[320px] min-w-[200px] animate-menu-in"
         style={position}
         role="menu"
         aria-label={label}
       >
-        {children}
+        <GlassCard blur={6} tint={0.68} className="max-h-[inherit] overflow-y-auto rounded-[14px] p-[5px]">
+          {children}
+        </GlassCard>
       </div>
     </>,
     document.body,

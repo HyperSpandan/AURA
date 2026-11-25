@@ -1,6 +1,7 @@
 import { ArrowDown, ArrowUp, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { Checkbox } from '@/components/liquid-glass/controls/Checkbox';
 import { getBridge } from '@/extension/bridge';
 import { LYRIC_EXTENSION_ORIGINS as EXTENSION_ORIGINS } from '@/lyrics/http';
 import { useLyricsSettings } from '@/lyrics/settings';
@@ -69,13 +70,13 @@ export function LyricsSettings({ onClose }: { onClose: () => void }) {
               const on = !disabled.includes(id);
               return (
                 <li key={id} className={`${row} [&+&]:border-t-[0.5px] [&+&]:border-t-divider`}>
-                  <label className={toggle}>
-                    <input type="checkbox" className={checkbox} checked={on} onChange={(e) => setEnabled(id, e.currentTarget.checked)} />
+                  <div className={toggle}>
+                    <Checkbox size="sm" checked={on} onChange={(checked) => setEnabled(id, checked)} label="" />
                     <span className="flex min-w-0 flex-col">
                       <span className="type-body-emphasized">{source.label}</span>
                       <span className="truncate type-callout text-secondary">{source.detail}</span>
                     </span>
-                  </label>
+                  </div>
                   <span className="flex gap-0.5">
                     <button className={moveButton} aria-label={`Move ${source.label} up`} disabled={index === 0} onClick={() => move(id, -1)}>
                       <ArrowUp size={14} />
@@ -89,13 +90,13 @@ export function LyricsSettings({ onClose }: { onClose: () => void }) {
             })}
           </ol>
 
-          <label className={`${group} ${toggle} py-2 pr-2.5 pl-3`}>
-            <input type="checkbox" className={checkbox} checked={preferSyllables} onChange={(e) => setPreferSyllables(e.currentTarget.checked)} />
+          <div className={`${group} ${toggle} py-2 pr-2.5 pl-3`}>
+            <Checkbox size="sm" checked={preferSyllables} onChange={(checked) => setPreferSyllables(checked)} label="" />
             <span className="flex min-w-0 flex-col">
               <span className="type-body-emphasized">Prefer syllable timing</span>
               <span className="truncate type-callout text-secondary">Keep looking past a line-timed answer for a word-timed one.</span>
             </span>
-          </label>
+          </div>
 
           <h3 className={section}>Extension access</h3>
           {granted === null ? (

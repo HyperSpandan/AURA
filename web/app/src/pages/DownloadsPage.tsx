@@ -1,7 +1,7 @@
-import { Trash2 } from 'lucide-react';
 import { useMemo } from 'react';
+import { GlassSlideToConfirm } from '@/components/liquid-glass/glass-slide-to-confirm';
 import { Artwork } from '@/components/music/Artwork';
-import { DetailHeader, detailButton } from '@/components/music/DetailHeader';
+import { DetailHeader } from '@/components/music/DetailHeader';
 import { EmptyState } from '@/components/music/States';
 import { TrackList } from '@/components/music/TrackList';
 import { playList, shuffleList } from '@/components/music/play';
@@ -92,12 +92,6 @@ export default function DownloadsPage() {
     }
   };
 
-  const handleClearAll = () => {
-    if (window.confirm('Are you sure you want to remove all downloaded songs from offline storage?')) {
-      void clearAll();
-    }
-  };
-
   if (tracks.length === 0) {
     return (
       <EmptyState
@@ -133,14 +127,17 @@ export default function DownloadsPage() {
         onShuffle={() => handlePlayAll(true)}
         artworkNode={<DownloadsCollage thumbnails={collageThumbnails} />}
         extra={
-          <button
-            className={detailButton.circle}
-            aria-label="Clear all downloads"
-            title="Clear all downloads"
-            onClick={handleClearAll}
-          >
-            <Trash2 size={18} strokeWidth={2.2} />
-          </button>
+          <div className="w-[240px]">
+            <GlassSlideToConfirm
+              size="sm"
+              fillClassName="bg-red-500"
+              pendingLabel="Clearing"
+              successLabel="Cleared"
+              onConfirm={() => clearAll()}
+            >
+              Slide to clear downloads
+            </GlassSlideToConfirm>
+          </div>
         }
       />
       <TrackList tracks={tracks} variant="playlist" source={context.source} />

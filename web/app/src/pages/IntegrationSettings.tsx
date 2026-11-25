@@ -19,6 +19,7 @@ import {
   useSpotifyAuth,
   type SpotifyAuthStatus,
 } from '@/extension/useSpotifyAuth';
+import { Switch } from '@/components/liquid-glass/controls/Switch';
 import { settingsUi } from './settingsStyles';
 
 /** Allowed, or an Allow button that opens the extension's permission page. */
@@ -141,13 +142,13 @@ function discordText(status: DiscordStatus): string {
 
 export function Toggle({ label, detail, checked, onChange }: { label: string; detail?: string; checked: boolean; onChange: (on: boolean) => void }) {
   return (
-    <label className={settingsUi.controlRow}>
+    <div className={settingsUi.controlRow}>
       <span className={settingsUi.rowText}>
         <span>{label}</span>
         {detail && <span className={settingsUi.rowDetail}>{detail}</span>}
       </span>
-      <input type="checkbox" className={settingsUi.switch} checked={checked} onChange={(e) => onChange(e.currentTarget.checked)} />
-    </label>
+      <Switch checked={checked} onChange={onChange} label="" size="sm" />
+    </div>
   );
 }
 

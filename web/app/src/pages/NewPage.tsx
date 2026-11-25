@@ -1,4 +1,5 @@
 import { PageHeader } from '@/components/PageHeader';
+import { GlassBadge } from '@/components/liquid-glass/glass-badge';
 import { Shelves } from '@/components/music/ShelfView';
 import { LoadError, NeedsExtension } from '@/components/music/States';
 import { useExplore, useYouTubeReady } from '@/data/music/queries';
@@ -28,7 +29,12 @@ export default function NewPage() {
   if (!explore.data) return <NewSkeleton />;
   return (
     <>
-      <PageHeader title="New" />
+      <div className="relative flex items-center justify-between">
+        <PageHeader title="New" />
+        <div className="me-(--body-gutter)">
+          <GlassBadge className="bg-key text-white">New</GlassBadge>
+        </div>
+      </div>
       <Shelves shelves={explore.data} />
     </>
   );

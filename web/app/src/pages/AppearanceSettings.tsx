@@ -1,4 +1,6 @@
 import { Check } from 'lucide-react';
+import { GlassTabs } from '@/components/liquid-glass/glass-tabs';
+import { GlassSelect } from '@/components/liquid-glass/glass-select';
 import { liquidGlassSupported } from '@/lib/liquidGlass';
 import { ACCENTS, PLAYER_STYLES, useAppearance } from '@/state/appearance';
 import { Toggle } from './IntegrationSettings';
@@ -11,11 +13,12 @@ function Segmented<T extends string>({ title, value, options, onChange }: { titl
   return (
     <div className={`${settingsUi.row} flex-wrap gap-3`}>
       <span>{title}</span>
-      <div className="ot-segmented" role="radiogroup" aria-label={title}>
-        {options.map(([v, name]) => (
-          <button key={v} role="radio" aria-checked={value === v} onClick={() => onChange(v)}>{name}</button>
-        ))}
-      </div>
+      <GlassTabs
+        aria-label={title}
+        value={value}
+        onValueChange={(v) => onChange(v as T)}
+        options={options.map(([v, name]) => ({ value: v, label: name }))}
+      />
     </div>
   );
 }
@@ -51,12 +54,15 @@ export function AppearanceSettings() {
       <h3 className={settingsUi.sectionHeader}>Now Playing</h3>
       <section className={settingsUi.group} aria-label="Now Playing">
         <Segmented title="Background" value={a.playerBackground} options={[['mesh', 'Mesh'], ['gradient', 'Gradient'], ['echo', 'Echo glow']]} onChange={(playerBackground) => a.update({ playerBackground })} />
-        <label className={settingsUi.controlRow}>
-          Player style
-          <select className={settingsUi.select} value={a.playerStyle} onChange={(e) => a.update({ playerStyle: e.target.value as typeof a.playerStyle })}>
-            {PLAYER_STYLES.map((v) => <option key={v} value={v}>{label(v)}</option>)}
-          </select>
-        </label>
+        <div className={settingsUi.controlRow}>
+          <span>Player style</span>
+          <GlassSelect
+            label=""
+            value={a.playerStyle}
+            onValueChange={(v) => v && a.update({ playerStyle: v as typeof a.playerStyle })}
+            options={PLAYER_STYLES.map((v) => ({ value: v, label: label(v) }))}
+          />
+        </div>
         <Toggle label="Animations" detail="Moving artwork, the player's waves and page motion. Your system's reduced-motion setting also applies." checked={a.motion} onChange={(motion) => a.update({ motion })} />
       </section>
       <p className={settingsUi.footer}>Saved in this browser. Wallpaper colors are in the Android app.</p>

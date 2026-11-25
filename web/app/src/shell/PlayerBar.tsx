@@ -19,6 +19,7 @@ import type { Track } from '@/data/music/types';
 import { useLyrics } from '@/lyrics/useLyrics';
 import { usePlayer } from '@/state/player';
 import { useUi } from '@/state/ui';
+import { RangeSlider } from '@/components/liquid-glass/controls/RangeSlider';
 import { GlassCard } from '@/components/liquid-glass/glass-card';
 import { Lcd } from './Lcd';
 import { useControlling, sendVolume, fromCTrack } from '@/connect/connect';
@@ -56,26 +57,30 @@ function VolumeControl({ open, onOpen }: { open: boolean; onOpen: () => void }) 
   const level = remote ? (remote.state?.volume ?? 1) : (muted ? 0 : volume);
   return (
     <>
-      <input
-        className={slider}
-        data-open={open || undefined}
-        type="range"
-        min={0}
-        max={1}
-        step={0.01}
-        value={level}
-        aria-label="Volume"
-        tabIndex={open ? 0 : -1}
-        style={{ '--fill': `${level * 100}%` } as React.CSSProperties}
-        onChange={(e) => {
-          const v = Number(e.currentTarget.value);
-          if (remote) {
-            sendVolume(v);
-          } else {
-            setVolume(v);
-          }
-        }}
-      />
+      <div
+        className={`absolute top-1/2 right-[33px] -mt-3 w-28 transition-[opacity,translate] ${
+          open ? 'pointer-events-auto translate-none opacity-100' : 'pointer-events-none translate-x-2 opacity-0'
+        }`}
+      >
+        <RangeSlider
+          size="sm"
+          min={0}
+          max={100}
+          step={1}
+          value={Math.round(level * 100)}
+          startIcon="none"
+          endIcon="none"
+          label="Volume"
+          onChange={(pct) => {
+            const v = pct / 100;
+            if (remote) {
+              sendVolume(v);
+            } else {
+              setVolume(v);
+            }
+          }}
+        />
+      </div>
       <button
         className={action}
         aria-label={muted ? 'Unmute' : 'Mute'}
@@ -145,6 +150,7 @@ export function PlayerBar() {
       data-panel-open={sidePanel !== null}
     >
       <GlassCard
+        live
         blur={6}
         tint={0.62}
         data-player-origin
