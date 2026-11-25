@@ -110,6 +110,12 @@ export function AccountButton({ compact = false }: { compact?: boolean }) {
         label=""
         className="w-full [&>label]:hidden [&_button]:!h-9 [&_button]:!px-2.5 [&_button]:!text-[13px]"
         value={active.id}
+        valueLabel={
+          <span className="inline-flex min-w-0 items-center gap-2">
+            <Avatar src={active.avatarUrl} name={active.name} size={20} />
+            <span className="truncate">{active.name}</span>
+          </span>
+        }
         onValueChange={(next) => {
           if (!next) return;
           if (next === '__add_account__') {

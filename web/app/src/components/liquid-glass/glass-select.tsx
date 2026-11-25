@@ -21,6 +21,7 @@ export type GlassSelectProps = {
   label: ReactNode
   options: GlassSelectOption[]
   value?: string | null
+  valueLabel?: ReactNode
   defaultValue?: string | null
   onValueChange?: (value: string | null) => void
   placeholder?: string
@@ -29,7 +30,7 @@ export type GlassSelectProps = {
   className?: string
 }
 
-export function GlassSelect({ label, options, value, defaultValue, onValueChange, placeholder, disabled, name, className = '' }: GlassSelectProps) {
+export function GlassSelect({ label, options, value, valueLabel, defaultValue, onValueChange, placeholder, disabled, name, className = '' }: GlassSelectProps) {
   const popup = useGlassPopup({ matchWidth: true })
   const controlled = value !== undefined ? { value } : {}
   const initial = defaultValue !== undefined ? { defaultValue } : {}
@@ -50,7 +51,11 @@ export function GlassSelect({ label, options, value, defaultValue, onValueChange
           className="flex h-12 w-full cursor-pointer items-center justify-between rounded-full border border-black/10 bg-white/60 pr-4 pl-5 text-[15px] font-medium text-neutral-900 outline-none select-none focus-visible:ring-2 focus-visible:ring-[#3291FF] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/15 dark:bg-white/10 dark:text-white data-[glass-tone=dark]:text-white data-[glass-tone=light]:text-neutral-900"
         >
           <GlassPopupAnchor popup={popup} />
-          <SelectValue />
+          {valueLabel !== undefined ? (
+            <span className="min-w-0 flex-1 truncate text-start">{valueLabel}</span>
+          ) : (
+            <SelectValue />
+          )}
           <svg aria-hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="size-4 shrink-0 opacity-60">
             <path d="m6 9 6 6 6-6" />
           </svg>
