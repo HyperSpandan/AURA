@@ -1,6 +1,5 @@
 import { Check } from 'lucide-react';
 import { GlassTabs } from '@/components/liquid-glass/glass-tabs';
-import { GlassSelect } from '@/components/liquid-glass/glass-select';
 import { liquidGlassSupported } from '@/lib/liquidGlass';
 import { ACCENTS, PLAYER_STYLES, useAppearance } from '@/state/appearance';
 import { Toggle } from './IntegrationSettings';
@@ -55,16 +54,12 @@ export function AppearanceSettings() {
       <h3 className={settingsUi.sectionHeader}>Now Playing</h3>
       <section className={settingsUi.group} aria-label="Now Playing">
         <Segmented title="Background" value={a.playerBackground} options={[['mesh', 'Mesh'], ['gradient', 'Gradient'], ['echo', 'Echo glow']]} onChange={(playerBackground) => a.update({ playerBackground })} />
-        <div className={settingsUi.controlRow}>
-          <span>Player style</span>
-          <GlassSelect
-            label=""
-            className="w-56 [&>label]:hidden"
-            value={a.playerStyle}
-            onValueChange={(v) => v && a.update({ playerStyle: v as typeof a.playerStyle })}
-            options={PLAYER_STYLES.map((v) => ({ value: v, label: label(v) }))}
-          />
-        </div>
+        <label className={settingsUi.controlRow}>
+          Player style
+          <select className={settingsUi.select} value={a.playerStyle} onChange={(e) => a.update({ playerStyle: e.target.value as typeof a.playerStyle })}>
+            {PLAYER_STYLES.map((v) => <option key={v} value={v}>{label(v)}</option>)}
+          </select>
+        </label>
         <Toggle label="Animations" detail="Moving artwork, the player's waves and page motion. Your system's reduced-motion setting also applies." checked={a.motion} onChange={(motion) => a.update({ motion })} />
       </section>
       <p className={settingsUi.footer}>Saved in this browser. Wallpaper colors are in the Android app.</p>
