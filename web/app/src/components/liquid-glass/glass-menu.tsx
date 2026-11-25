@@ -137,7 +137,7 @@ export function GlassMenuContent({ children, className = '', side = 'bottom', al
 
 /** An action. Pressing it runs `onSelect` and closes the menu. `destructive` paints it red. */
 export function GlassMenuItem({ className = '', ...rest }: GlassMenuItemProps) {
-  return <MenuItem className={`${ROW} data-[destructive]:text-red-600 group-data-[glass-tone=dark]/glass:data-[destructive]:text-red-400 ${className}`} {...rest} />
+  return <MenuItem className={`${ROW} data-[destructive]:!text-red-500 ${className}`} {...rest} />
 }
 
 /** An option that is on or off: `checked` / `defaultChecked` / `onCheckedChange`. The menu stays open unless `closeOnSelect`. */

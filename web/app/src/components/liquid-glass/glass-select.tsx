@@ -77,7 +77,7 @@ export function GlassSelect({ label, options, value, valueLabel, defaultValue, o
                 disabled={o.disabled}
                 data-destructive={o.destructive || undefined}
                 style={{ '--glass-i': i } as CSSProperties}
-                className="relative flex h-10 cursor-pointer items-center rounded-2xl px-3.5 font-medium outline-none select-none data-[disabled]:cursor-not-allowed data-[disabled]:opacity-40 data-[destructive]:!text-red-600 data-[highlighted]:bg-black/8 data-[selected]:font-semibold dark:data-[destructive]:!text-red-400 dark:data-[highlighted]:bg-white/12"
+                className="relative flex h-10 cursor-pointer items-center rounded-2xl px-3.5 font-medium outline-none select-none data-[disabled]:cursor-not-allowed data-[disabled]:opacity-40 data-[destructive]:!text-red-500 data-[highlighted]:bg-black/8 data-[selected]:font-semibold dark:data-[highlighted]:bg-white/12"
               >
                 {o.label}
               </SelectItem>

@@ -122,7 +122,7 @@ export function GlassDropdownMenuContent({ children, className = '', sideOffset,
 export function GlassDropdownMenuItem({ className = '', ...rest }: GlassDropdownMenuItemProps) {
   return (
     <MenuItem
-      className={`relative flex h-10 cursor-pointer items-center gap-2.5 rounded-2xl px-3.5 font-medium whitespace-nowrap outline-none select-none transition-colors duration-100 data-[disabled]:cursor-not-allowed data-[highlighted]:bg-current/10 data-[destructive]:text-red-600 group-data-[glass-tone=dark]/glass:data-[destructive]:text-red-400 [&_svg]:size-4 [&_svg]:shrink-0 ${className}`}
+      className={`relative flex h-10 cursor-pointer items-center gap-2.5 rounded-2xl px-3.5 font-medium whitespace-nowrap outline-none select-none transition-colors duration-100 data-[disabled]:cursor-not-allowed data-[highlighted]:bg-current/10 data-[destructive]:!text-red-500 [&_svg]:size-4 [&_svg]:shrink-0 ${className}`}
       {...rest}
     />
   )

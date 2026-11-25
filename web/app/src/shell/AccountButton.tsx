@@ -101,7 +101,7 @@ export function AccountButton({ compact = false }: { compact?: boolean }) {
       {
         value: '__disconnect__',
         destructive: true,
-        label: <span className="whitespace-nowrap !text-red-400">Disconnect from AURA</span>,
+        label: <span className="whitespace-nowrap !text-red-500">Disconnect from AURA</span>,
       },
     ];
 
