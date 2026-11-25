@@ -53,6 +53,7 @@ export function LockupMenu({
   className?: string;
   placement?: MenuPlacement;
 }) {
+  const [engaged, setEngaged] = useState(false);
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
@@ -174,15 +175,40 @@ export function LockupMenu({
   const side = placement === 'above-start' ? 'top' : 'bottom';
   const align = placement === 'above-start' ? 'start' : 'end';
 
+  const triggerClass =
+    className ??
+    'ot-platter grid size-8 place-items-center rounded-full bg-black/60 text-white opacity-0 hover:bg-black/80 hover:scale-105 transition-all group-hover/art:opacity-100 data-open:opacity-100 shadow-[0_4px_12px_rgb(0_0_0/0.3)] [&:not([data-open])]:!bg-black/60';
+
+  if (!engaged) {
+    return (
+      <button
+        type="button"
+        className={triggerClass}
+        aria-label={`More options for ${item.title}`}
+        aria-haspopup="menu"
+        aria-expanded={false}
+        title="More options"
+        onPointerEnter={() => setEngaged(true)}
+        onFocus={() => setEngaged(true)}
+        onClick={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          setEngaged(true);
+          setOpen(true);
+        }}
+        onDoubleClick={(event) => event.stopPropagation()}
+      >
+        <MoreHorizontal size={18} strokeWidth={2} />
+      </button>
+    );
+  }
+
   return (
     <GlassDropdownMenu open={open} onOpenChange={setOpen}>
       <GlassDropdownMenuTrigger asChild>
         <LockupMenuButton
           type="button"
-          className={
-            className ??
-            'ot-platter grid size-8 place-items-center rounded-full bg-black/60 text-white opacity-0 hover:bg-black/80 hover:scale-105 transition-all group-hover/art:opacity-100 data-open:opacity-100 shadow-[0_4px_12px_rgb(0_0_0/0.3)] [&:not([data-open])]:!bg-black/60'
-          }
+          className={triggerClass}
           aria-label={`More options for ${item.title}`}
           title="More options"
           onClick={(event) => {

@@ -29,5 +29,25 @@ export default defineConfig({
     port: 5173,
     strictPort: true,
   },
+  build: {
+    rolldownOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules/react-dom') || id.includes('node_modules/react/') || id.includes('node_modules/react-router')) {
+            return 'vendor-react';
+          }
+          if (id.includes('node_modules/@tanstack/react-query') || id.includes('node_modules/zustand')) {
+            return 'vendor-state';
+          }
+          if (id.includes('node_modules/@ui-sdk')) {
+            return 'vendor-uisdk';
+          }
+          if (id.includes('node_modules/lucide-react') || id.includes('node_modules/react-icons')) {
+            return 'vendor-icons';
+          }
+        },
+      },
+    },
+  },
 });
 

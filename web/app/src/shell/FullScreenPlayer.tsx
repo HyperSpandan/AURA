@@ -1,5 +1,5 @@
 import { Maximize, Minimize, X } from 'lucide-react';
-import { Component, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
+import { Component, lazy, Suspense, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { useLocation } from 'react-router';
 import {
   BackwardIcon,
@@ -25,8 +25,9 @@ import { usePlayer } from '@/state/player';
 import { useUi } from '@/state/ui';
 import { useHasVideo, useVideo } from '@/state/video';
 import { Credits, PageLink, pageLink } from './Lcd';
-import { LyricsPanel } from './LyricsPanel';
 import { MeshBackdrop } from './MeshBackdrop';
+
+const LyricsPanel = lazy(() => import('./LyricsPanel').then((m) => ({ default: m.LyricsPanel })));
 import { albumPageFor } from './nowPlayingLinks';
 import { UpNext } from './UpNext';
 import { useAppearance } from '@/state/appearance';
@@ -494,7 +495,9 @@ function FullScreenPlayerContent({ closing = false, onClosed }: { closing?: bool
 
         {showLyrics && (
           <section className="flex min-h-0 animate-fade-in self-stretch" aria-label="Lyrics" data-morph-fade>
-            <LyricsPanel variant="full" />
+            <Suspense fallback={null}>
+              <LyricsPanel variant="full" />
+            </Suspense>
           </section>
         )}
         {showQueue && (

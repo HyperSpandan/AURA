@@ -417,10 +417,33 @@ export function TrackMenu({
   className?: string;
   placement?: MenuPlacement;
 }) {
+  const [engaged, setEngaged] = useState(false);
   const [open, setOpen] = useState(false);
   const close = useCallback(() => setOpen(false), []);
   const side = placement === 'above-start' ? 'top' : 'bottom';
   const align = placement === 'above-start' ? 'start' : 'end';
+
+  if (!engaged) {
+    return (
+      <button
+        type="button"
+        className={className}
+        aria-label={`More options for ${track.title}`}
+        aria-haspopup="menu"
+        aria-expanded={false}
+        onPointerEnter={() => setEngaged(true)}
+        onFocus={() => setEngaged(true)}
+        onClick={(event) => {
+          event.stopPropagation();
+          setEngaged(true);
+          setOpen(true);
+        }}
+        onDoubleClick={(event) => event.stopPropagation()}
+      >
+        <MoreHorizontal size={18} strokeWidth={2} />
+      </button>
+    );
+  }
 
   return (
     <GlassMenu open={open} onOpenChange={setOpen}>

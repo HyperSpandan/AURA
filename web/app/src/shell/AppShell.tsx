@@ -23,12 +23,13 @@ import { RoomNotice } from './RoomNotice';
 import { Sidebar } from './Sidebar';
 import { AccountSyncAsk } from './AccountSyncAsk';
 import { initConnect } from '@/connect/connect';
-import { SupportModal } from '@/components/SupportModal';
-import { KeyboardShortcutsModal } from '@/components/KeyboardShortcutsModal';
-import { FullScreenPlayer } from './FullScreenPlayer';
 import { OfflinePage } from '@/components/music/OfflinePage';
 import { OpeningIntro } from '@/components/OpeningIntro';
 import { useIsOnline } from '@/lib/useIsOnline';
+
+const FullScreenPlayer = lazy(() => import('./FullScreenPlayer').then((m) => ({ default: m.FullScreenPlayer })));
+const SupportModal = lazy(() => import('@/components/SupportModal').then((m) => ({ default: m.SupportModal })));
+const KeyboardShortcutsModal = lazy(() => import('@/components/KeyboardShortcutsModal').then((m) => ({ default: m.KeyboardShortcutsModal })));
 
 const mobile = isMobileBrowser();
 
@@ -117,6 +118,8 @@ function useScrollEdge() {
  */
 export function AppShell() {
   const runtime = useRemoteConfig(s => s.config.data);
+  const supportOpen = useUi((s) => s.supportOpen);
+  const shortcutsOpen = useUi((s) => s.shortcutsOpen);
   useKeyboardShortcuts();
   useDiscordPresence();
   usePageScroll();
@@ -241,13 +244,23 @@ export function AppShell() {
         <MobileDock />
         <SidePanel />
         <RoomNotice />
-        <SupportModal />
-        <KeyboardShortcutsModal />
+        {supportOpen && (
+          <Suspense fallback={null}>
+            <SupportModal />
+          </Suspense>
+        )}
+        {shortcutsOpen && (
+          <Suspense fallback={null}>
+            <KeyboardShortcutsModal />
+          </Suspense>
+        )}
         <AccountSyncAsk />
       </div>
       {banner}
       {(fullScreen || playerUp) && (
-        <FullScreenPlayer closing={!fullScreen} onClosed={() => setPlayerUp(false)} />
+        <Suspense fallback={null}>
+          <FullScreenPlayer closing={!fullScreen} onClosed={() => setPlayerUp(false)} />
+        </Suspense>
       )}
       <OpeningIntro />
     </div>
