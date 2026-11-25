@@ -43,7 +43,7 @@ export function GlassSelect({ label, options, value, defaultValue, onValueChange
       disabled={disabled}
       name={name}
     >
-      <div className={`flex w-64 flex-col gap-2 ${className}`}>
+      <div className={`flex ${/\bw-/.test(className) ? '' : 'w-64 '}flex-col gap-2 ${className}`}>
         <SelectLabel className="text-sm font-medium text-neutral-900 dark:text-white">{label}</SelectLabel>
         <SelectTrigger
           data-glass-host=""

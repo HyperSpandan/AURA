@@ -470,7 +470,9 @@ function createMorph(matchWidth: boolean, opening: GlassPopupOpening, from: Glas
     const r = host.getBoundingClientRect()
     const sc = Math.max(0.5, Number(swScale.x.toFixed(4)))
     const stretch = { x: triggerView?.pulled?.sx ?? 1, y: triggerView?.pulled?.sy ?? 1 }
-    const a = sc === 1 && stretch.x === 1 && stretch.y === 1 ? r : new DOMRect(r.left + (r.width - host.offsetWidth) / 2, r.top + (r.height - host.offsetHeight) / 2, host.offsetWidth, host.offsetHeight)
+    // Always use layout offsetWidth/offsetHeight so ancestor CSS `zoom` (e.g. `.ot-page { zoom: 1.1 }`)
+    // is not double-applied to the canvas inside `host` when idle (`sc === 1`).
+    const a = host.offsetWidth > 0 && host.offsetHeight > 0 ? new DOMRect(r.left + (r.width - host.offsetWidth) / 2, r.top + (r.height - host.offsetHeight) / 2, host.offsetWidth, host.offsetHeight) : r
     if (a.width < 2 || a.height < 2) return null
     glowSmall = smallness(a.width, a.height)
     const sk = lerp(1, Math.min(PRESS_SCALE, maxScale()), clamp(swPress.x, -0.12, 1.15))
