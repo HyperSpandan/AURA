@@ -9,15 +9,40 @@ import {
   Play,
   Share2,
 } from 'lucide-react';
-import { useCallback, useState } from 'react';
+import { useCallback, useContext, useState, type ComponentProps } from 'react';
 import { useNavigate } from 'react-router';
-import { Menu, MenuItem, type MenuPlacement, MenuSeparator } from '@/components/Menu';
+import type { MenuPlacement } from '@/components/Menu';
+import {
+  GlassDropdownMenu,
+  GlassDropdownMenuContent,
+  GlassDropdownMenuItem,
+  GlassDropdownMenuSeparator,
+  GlassDropdownMenuTrigger,
+} from '@/components/liquid-glass/glass-dropdown-menu';
+import { GlassPopupAnchor, GlassPopupContext } from '@/components/liquid-glass/glass-popup';
 import { useDownloads } from '@/data/download/useDownloads';
 import type { MusicItem } from '@/data/music/types';
 import { usePinnedStore } from '@/data/pinned/pinnedStore';
 import { usePlayer } from '@/state/player';
 import { hrefFor } from './links';
 import { playItem } from './play';
+
+const compactDropdownClasses =
+  '!min-w-[165px] !rounded-xl !p-1 !text-[12px] [&_[role=menuitem]]:!h-7 [&_[role=menuitem]]:!gap-2 [&_[role=menuitem]]:!rounded-lg [&_[role=menuitem]]:!px-2 [&_svg]:!size-3.5 [&_[role=separator]]:!mx-2 [&_[role=separator]]:!my-0.5';
+
+function LockupMenuButton({ className = '', children, ...props }: ComponentProps<'button'>) {
+  const popup = useContext(GlassPopupContext);
+  return (
+    <button
+      data-glass-host=""
+      {...props}
+      className={`${className} [&:not([data-open])>canvas]:!opacity-0`}
+    >
+      {popup && <GlassPopupAnchor popup={popup} />}
+      <span className="inline-flex items-center justify-center">{children}</span>
+    </button>
+  );
+}
 
 export function LockupMenu({
   item,
@@ -28,7 +53,7 @@ export function LockupMenu({
   className?: string;
   placement?: MenuPlacement;
 }) {
-  const [anchor, setAnchor] = useState<HTMLElement | null>(null);
+  const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
 
@@ -42,7 +67,7 @@ export function LockupMenu({
   const isDownloading = useDownloads((s) => Boolean(s.playlistProgress[item.id]));
   const downloadPlaylist = useDownloads((s) => s.downloadPlaylist);
 
-  const close = useCallback(() => setAnchor(null), []);
+  const close = useCallback(() => setOpen(false), []);
 
   const getTracks = async () => {
     if (item.kind === 'playlist') {
@@ -146,88 +171,86 @@ export function LockupMenu({
     close();
   };
 
+  const side = placement === 'above-start' ? 'top' : 'bottom';
+  const align = placement === 'above-start' ? 'start' : 'end';
+
   return (
-    <>
-      <button
-        className={
-          className ??
-          'ot-platter grid size-8 place-items-center rounded-full bg-black/60 text-white opacity-0 hover:bg-black/80 hover:scale-105 transition-all group-hover/art:opacity-100 data-open:opacity-100 shadow-[0_4px_12px_rgb(0_0_0/0.3)]'
-        }
-        aria-label={`More options for ${item.title}`}
-        aria-haspopup="menu"
-        aria-expanded={anchor !== null}
-        data-open={anchor !== null || undefined}
-        onClick={(event) => {
-          event.preventDefault();
-          event.stopPropagation();
-          setAnchor(anchor ? null : event.currentTarget);
-        }}
-        onDoubleClick={(event) => event.stopPropagation()}
-        title="More options"
-      >
-        <MoreHorizontal size={18} strokeWidth={2} />
-      </button>
+    <GlassDropdownMenu open={open} onOpenChange={setOpen}>
+      <GlassDropdownMenuTrigger asChild>
+        <LockupMenuButton
+          type="button"
+          className={
+            className ??
+            'ot-platter grid size-8 place-items-center rounded-full bg-black/60 text-white opacity-0 hover:bg-black/80 hover:scale-105 transition-all group-hover/art:opacity-100 data-open:opacity-100 shadow-[0_4px_12px_rgb(0_0_0/0.3)] [&:not([data-open])]:!bg-black/60'
+          }
+          aria-label={`More options for ${item.title}`}
+          title="More options"
+          onClick={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+          }}
+          onDoubleClick={(event) => event.stopPropagation()}
+        >
+          <MoreHorizontal size={18} strokeWidth={2} />
+        </LockupMenuButton>
+      </GlassDropdownMenuTrigger>
 
-      {anchor && (
-        <Menu anchor={anchor} placement={placement} onClose={close} label={item.title}>
-          <MenuItem
-            icon={<Play size={15} />}
-            onSelect={() => {
-              close();
-              void playItem(item);
-            }}
-          >
-            Play
-          </MenuItem>
-          <MenuItem
-            icon={loadingAction === 'next' ? <Loader2 size={15} className="animate-spin text-key" /> : <ListStart size={15} />}
-            onSelect={handlePlayNext}
-            disabled={loadingAction !== null}
-          >
-            Play Next
-          </MenuItem>
-          <MenuItem
-            icon={loadingAction === 'queue' ? <Loader2 size={15} className="animate-spin text-key" /> : <ListEnd size={15} />}
-            onSelect={handleAddToQueue}
-            disabled={loadingAction !== null}
-          >
-            Add to Queue
-          </MenuItem>
+      <GlassDropdownMenuContent side={side} align={align} aria-label={item.title} className={compactDropdownClasses}>
+        <GlassDropdownMenuItem
+          onSelect={() => {
+            close();
+            void playItem(item);
+          }}
+        >
+          <Play size={15} />
+          Play
+        </GlassDropdownMenuItem>
+        <GlassDropdownMenuItem
+          onSelect={handlePlayNext}
+          disabled={loadingAction !== null}
+        >
+          {loadingAction === 'next' ? <Loader2 size={15} className="animate-spin text-key" /> : <ListStart size={15} />}
+          Play Next
+        </GlassDropdownMenuItem>
+        <GlassDropdownMenuItem
+          onSelect={handleAddToQueue}
+          disabled={loadingAction !== null}
+        >
+          {loadingAction === 'queue' ? <Loader2 size={15} className="animate-spin text-key" /> : <ListEnd size={15} />}
+          Add to Queue
+        </GlassDropdownMenuItem>
 
-          <MenuSeparator />
+        <GlassDropdownMenuSeparator />
 
-          <MenuItem
-            icon={
-              isDownloading || loadingAction === 'download' ? (
-                <Loader2 size={15} className="animate-spin text-key" />
-              ) : (
-                <Download size={15} />
-              )
-            }
-            onSelect={handleDownload}
-            disabled={isDownloading || loadingAction !== null}
-          >
-            {isDownloading ? 'Downloading…' : item.kind === 'album' ? 'Download Album' : 'Download Playlist'}
-          </MenuItem>
-
-          <MenuItem
-            icon={<Pin size={15} className={isPinned ? 'text-key fill-key' : ''} />}
-            onSelect={handleTogglePin}
-          >
-            {isPinned ? 'Unpin from Listen again' : 'Pin to Listen again'}
-          </MenuItem>
-
-          <MenuItem icon={<Share2 size={15} />} onSelect={handleShare}>
-            {copied ? 'Link Copied!' : 'Share'}
-          </MenuItem>
-
-          {item.thumbnail && (
-            <MenuItem icon={<ImageIcon size={15} />} onSelect={handleDownloadArtwork}>
-              Download Artwork
-            </MenuItem>
+        <GlassDropdownMenuItem
+          onSelect={handleDownload}
+          disabled={isDownloading || loadingAction !== null}
+        >
+          {isDownloading || loadingAction === 'download' ? (
+            <Loader2 size={15} className="animate-spin text-key" />
+          ) : (
+            <Download size={15} />
           )}
-        </Menu>
-      )}
-    </>
+          {isDownloading ? 'Downloading…' : item.kind === 'album' ? 'Download Album' : 'Download Playlist'}
+        </GlassDropdownMenuItem>
+
+        <GlassDropdownMenuItem onSelect={handleTogglePin}>
+          <Pin size={15} className={isPinned ? 'text-key fill-key' : ''} />
+          {isPinned ? 'Unpin from Listen again' : 'Pin to Listen again'}
+        </GlassDropdownMenuItem>
+
+        <GlassDropdownMenuItem closeOnSelect={false} onSelect={handleShare}>
+          <Share2 size={15} />
+          {copied ? 'Link Copied!' : 'Share'}
+        </GlassDropdownMenuItem>
+
+        {item.thumbnail && (
+          <GlassDropdownMenuItem onSelect={handleDownloadArtwork}>
+            <ImageIcon size={15} />
+            Download Artwork
+          </GlassDropdownMenuItem>
+        )}
+      </GlassDropdownMenuContent>
+    </GlassDropdownMenu>
   );
 }

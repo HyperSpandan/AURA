@@ -13,7 +13,7 @@ import {
   Shuffle,
   Trash2,
 } from 'lucide-react';
-import { useCallback, useState } from 'react';
+import { useCallback, useContext, useState, type ComponentProps } from 'react';
 import type { MenuPlacement } from '@/components/Menu';
 import {
   GlassDropdownMenu,
@@ -22,6 +22,7 @@ import {
   GlassDropdownMenuSeparator,
   GlassDropdownMenuTrigger,
 } from '@/components/liquid-glass/glass-dropdown-menu';
+import { GlassPopupAnchor, GlassPopupContext } from '@/components/liquid-glass/glass-popup';
 import { useDownloads } from '@/data/download/useDownloads';
 import { useSetListSaved, useSignedIn } from '@/data/music/queries';
 import type { Track } from '@/data/music/types';
@@ -38,6 +39,23 @@ export interface PlaylistMenuProps {
   className?: string;
   placement?: MenuPlacement;
   onReorder?: () => void;
+}
+
+const compactDropdownClasses =
+  '!min-w-[165px] !rounded-xl !p-1 !text-[12px] [&_[role=menuitem]]:!h-7 [&_[role=menuitem]]:!gap-2 [&_[role=menuitem]]:!rounded-lg [&_[role=menuitem]]:!px-2 [&_svg]:!size-3.5 [&_[role=separator]]:!mx-2 [&_[role=separator]]:!my-0.5';
+
+function PlaylistMenuButton({ className = '', children, ...props }: ComponentProps<'button'>) {
+  const popup = useContext(GlassPopupContext);
+  return (
+    <button
+      data-glass-host=""
+      {...props}
+      className={`${className} [&:not([data-open])>canvas]:!opacity-0`}
+    >
+      {popup && <GlassPopupAnchor popup={popup} />}
+      <span className="inline-flex items-center justify-center">{children}</span>
+    </button>
+  );
 }
 
 export function PlaylistMenu({
@@ -146,25 +164,27 @@ export function PlaylistMenu({
 
   return (
     <GlassDropdownMenu open={open} onOpenChange={setOpen}>
-      <GlassDropdownMenuTrigger
-        className={
-          className
-            ? `${className} !px-0`
-            : '!size-10 !h-10 !w-10 !px-0'
-        }
-        aria-label={`More options for ${title}`}
-        title="More options"
-        onClick={(event) => event.stopPropagation()}
-        onDoubleClick={(event) => event.stopPropagation()}
-      >
-        {isDownloading ? (
-          <Loader2 size={18} className="animate-spin text-key" />
-        ) : (
-          <MoreHorizontal size={18} strokeWidth={2.2} />
-        )}
+      <GlassDropdownMenuTrigger asChild>
+        <PlaylistMenuButton
+          type="button"
+          className={
+            className ??
+            'ot-press grid size-10 place-items-center rounded-full border-[0.75px] border-quaternary bg-quinary text-primary backdrop-blur-xl transition-[scale,background-color] disabled:opacity-40 enabled:hover:bg-quaternary [&:not([data-open])]:!border-quaternary [&:not([data-open])]:!bg-quinary'
+          }
+          aria-label={`More options for ${title}`}
+          title="More options"
+          onClick={(event) => event.stopPropagation()}
+          onDoubleClick={(event) => event.stopPropagation()}
+        >
+          {isDownloading ? (
+            <Loader2 size={18} className="animate-spin text-key" />
+          ) : (
+            <MoreHorizontal size={18} strokeWidth={2.2} />
+          )}
+        </PlaylistMenuButton>
       </GlassDropdownMenuTrigger>
 
-      <GlassDropdownMenuContent side={side} align={align} aria-label={title}>
+      <GlassDropdownMenuContent side={side} align={align} aria-label={title} className={compactDropdownClasses}>
         {tracks.length > 0 && (
           <>
             <GlassDropdownMenuItem
