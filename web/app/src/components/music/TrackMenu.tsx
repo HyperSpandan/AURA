@@ -19,12 +19,13 @@ import {
   User,
   Users,
 } from 'lucide-react';
-import { useCallback, useState } from 'react';
+import { useCallback, useContext, useState, type ComponentProps } from 'react';
 import { useNavigate } from 'react-router';
 import type { MenuPlacement } from '@/components/Menu';
 import {
   GlassMenu,
   GlassMenuContent,
+  GlassMenuGroup,
   GlassMenuItem,
   GlassMenuLabel,
   GlassMenuSeparator,
@@ -33,6 +34,7 @@ import {
   GlassMenuSubTrigger,
   GlassMenuTrigger,
 } from '@/components/liquid-glass/glass-menu';
+import { GlassPopupAnchor, GlassPopupContext } from '@/components/liquid-glass/glass-popup';
 import {
   useAddToPlaylist,
   useLikeStatus,
@@ -52,7 +54,7 @@ function PlaylistChoices({ videoId, onDone }: { videoId: string; onDone: () => v
   const options = usePlaylistOptions(videoId, true);
   const add = useAddToPlaylist();
   return (
-    <>
+    <GlassMenuGroup>
       <GlassMenuLabel>Add to Playlist</GlassMenuLabel>
       {options.isPending && (
         <GlassMenuItem disabled onSelect={() => {}}>
@@ -80,41 +82,41 @@ function PlaylistChoices({ videoId, onDone }: { videoId: string; onDone: () => v
           {option.title}
         </GlassMenuItem>
       ))}
-    </>
+    </GlassMenuGroup>
   );
 }
 
 function TrackDetailsView({ track }: { track: Track }) {
   return (
-    <>
+    <GlassMenuGroup>
       <GlassMenuLabel>Song Info</GlassMenuLabel>
-      <div className="px-3.5 py-2 flex flex-col gap-2 text-[13px]">
+      <div className="px-3 py-1.5 flex flex-col gap-1.5 text-[12px]">
         <div>
-          <span className="opacity-55 block text-[11px] uppercase tracking-wider font-semibold">Title</span>
+          <span className="opacity-55 block text-[10px] uppercase tracking-wider font-semibold">Title</span>
           <span className="font-medium">{track.title}</span>
         </div>
         <div>
-          <span className="opacity-55 block text-[11px] uppercase tracking-wider font-semibold">Artist</span>
+          <span className="opacity-55 block text-[10px] uppercase tracking-wider font-semibold">Artist</span>
           <span>{track.artists.map((a) => a.name).join(', ') || 'Unknown'}</span>
         </div>
         {track.album?.name && (
           <div>
-            <span className="opacity-55 block text-[11px] uppercase tracking-wider font-semibold">Album</span>
+            <span className="opacity-55 block text-[10px] uppercase tracking-wider font-semibold">Album</span>
             <span>{track.album.name}</span>
           </div>
         )}
         {track.durationSec && (
           <div>
-            <span className="opacity-55 block text-[11px] uppercase tracking-wider font-semibold">Duration</span>
+            <span className="opacity-55 block text-[10px] uppercase tracking-wider font-semibold">Duration</span>
             <span>{formatDuration(track.durationSec)}</span>
           </div>
         )}
         <div>
-          <span className="opacity-55 block text-[11px] uppercase tracking-wider font-semibold">YouTube ID</span>
-          <span className="font-mono text-xs select-all">{track.videoId}</span>
+          <span className="opacity-55 block text-[10px] uppercase tracking-wider font-semibold">YouTube ID</span>
+          <span className="font-mono text-[11px] select-all">{track.videoId}</span>
         </div>
       </div>
-    </>
+    </GlassMenuGroup>
   );
 }
 
@@ -140,7 +142,7 @@ function AccountItems({ track, onClose }: { track: Track; onClose: () => void })
           <ListPlus size={15} />
           Add to Playlist
         </GlassMenuSubTrigger>
-        <GlassMenuSubContent className="max-w-64">
+        <GlassMenuSubContent className={`${compactMenuClasses} max-w-64`}>
           <PlaylistChoices videoId={track.videoId} onDone={onClose} />
         </GlassMenuSubContent>
       </GlassMenuSub>
@@ -377,11 +379,24 @@ function TrackMenuItems({ track, onClose }: { track: Track; onClose: () => void 
           <Info size={15} />
           Song Credits &amp; Info
         </GlassMenuSubTrigger>
-        <GlassMenuSubContent className="max-w-72">
+        <GlassMenuSubContent className={`${compactMenuClasses} max-w-72`}>
           <TrackDetailsView track={track} />
         </GlassMenuSubContent>
       </GlassMenuSub>
     </>
+  );
+}
+
+const compactMenuClasses =
+  '!min-w-[185px] !rounded-2xl !p-1.5 !text-[13px] [&_[role=menuitem]]:!h-8 [&_[role=menuitem]]:!rounded-xl [&_[role=menuitem]]:!px-2.5 [&_[role=separator]]:!mx-2.5 [&_[role=separator]]:!my-1';
+
+function TrackMenuButton({ children, ...props }: ComponentProps<'button'>) {
+  const popup = useContext(GlassPopupContext);
+  return (
+    <button data-glass-host="" {...props}>
+      {popup && <GlassPopupAnchor popup={popup} />}
+      <span className="inline-flex items-center justify-center">{children}</span>
+    </button>
   );
 }
 
@@ -406,7 +421,7 @@ export function TrackMenu({
   return (
     <GlassMenu open={open} onOpenChange={setOpen}>
       <GlassMenuTrigger asChild>
-        <button
+        <TrackMenuButton
           type="button"
           className={className}
           aria-label={`More options for ${track.title}`}
@@ -414,13 +429,13 @@ export function TrackMenu({
           onDoubleClick={(event) => event.stopPropagation()}
         >
           <MoreHorizontal size={18} strokeWidth={2} />
-        </button>
+        </TrackMenuButton>
       </GlassMenuTrigger>
       <GlassMenuContent
         side={side}
         align={align}
         aria-label={track.title}
-        className="[&_[data-glass-list]]:max-h-[70vh] [&_[data-glass-list]]:overflow-y-auto"
+        className={`${compactMenuClasses} [&_[data-glass-list]]:max-h-[70vh] [&_[data-glass-list]]:overflow-y-auto`}
       >
         <TrackMenuItems track={track} onClose={close} />
       </GlassMenuContent>
