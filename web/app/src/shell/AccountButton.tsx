@@ -1,6 +1,7 @@
-import { ArrowUpRight, ChevronsUpDown, LogIn, RotateCw } from 'lucide-react';
+import { ArrowUpRight, LogIn, RotateCw } from 'lucide-react';
 import { useCallback, useState } from 'react';
 import { Menu, MenuHeader, MenuItem, MenuSeparator } from '@/components/Menu';
+import { GlassSelect } from '@/components/liquid-glass/glass-select';
 import { useRefreshYtAuth, useSelectChannel, useSetConnected, useYtAuth } from '@/extension/useYtAuth';
 
 const SIGN_IN_URL = 'https://accounts.google.com/ServiceLogin?service=youtube&continue=https://music.youtube.com/';
@@ -72,26 +73,70 @@ export function AccountButton({ compact = false }: { compact?: boolean }) {
     );
   }
   const active = auth.active;
-  const multiple = auth.accounts.flatMap((a) => a.channels).length > 1;
+
+  if (!compact) {
+    const options = [
+      ...auth.accounts.flatMap((account) =>
+        account.channels.map((channel) => ({
+          value: channel.id,
+          label: (
+            <span className="inline-flex min-w-0 items-center gap-2">
+              <Avatar src={channel.avatarUrl} name={channel.name} size={20} />
+              <span className="truncate">{channel.name}</span>
+              {channel.brand && <span className="text-[11px] opacity-55">Brand</span>}
+            </span>
+          ),
+        })),
+      ),
+      {
+        value: '__add_account__',
+        label: (
+          <span className="inline-flex items-center gap-2">
+            <ArrowUpRight size={14} />
+            Add Account
+          </span>
+        ),
+      },
+      {
+        value: '__disconnect__',
+        label: <span className="text-red-400">Disconnect from AURA</span>,
+      },
+    ];
+
+    return (
+      <GlassSelect
+        label=""
+        className="w-full [&>label]:hidden [&_button]:!h-9 [&_button]:!px-2.5 [&_button]:!text-[13px]"
+        value={active.id}
+        onValueChange={(next) => {
+          if (!next) return;
+          if (next === '__add_account__') {
+            window.open(SIGN_IN_URL.replace('ServiceLogin', 'AddSession'), '_blank', 'noreferrer');
+            return;
+          }
+          if (next === '__disconnect__') {
+            connect.mutate(false);
+            return;
+          }
+          if (next !== active.id) select.mutate(next);
+        }}
+        options={options}
+      />
+    );
+  }
 
   return (
     <>
       <button
-        // Signed in: a 24px avatar and the name, opening the account menu.
-        className={
-          compact
-            ? 'grid size-10 place-items-center self-center rounded-nav hover:bg-quinary aria-expanded:bg-quinary'
-            : 'flex w-full min-w-0 items-center gap-2 rounded-nav px-1 py-1.5 text-start type-body-reduced text-primary hover:bg-quinary aria-expanded:bg-quinary'
-        }
+        // Signed in (compact rail): a 28px avatar opening the account menu.
+        className="grid size-10 place-items-center self-center rounded-nav hover:bg-quinary aria-expanded:bg-quinary"
         aria-haspopup="menu"
         aria-expanded={anchor !== null}
-        aria-label={compact ? `Account: ${active.name}` : undefined}
-        title={compact ? active.name : undefined}
+        aria-label={`Account: ${active.name}`}
+        title={active.name}
         onClick={(event) => setAnchor(anchor ? null : event.currentTarget)}
       >
-        <Avatar src={active.avatarUrl} name={active.name} size={compact ? 28 : 24} />
-        {!compact && <span className="min-w-0 flex-1 truncate">{active.name}</span>}
-        {!compact && multiple && <ChevronsUpDown size={14} strokeWidth={2} className="flex-none text-secondary" />}
+        <Avatar src={active.avatarUrl} name={active.name} size={28} />
       </button>
       {anchor && (
         <Menu anchor={anchor} placement="above-start" onClose={close} label="Account">
