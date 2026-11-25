@@ -1,6 +1,7 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router';
+import { GlassButtonGroup, GlassButtonGroupItem, GlassButtonGroupSeparator } from '@/components/liquid-glass/glass-button-group';
 import { SearchField } from '@/components/music/SearchField';
 
 export function DesktopTopBar() {
@@ -28,9 +29,6 @@ export function DesktopTopBar() {
     }
   };
 
-  const navButton =
-    'grid size-8 place-items-center rounded-full border border-white/[0.08] bg-white/[0.08] backdrop-blur-md hover:bg-white/[0.15] text-secondary hover:text-primary active:scale-95 transition-all';
-
   return (
     <header
       className={`fixed top-0 right-0 left-(--web-navigation-width) z-[calc(var(--z-web-chrome)-2)] flex h-16 items-center justify-between px-6 max-sm:hidden transition-[background-color,border-color,backdrop-filter,box-shadow,left] duration-200 ease-out ${
@@ -40,24 +38,25 @@ export function DesktopTopBar() {
       }`}
     >
       {/* Left: History navigation buttons */}
-      <div className="flex items-center gap-2">
-        <button
-          className={navButton}
+      <GlassButtonGroup material="clear" size="sm" aria-label="History navigation">
+        <GlassButtonGroupItem
           onClick={() => navigate(-1)}
           aria-label="Back"
           title="Back"
+          className="!px-2"
         >
-          <ChevronLeft size={19} strokeWidth={2.4} />
-        </button>
-        <button
-          className={navButton}
+          <ChevronLeft size={17} strokeWidth={2.3} />
+        </GlassButtonGroupItem>
+        <GlassButtonGroupSeparator />
+        <GlassButtonGroupItem
           onClick={() => navigate(1)}
           aria-label="Forward"
           title="Forward"
+          className="!px-2"
         >
-          <ChevronRight size={19} strokeWidth={2.4} />
-        </button>
-      </div>
+          <ChevronRight size={17} strokeWidth={2.3} />
+        </GlassButtonGroupItem>
+      </GlassButtonGroup>
 
       {/* Center: Search Field */}
       <div className="flex-1 flex justify-center px-4 max-w-[560px]">
