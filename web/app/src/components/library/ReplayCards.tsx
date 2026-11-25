@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { LogoMark } from '@/components/icons/LogoMark';
+import { GlassCard } from '@/components/liquid-glass/glass-card';
 import type { ReplaySummary } from '@/data/history/historyStore';
 
 interface ReplayCardsProps {
@@ -61,45 +62,63 @@ export function ReplayCards({
           <div
             key={i}
             onClick={() => onOpenStory(i)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onOpenStory(i);
+              }
+            }}
             role="button"
             tabIndex={0}
-            className={`group relative flex h-[190px] w-[280px] shrink-0 cursor-pointer snap-start flex-col justify-between overflow-hidden rounded-[24px] bg-gradient-to-br ${card.gradient} border ${card.border} p-5 shadow-[0_12px_28px_-8px_rgba(0,0,0,0.5)] transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_18px_36px_-6px_rgba(0,0,0,0.65)] sm:w-[320px]`}
+            className="group relative h-[190px] w-[280px] shrink-0 cursor-pointer snap-start overflow-hidden rounded-[24px] shadow-[0_12px_28px_-8px_rgba(0,0,0,0.5)] transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_18px_36px_-6px_rgba(0,0,0,0.65)] sm:w-[320px]"
           >
-            {/* Top row */}
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold tracking-[1.6px] text-white/80 uppercase sm:text-[11px]">
-                Your listening experience
-              </span>
-              <LogoMark size={22} className="text-white/80 transition-transform duration-300 group-hover:scale-110" />
-            </div>
+            {/* Colorful gradient backdrop refracted by the Liquid Glass card */}
+            <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${card.gradient}`} aria-hidden="true" />
+            <div
+              className="pointer-events-none absolute -top-10 -right-10 size-36 rounded-full bg-white/15 blur-2xl transition-transform duration-500 group-hover:scale-125"
+              aria-hidden="true"
+            />
+            <GlassCard
+              blur={4}
+              tint={0.38}
+              className="relative flex size-full flex-col justify-between rounded-[24px] p-5 text-white"
+            >
+              {/* Top row */}
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold tracking-[1.6px] text-white/85 uppercase sm:text-[11px]">
+                  Your listening experience
+                </span>
+                <LogoMark size={22} className="text-white/85 transition-transform duration-300 group-hover:scale-110" />
+              </div>
 
-            {/* Middle value & label */}
-            <div className="my-auto">
-              <p className="line-clamp-2 text-2xl font-black leading-tight text-white drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)] sm:text-[28px]">
-                {card.value}
-              </p>
-              <span className="mt-0.5 inline-block text-[10px] font-bold tracking-[2px] text-white/70 uppercase sm:text-[11px]">
-                {card.label}
-              </span>
-            </div>
-
-            {/* Bottom info */}
-            <div className="flex items-end justify-between">
-              <div className="min-w-0 pr-2">
-                <p className="truncate text-xs font-bold tracking-[1.4px] text-white uppercase sm:text-[13px]">
-                  {userName}
+              {/* Middle value & label */}
+              <div className="my-auto">
+                <p className="line-clamp-2 text-2xl font-black leading-tight text-white drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)] sm:text-[28px]">
+                  {card.value}
                 </p>
-                <p className="truncate text-[10px] text-white/70 sm:text-[11px]">{card.detail}</p>
-              </div>
-              <div className="shrink-0 text-right">
-                <span className="block text-[8px] font-bold tracking-[1.2px] text-white/70 uppercase">
-                  Member since
-                </span>
-                <span className="text-sm font-bold tracking-[1.8px] text-white sm:text-[15px]">
-                  {memberSince}
+                <span className="mt-0.5 inline-block text-[10px] font-bold tracking-[2px] text-white/75 uppercase sm:text-[11px]">
+                  {card.label}
                 </span>
               </div>
-            </div>
+
+              {/* Bottom info */}
+              <div className="flex items-end justify-between">
+                <div className="min-w-0 pr-2">
+                  <p className="truncate text-xs font-bold tracking-[1.4px] text-white uppercase sm:text-[13px]">
+                    {userName}
+                  </p>
+                  <p className="truncate text-[10px] text-white/75 sm:text-[11px]">{card.detail}</p>
+                </div>
+                <div className="shrink-0 text-right">
+                  <span className="block text-[8px] font-bold tracking-[1.2px] text-white/75 uppercase">
+                    Member since
+                  </span>
+                  <span className="text-sm font-bold tracking-[1.8px] text-white sm:text-[15px]">
+                    {memberSince}
+                  </span>
+                </div>
+              </div>
+            </GlassCard>
           </div>
         ))}
       </div>
