@@ -19,7 +19,7 @@ import type { Track } from '@/data/music/types';
 import { useLyrics } from '@/lyrics/useLyrics';
 import { usePlayer } from '@/state/player';
 import { useUi } from '@/state/ui';
-import { useLiquidGlass } from '@/lib/liquidGlass';
+import { GlassCard } from '@/components/liquid-glass/glass-card';
 import { Lcd } from './Lcd';
 import { useControlling, sendVolume, fromCTrack } from '@/connect/connect';
 import { useShownNowPlaying } from '@/connect/shown';
@@ -133,7 +133,6 @@ export function PlayerBar() {
   const repeat = remote ? (remote.state?.repeat ?? 'off') : localRepeat;
   const { togglePlay, next, previous, toggleShuffle, cycleRepeat } = usePlayer.getState();
   const [volumeOpen, setVolumeOpen] = useState(false);
-  const glass = useLiquidGlass<HTMLDivElement>(24, 26);
 
   return (
     // The side panel overlays the page; the pill re-centres in what's left. It slides there
@@ -145,10 +144,12 @@ export function PlayerBar() {
       } ${fullScreen ? 'invisible pointer-events-none opacity-0' : ''}`}
       data-panel-open={sidePanel !== null}
     >
-      <div
-        ref={glass}
+      <GlassCard
+        live
+        blur={6}
+        tint={0.62}
         data-player-origin
-        className="glass-pill group/pill pointer-events-auto relative grid h-(--player-pill-height) w-[min(668px,100%)] grid-cols-[184px_minmax(180px,427px)_minmax(57px,auto)] items-center rounded-pill px-4 transition-[translate] duration-(--duration-panel) ease-(--ot-ease-emph) group-data-[panel-open=true]/bar:w-[min(668px,100%-var(--side-panel-width)-20px)] group-data-[panel-open=true]/bar:-translate-x-[calc((var(--side-panel-width)+20px)/2)]"
+        className="group/pill pointer-events-auto relative grid h-(--player-pill-height) w-[min(668px,100%)] grid-cols-[184px_minmax(180px,427px)_minmax(57px,auto)] items-center rounded-pill px-4 transition-[translate] duration-(--duration-panel) ease-(--ot-ease-emph) group-data-[panel-open=true]/bar:w-[min(668px,100%-var(--side-panel-width)-20px)] group-data-[panel-open=true]/bar:-translate-x-[calc((var(--side-panel-width)+20px)/2)]"
         role="region"
         aria-label="Player"
       >
@@ -225,7 +226,7 @@ export function PlayerBar() {
           </button>
           <VolumeControl open={volumeOpen} onOpen={() => setVolumeOpen(true)} />
         </div>
-      </div>
+      </GlassCard>
     </div>
   );
 }

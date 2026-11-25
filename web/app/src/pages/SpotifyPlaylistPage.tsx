@@ -2,7 +2,8 @@ import { useMutation } from '@tanstack/react-query';
 import { ListPlus } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
-import { DetailHeader, detailButton } from '@/components/music/DetailHeader';
+import { DetailHeader } from '@/components/music/DetailHeader';
+import { GlassActionButton } from '@/components/liquid-glass/glass-action-button';
 import { PlaylistMenu } from '@/components/music/PlaylistMenu';
 import { playList, shuffleList } from '@/components/music/play';
 import { EmptyState, LoadError, NeedsExtension } from '@/components/music/States';
@@ -175,32 +176,30 @@ export default function SpotifyPlaylistPage() {
 function ImportButton({ title, videoIds, ready }: { title: string; videoIds: string[]; ready: boolean }) {
   const ytSignedIn = useSignedIn();
   const navigate = useNavigate();
-  const [confirming, setConfirming] = useState(false);
   const create = useMutation({
     mutationFn: () => createPlaylist(title, videoIds, 'Imported from Spotify with AURA'),
     onSuccess: (playlistId) => navigate(`/playlist/${encodeURIComponent(`VL${playlistId}`)}`),
   });
   if (!ytSignedIn) return null;
-  const label = !ready
-    ? 'Import to YouTube Music (matching…)'
-    : create.isPending
-      ? 'Importing…'
-      : create.isError
-        ? 'Import failed. Try again'
-        : confirming
-          ? `Make a private playlist of ${videoIds.length} songs?`
-          : 'Import to YouTube Music';
+  if (!ready || !videoIds.length) {
+    return (
+      <span className="inline-flex h-10 items-center gap-1.5 rounded-full bg-white/[0.08] px-4 text-sm text-secondary opacity-60">
+        <ListPlus size={17} strokeWidth={2.2} />
+        <span>Matching…</span>
+      </span>
+    );
+  }
   return (
-    <button
-      className={confirming ? detailButton.pill : detailButton.circle}
-      aria-label={label}
-      title={label}
-      disabled={!ready || !videoIds.length || create.isPending}
-      onClick={() => (confirming ? (setConfirming(false), create.mutate()) : setConfirming(true))}
-      onBlur={() => setConfirming(false)}
+    <GlassActionButton
+      material="tinted"
+      className="bg-key text-white"
+      pendingLabel="Importing"
+      successLabel="Imported"
+      onAction={() => create.mutateAsync()}
+      aria-label={`Import ${videoIds.length} songs to YouTube Music`}
+      title={`Make a private YouTube Music playlist of ${videoIds.length} songs`}
     >
-      <ListPlus size={18} strokeWidth={2.2} />
-      {confirming && <span>Make Playlist</span>}
-    </button>
+      Import
+    </GlassActionButton>
   );
 }

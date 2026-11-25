@@ -4,14 +4,14 @@ import { PrefetchLink } from '@/components/PrefetchLink';
 import { shelfHeader, shelfKinds, shelfList, shelfSection, type ShelfKind } from '@/components/shelf';
 import type { MusicItem, Shelf, Track } from '@/data/music/types';
 import type { QueueSource } from '@/playback/queue/timeline';
-import { useLiquidGlass } from '@/lib/liquidGlass';
+import { GlassButtonGroup, GlassButtonGroupItem } from '@/components/liquid-glass/glass-button-group';
 import { browseHref } from './links';
 import { CircleLockup, SquareLockup, TrackLockup, VideoLockup } from './Lockups';
 import { playList, playTrack } from './play';
 
 // Arrow buttons: round frosted discs at each end, only ≥1000px, rising in on shelf hover (.ot-arrow).
 const arrow =
-  'ot-arrow absolute top-1/2 z-3 hidden size-10 place-items-center rounded-full text-primary disabled:pointer-events-none lg:grid';
+  'ot-arrow !absolute top-1/2 z-3 hidden lg:inline-flex';
 
 function renderItem(shelf: Shelf, item: MusicItem): ReactNode {
   const onPlay = () => {
@@ -36,8 +36,6 @@ function renderItem(shelf: Shelf, item: MusicItem): ReactNode {
 export function ShelfScroller({ kind, children }: { kind: ShelfKind; children: ReactNode }) {
   const list = useRef<HTMLUListElement>(null);
   const [edges, setEdges] = useState({ start: true, end: true });
-  const back = useLiquidGlass<HTMLButtonElement>(14, 12);
-  const forward = useLiquidGlass<HTMLButtonElement>(14, 12);
 
   const measure = useCallback(() => {
     const el = list.current;
@@ -64,27 +62,29 @@ export function ShelfScroller({ kind, children }: { kind: ShelfKind; children: R
 
   return (
     <div className="group/shelf relative">
-      <button
-        ref={back}
-        className={`${arrow} left-3`}
-        aria-label="Previous Page"
-        disabled={edges.start}
-        onClick={() => page(-1)}
-      >
-        <ChevronLeft size={22} strokeWidth={2.4} />
-      </button>
+      <GlassButtonGroup material="clear" size="md" className={`${arrow} left-3`}>
+        <GlassButtonGroupItem
+          className="!px-2"
+          aria-label="Previous Page"
+          disabled={edges.start}
+          onClick={() => page(-1)}
+        >
+          <ChevronLeft size={20} strokeWidth={2.4} />
+        </GlassButtonGroupItem>
+      </GlassButtonGroup>
       <ul ref={list} className={`ot-shelf ${shelfList} ${shelfKinds[kind]}`} onScroll={measure}>
         {children}
       </ul>
-      <button
-        ref={forward}
-        className={`${arrow} right-3`}
-        aria-label="Next Page"
-        disabled={edges.end}
-        onClick={() => page(1)}
-      >
-        <ChevronRight size={22} strokeWidth={2.4} />
-      </button>
+      <GlassButtonGroup material="clear" size="md" className={`${arrow} right-3`}>
+        <GlassButtonGroupItem
+          className="!px-2"
+          aria-label="Next Page"
+          disabled={edges.end}
+          onClick={() => page(1)}
+        >
+          <ChevronRight size={20} strokeWidth={2.4} />
+        </GlassButtonGroupItem>
+      </GlassButtonGroup>
     </div>
   );
 }

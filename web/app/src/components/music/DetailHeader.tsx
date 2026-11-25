@@ -2,6 +2,7 @@ import { Check, Plus, Shuffle } from 'lucide-react';
 import { useState } from 'react';
 import { PrefetchLink } from '@/components/PrefetchLink';
 import { PlayIcon } from '@/components/icons/Transport';
+import { GlassButtonGroup, GlassButtonGroupItem } from '@/components/liquid-glass/glass-button-group';
 import { useSetListSaved, useSignedIn } from '@/data/music/queries';
 import type { AppleMotion } from '@/data/apple/motionArt';
 import type { HeaderInfo } from '@/data/music/types';
@@ -105,24 +106,28 @@ export function DetailHeader({ info, onPlay, onShuffle, canPlay, extra, menu, mo
           </div>
         )}
         <div className="ot-detail-actions mt-3.5 flex items-center gap-3.5 self-end [grid-area:actions]">
-          <button className={detailButton.circle} aria-label="Shuffle" onClick={onShuffle} disabled={!canPlay}>
-            <Shuffle size={18} strokeWidth={2.2} />
-          </button>
+          <GlassButtonGroup material="clear" size="lg">
+            <GlassButtonGroupItem className="!px-2.5" aria-label="Shuffle" onClick={onShuffle} disabled={!canPlay}>
+              <Shuffle size={18} strokeWidth={2.2} />
+            </GlassButtonGroupItem>
+          </GlassButtonGroup>
           <button className={detailButton.pill} onClick={onPlay} disabled={!canPlay}>
             <PlayIcon size={18} />
             <span>Play</span>
           </button>
           {library && (
-            <button
-              className={detailButton.circle}
-              aria-label={library.saved ? 'Remove from Library' : 'Add to Library'}
-              aria-pressed={library.saved}
-              title={library.saved ? 'In your library' : 'Add to Library'}
-              disabled={setSaved.isPending}
-              onClick={() => setSaved.mutate({ playlistId: library.playlistId, saved: !library.saved })}
-            >
-              {library.saved ? <Check size={18} strokeWidth={2.4} /> : <Plus size={18} strokeWidth={2.4} />}
-            </button>
+            <GlassButtonGroup material="clear" size="lg">
+              <GlassButtonGroupItem
+                className="!px-2.5"
+                aria-label={library.saved ? 'Remove from Library' : 'Add to Library'}
+                aria-pressed={library.saved}
+                title={library.saved ? 'In your library' : 'Add to Library'}
+                disabled={setSaved.isPending}
+                onClick={() => setSaved.mutate({ playlistId: library.playlistId, saved: !library.saved })}
+              >
+                {library.saved ? <Check size={18} strokeWidth={2.4} /> : <Plus size={18} strokeWidth={2.4} />}
+              </GlassButtonGroupItem>
+            </GlassButtonGroup>
           )}
           {extra}
           {menu}

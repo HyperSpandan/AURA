@@ -1,4 +1,5 @@
 import { lazy, Suspense, useState } from 'react';
+import { GlassCard } from '@/components/liquid-glass/glass-card';
 import { useUi, type SidePanel as Panel } from '@/state/ui';
 import { motionAllowed } from './playerMorph';
 import { DevicesPanel } from '@/connect/DevicesPanel';
@@ -22,8 +23,12 @@ export function SidePanel() {
   if (!shown || fullScreen) return null;
 
   return (
-    <aside
-      className={`absolute inset-y-0 right-0 z-(--z-web-chrome) flex w-(--side-panel-width) flex-col glass-material shadow-glass max-sm:w-full ${leaving ? 'pointer-events-none animate-slide-out' : 'animate-slide-in'}`}
+    <GlassCard
+      role="complementary"
+      live
+      blur={6}
+      tint={0.68}
+      className={`absolute top-2.5 right-2.5 bottom-2.5 z-(--z-web-chrome) flex w-(--side-panel-width) flex-col rounded-[24px] max-sm:inset-0 max-sm:w-full max-sm:rounded-none ${leaving ? 'pointer-events-none animate-slide-out' : 'animate-slide-in'}`}
       aria-label={shown === 'up-next' ? 'Up Next' : shown === 'devices' ? 'Devices' : 'Lyrics'}
       aria-hidden={leaving || undefined}
       onAnimationEnd={(e) => {
@@ -39,6 +44,6 @@ export function SidePanel() {
           <LyricsPanel />
         </Suspense>
       )}
-    </aside>
+    </GlassCard>
   );
 }
