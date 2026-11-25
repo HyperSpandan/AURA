@@ -1,7 +1,5 @@
 import {
   Check,
-  ChevronLeft,
-  ChevronRight,
   Disc,
   Download,
   FileDown,
@@ -23,7 +21,18 @@ import {
 } from 'lucide-react';
 import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router';
-import { Menu, MenuHeader, MenuItem, type MenuPlacement, MenuSeparator } from '@/components/Menu';
+import type { MenuPlacement } from '@/components/Menu';
+import {
+  GlassMenu,
+  GlassMenuContent,
+  GlassMenuItem,
+  GlassMenuLabel,
+  GlassMenuSeparator,
+  GlassMenuSub,
+  GlassMenuSubContent,
+  GlassMenuSubTrigger,
+  GlassMenuTrigger,
+} from '@/components/liquid-glass/glass-menu';
 import {
   useAddToPlaylist,
   useLikeStatus,
@@ -39,33 +48,29 @@ import { usePlayer } from '@/state/player';
 import { useUi } from '@/state/ui';
 import { albumHref, artistHref, formatDuration } from './links';
 
-function PlaylistChoices({ videoId, onDone, onBack }: { videoId: string; onDone: () => void; onBack: () => void }) {
+function PlaylistChoices({ videoId, onDone }: { videoId: string; onDone: () => void }) {
   const options = usePlaylistOptions(videoId, true);
   const add = useAddToPlaylist();
   return (
     <>
-      <MenuItem icon={<ChevronLeft size={14} />} onSelect={onBack}>
-        Back
-      </MenuItem>
-      <MenuSeparator />
-      <MenuHeader>Add to Playlist</MenuHeader>
+      <GlassMenuLabel>Add to Playlist</GlassMenuLabel>
       {options.isPending && (
-        <MenuItem disabled onSelect={() => {}}>
+        <GlassMenuItem disabled onSelect={() => {}}>
           Loading…
-        </MenuItem>
+        </GlassMenuItem>
       )}
       {options.isError && (
-        <MenuItem disabled onSelect={() => {}}>
+        <GlassMenuItem disabled onSelect={() => {}}>
           Couldn’t load your playlists
-        </MenuItem>
+        </GlassMenuItem>
       )}
       {options.data?.length === 0 && (
-        <MenuItem disabled onSelect={() => {}}>
+        <GlassMenuItem disabled onSelect={() => {}}>
           No playlists yet
-        </MenuItem>
+        </GlassMenuItem>
       )}
       {options.data?.map((option) => (
-        <MenuItem
+        <GlassMenuItem
           key={option.playlistId}
           onSelect={() => {
             add.mutate({ playlistId: option.playlistId, videoId });
@@ -73,44 +78,40 @@ function PlaylistChoices({ videoId, onDone, onBack }: { videoId: string; onDone:
           }}
         >
           {option.title}
-        </MenuItem>
+        </GlassMenuItem>
       ))}
     </>
   );
 }
 
-function TrackDetailsView({ track, onBack }: { track: Track; onBack: () => void }) {
+function TrackDetailsView({ track }: { track: Track }) {
   return (
     <>
-      <MenuItem icon={<ChevronLeft size={14} />} onSelect={onBack}>
-        Back
-      </MenuItem>
-      <MenuSeparator />
-      <MenuHeader>Song Info</MenuHeader>
-      <div className="px-2 py-1.5 flex flex-col gap-2 type-callout">
+      <GlassMenuLabel>Song Info</GlassMenuLabel>
+      <div className="px-3.5 py-2 flex flex-col gap-2 text-[13px]">
         <div>
-          <span className="text-secondary block text-xs uppercase tracking-wider font-semibold">Title</span>
-          <span className="text-primary font-medium">{track.title}</span>
+          <span className="opacity-55 block text-[11px] uppercase tracking-wider font-semibold">Title</span>
+          <span className="font-medium">{track.title}</span>
         </div>
         <div>
-          <span className="text-secondary block text-xs uppercase tracking-wider font-semibold">Artist</span>
-          <span className="text-primary">{track.artists.map((a) => a.name).join(', ') || 'Unknown'}</span>
+          <span className="opacity-55 block text-[11px] uppercase tracking-wider font-semibold">Artist</span>
+          <span>{track.artists.map((a) => a.name).join(', ') || 'Unknown'}</span>
         </div>
         {track.album?.name && (
           <div>
-            <span className="text-secondary block text-xs uppercase tracking-wider font-semibold">Album</span>
-            <span className="text-primary">{track.album.name}</span>
+            <span className="opacity-55 block text-[11px] uppercase tracking-wider font-semibold">Album</span>
+            <span>{track.album.name}</span>
           </div>
         )}
         {track.durationSec && (
           <div>
-            <span className="text-secondary block text-xs uppercase tracking-wider font-semibold">Duration</span>
-            <span className="text-primary">{formatDuration(track.durationSec)}</span>
+            <span className="opacity-55 block text-[11px] uppercase tracking-wider font-semibold">Duration</span>
+            <span>{formatDuration(track.durationSec)}</span>
           </div>
         )}
         <div>
-          <span className="text-secondary block text-xs uppercase tracking-wider font-semibold">YouTube ID</span>
-          <span className="text-primary font-mono text-xs select-all">{track.videoId}</span>
+          <span className="opacity-55 block text-[11px] uppercase tracking-wider font-semibold">YouTube ID</span>
+          <span className="font-mono text-xs select-all">{track.videoId}</span>
         </div>
       </div>
     </>
@@ -118,31 +119,36 @@ function TrackDetailsView({ track, onBack }: { track: Track; onBack: () => void 
 }
 
 /** Favorite and Add to Playlist: the account's actions, signed in only. */
-function AccountItems({ track, onClose, onPlaylists }: { track: Track; onClose: () => void; onPlaylists: () => void }) {
+function AccountItems({ track, onClose }: { track: Track; onClose: () => void }) {
   const status = useLikeStatus(track.videoId);
   const setLiked = useSetLiked();
   const liked = status.data === 'LIKE';
   return (
     <>
-      <MenuItem
-        icon={<Heart size={15} fill={liked ? '#ef4444' : 'none'} className={liked ? 'text-red-500' : 'text-current'} />}
+      <GlassMenuItem
         disabled={status.isPending}
         onSelect={() => {
           setLiked.mutate({ videoId: track.videoId, liked: !liked });
           onClose();
         }}
       >
+        <Heart size={15} fill={liked ? '#ef4444' : 'none'} className={liked ? 'text-red-500' : 'text-current'} />
         {liked ? 'Unlike' : 'Like'}
-      </MenuItem>
-      <MenuItem icon={<ListPlus size={15} />} trailing={<ChevronRight size={14} />} onSelect={onPlaylists}>
-        Add to Playlist
-      </MenuItem>
+      </GlassMenuItem>
+      <GlassMenuSub>
+        <GlassMenuSubTrigger>
+          <ListPlus size={15} />
+          Add to Playlist
+        </GlassMenuSubTrigger>
+        <GlassMenuSubContent className="max-w-64">
+          <PlaylistChoices videoId={track.videoId} onDone={onClose} />
+        </GlassMenuSubContent>
+      </GlassMenuSub>
     </>
   );
 }
 
 function TrackMenuItems({ track, onClose }: { track: Track; onClose: () => void }) {
-  const [view, setView] = useState<'main' | 'playlists' | 'details'>('main');
   const [copied, setCopied] = useState(false);
   const isDownloaded = useDownloads((s) => s.isDownloaded(track.videoId));
   const isDownloading = useDownloads((s) => s.isDownloading(track.videoId));
@@ -152,14 +158,6 @@ function TrackMenuItems({ track, onClose }: { track: Track; onClose: () => void 
   const signedIn = useSignedIn();
   const isPinned = usePinnedStore((s) => s.isPinned(track.videoId));
   const togglePin = usePinnedStore((s) => s.togglePin);
-
-  if (view === 'playlists') {
-    return <PlaylistChoices videoId={track.videoId} onDone={onClose} onBack={() => setView('main')} />;
-  }
-
-  if (view === 'details') {
-    return <TrackDetailsView track={track} onBack={() => setView('main')} />;
-  }
 
   const { playNext, addToQueue } = usePlayer.getState();
   const primaryArtist = track.artists[0];
@@ -268,108 +266,121 @@ function TrackMenuItems({ track, onClose }: { track: Track; onClose: () => void 
 
   return (
     <>
-      <MenuItem icon={<ListStart size={15} />} onSelect={() => (onClose(), playNext([track]))}>
+      <GlassMenuItem onSelect={() => (onClose(), playNext([track]))}>
+        <ListStart size={15} />
         Play Next
-      </MenuItem>
-      <MenuItem icon={<ListEnd size={15} />} onSelect={() => (onClose(), addToQueue([track]))}>
+      </GlassMenuItem>
+      <GlassMenuItem onSelect={() => (onClose(), addToQueue([track]))}>
+        <ListEnd size={15} />
         Add to Queue
-      </MenuItem>
-      <MenuItem icon={<Radio size={15} />} onSelect={handleStartRadio}>
+      </GlassMenuItem>
+      <GlassMenuItem onSelect={handleStartRadio}>
+        <Radio size={15} />
         Start Radio
-      </MenuItem>
+      </GlassMenuItem>
 
-      <MenuSeparator />
+      <GlassMenuSeparator />
 
       {signedIn ? (
-        <AccountItems track={track} onClose={onClose} onPlaylists={() => setView('playlists')} />
+        <AccountItems track={track} onClose={onClose} />
       ) : (
         <>
-          <MenuItem icon={<Heart size={15} />} onSelect={() => (onClose(), navigate('/settings'))}>
+          <GlassMenuItem onSelect={() => (onClose(), navigate('/settings'))}>
+            <Heart size={15} />
             Sign in to Like
-          </MenuItem>
-          <MenuItem icon={<ListPlus size={15} />} onSelect={() => (onClose(), navigate('/settings'))}>
+          </GlassMenuItem>
+          <GlassMenuItem onSelect={() => (onClose(), navigate('/settings'))}>
+            <ListPlus size={15} />
             Sign in for Playlists
-          </MenuItem>
+          </GlassMenuItem>
         </>
       )}
 
-      {(primaryArtist?.id || track.album?.id) && <MenuSeparator />}
+      {(primaryArtist?.id || track.album?.id) && <GlassMenuSeparator />}
 
       {primaryArtist?.id && (
-        <MenuItem
-          icon={<User size={15} />}
+        <GlassMenuItem
           onSelect={() => {
             onClose();
             const href = artistHref(primaryArtist.id);
             if (href) navigate(href);
           }}
         >
+          <User size={15} />
           Go to Artist
-        </MenuItem>
+        </GlassMenuItem>
       )}
       {track.album?.id && (
-        <MenuItem
-          icon={<Disc size={15} />}
+        <GlassMenuItem
           onSelect={() => {
             onClose();
             const href = albumHref(track.album?.id ?? null);
             if (href) navigate(href);
           }}
         >
+          <Disc size={15} />
           Go to Album
-        </MenuItem>
+        </GlassMenuItem>
       )}
 
-      <MenuSeparator />
+      <GlassMenuSeparator />
 
-      <MenuItem icon={<MessageSquareQuote size={15} />} onSelect={handleViewLyrics}>
+      <GlassMenuItem onSelect={handleViewLyrics}>
+        <MessageSquareQuote size={15} />
         View Lyrics
-      </MenuItem>
-      <MenuItem icon={<Users size={15} />} onSelect={handleListenTogether}>
+      </GlassMenuItem>
+      <GlassMenuItem onSelect={handleListenTogether}>
+        <Users size={15} />
         Listen Together
-      </MenuItem>
+      </GlassMenuItem>
 
-      <MenuSeparator />
+      <GlassMenuSeparator />
 
-      <MenuItem
-        icon={
-          isDownloading ? (
-            <Loader2 size={15} className="animate-spin text-key" />
-          ) : isDownloaded ? (
-            <Trash2 size={15} className="text-red-400" />
-          ) : (
-            <Download size={15} />
-          )
-        }
+      <GlassMenuItem
+        destructive={isDownloaded && !isDownloading}
         onSelect={handleToggleDownload}
         disabled={isDownloading}
       >
+        {isDownloading ? (
+          <Loader2 size={15} className="animate-spin text-key" />
+        ) : isDownloaded ? (
+          <Trash2 size={15} />
+        ) : (
+          <Download size={15} />
+        )}
         {isDownloading
           ? 'Downloading…'
           : isDownloaded
             ? 'Remove download'
             : 'Download'}
-      </MenuItem>
-      <MenuItem icon={<FileDown size={15} />} onSelect={handleExportAudio}>
+      </GlassMenuItem>
+      <GlassMenuItem onSelect={handleExportAudio}>
+        <FileDown size={15} />
         Export Audio File
-      </MenuItem>
-      <MenuItem
-        icon={<Pin size={15} className={isPinned ? 'text-key fill-key' : ''} />}
-        onSelect={handleTogglePin}
-      >
+      </GlassMenuItem>
+      <GlassMenuItem onSelect={handleTogglePin}>
+        <Pin size={15} className={isPinned ? 'text-key fill-key' : ''} />
         {isPinned ? 'Unpin from Listen again' : 'Pin to Listen again'}
-      </MenuItem>
-      <MenuItem icon={<Share2 size={15} />} onSelect={handleShare}>
+      </GlassMenuItem>
+      <GlassMenuItem closeOnSelect={false} onSelect={handleShare}>
+        <Share2 size={15} />
         {copied ? 'Link Copied!' : 'Share Song'}
-      </MenuItem>
+      </GlassMenuItem>
       {track.thumbnail && (
-        <MenuItem icon={<ImageIcon size={15} />} onSelect={handleDownloadArtwork}>
+        <GlassMenuItem onSelect={handleDownloadArtwork}>
+          <ImageIcon size={15} />
           Download Artwork
-        </MenuItem>
+        </GlassMenuItem>
       )}
-      <MenuItem icon={<Info size={15} />} trailing={<ChevronRight size={14} />} onSelect={() => setView('details')}>
-        Song Credits & Info
-      </MenuItem>
+      <GlassMenuSub>
+        <GlassMenuSubTrigger>
+          <Info size={15} />
+          Song Credits &amp; Info
+        </GlassMenuSubTrigger>
+        <GlassMenuSubContent className="max-w-72">
+          <TrackDetailsView track={track} />
+        </GlassMenuSubContent>
+      </GlassMenuSub>
     </>
   );
 }
@@ -387,29 +398,32 @@ export function TrackMenu({
   className?: string;
   placement?: MenuPlacement;
 }) {
-  const [anchor, setAnchor] = useState<HTMLElement | null>(null);
-  const close = useCallback(() => setAnchor(null), []);
+  const [open, setOpen] = useState(false);
+  const close = useCallback(() => setOpen(false), []);
+  const side = placement === 'above-start' ? 'top' : 'bottom';
+  const align = placement === 'above-start' ? 'start' : 'end';
+
   return (
-    <>
-      <button
-        className={className}
-        aria-label={`More options for ${track.title}`}
-        aria-haspopup="menu"
-        aria-expanded={anchor !== null}
-        data-open={anchor !== null || undefined}
-        onClick={(event) => {
-          event.stopPropagation();
-          setAnchor(anchor ? null : event.currentTarget);
-        }}
-        onDoubleClick={(event) => event.stopPropagation()}
+    <GlassMenu open={open} onOpenChange={setOpen}>
+      <GlassMenuTrigger asChild>
+        <button
+          type="button"
+          className={className}
+          aria-label={`More options for ${track.title}`}
+          onClick={(event) => event.stopPropagation()}
+          onDoubleClick={(event) => event.stopPropagation()}
+        >
+          <MoreHorizontal size={18} strokeWidth={2} />
+        </button>
+      </GlassMenuTrigger>
+      <GlassMenuContent
+        side={side}
+        align={align}
+        aria-label={track.title}
+        className="[&_[data-glass-list]]:max-h-[70vh] [&_[data-glass-list]]:overflow-y-auto"
       >
-        <MoreHorizontal size={18} strokeWidth={2} />
-      </button>
-      {anchor && (
-        <Menu anchor={anchor} placement={placement} onClose={close} label={track.title}>
-          <TrackMenuItems track={track} onClose={close} />
-        </Menu>
-      )}
-    </>
+        <TrackMenuItems track={track} onClose={close} />
+      </GlassMenuContent>
+    </GlassMenu>
   );
 }

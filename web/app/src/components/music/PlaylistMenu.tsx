@@ -14,7 +14,14 @@ import {
   Trash2,
 } from 'lucide-react';
 import { useCallback, useState } from 'react';
-import { Menu, MenuItem, type MenuPlacement, MenuSeparator } from '@/components/Menu';
+import type { MenuPlacement } from '@/components/Menu';
+import {
+  GlassDropdownMenu,
+  GlassDropdownMenuContent,
+  GlassDropdownMenuItem,
+  GlassDropdownMenuSeparator,
+  GlassDropdownMenuTrigger,
+} from '@/components/liquid-glass/glass-dropdown-menu';
 import { useDownloads } from '@/data/download/useDownloads';
 import { useSetListSaved, useSignedIn } from '@/data/music/queries';
 import type { Track } from '@/data/music/types';
@@ -43,7 +50,7 @@ export function PlaylistMenu({
   placement,
   onReorder,
 }: PlaylistMenuProps) {
-  const [anchor, setAnchor] = useState<HTMLElement | null>(null);
+  const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const signedIn = useSignedIn();
@@ -79,7 +86,7 @@ export function PlaylistMenu({
   const downloadedCount = tracks.filter((t) => t.videoId && downloadedIds.has(t.videoId)).length;
   const isAllDownloaded = tracks.length > 0 && downloadedCount === tracks.length;
 
-  const close = useCallback(() => setAnchor(null), []);
+  const close = useCallback(() => setOpen(false), []);
 
   const handleShare = async () => {
     const url = window.location.href;
@@ -134,157 +141,143 @@ export function PlaylistMenu({
     close();
   };
 
+  const side = placement === 'above-start' ? 'top' : 'bottom';
+  const align = placement === 'above-start' ? 'start' : 'end';
+
   return (
-    <>
-      <button
+    <GlassDropdownMenu open={open} onOpenChange={setOpen}>
+      <GlassDropdownMenuTrigger
         className={
-          className ??
-          'ot-press grid size-10 place-items-center rounded-full border-[0.75px] border-quaternary bg-quinary text-primary backdrop-blur-xl transition-[scale,background-color] disabled:opacity-40 enabled:hover:bg-quaternary'
+          className
+            ? `${className} !px-0`
+            : '!size-10 !h-10 !w-10 !px-0'
         }
         aria-label={`More options for ${title}`}
-        aria-haspopup="menu"
-        aria-expanded={anchor !== null}
-        data-open={anchor !== null || undefined}
-        onClick={(event) => {
-          event.stopPropagation();
-          setAnchor(anchor ? null : event.currentTarget);
-        }}
-        onDoubleClick={(event) => event.stopPropagation()}
         title="More options"
+        onClick={(event) => event.stopPropagation()}
+        onDoubleClick={(event) => event.stopPropagation()}
       >
         {isDownloading ? (
           <Loader2 size={18} className="animate-spin text-key" />
         ) : (
           <MoreHorizontal size={18} strokeWidth={2.2} />
         )}
-      </button>
+      </GlassDropdownMenuTrigger>
 
-      {anchor && (
-        <Menu anchor={anchor} placement={placement} onClose={close} label={title}>
-          {tracks.length > 0 && (
-            <>
-              <MenuItem
-                icon={<ListStart size={15} />}
-                onSelect={() => {
-                  close();
-                  playNext(tracks);
-                }}
-              >
-                Play Next
-              </MenuItem>
-              <MenuItem
-                icon={<ListEnd size={15} />}
-                onSelect={() => {
-                  close();
-                  addToQueue(tracks);
-                }}
-              >
-                Add to Queue
-              </MenuItem>
-              <MenuItem
-                icon={<Shuffle size={15} />}
-                onSelect={() => {
-                  close();
-                  shuffleList(tracks, { source: { title, type: 'playlist', id } });
-                }}
-              >
-                Shuffle
-              </MenuItem>
-              {onReorder && (
-                <MenuItem
-                  icon={<ArrowUpDown size={15} />}
-                  onSelect={() => {
-                    close();
-                    onReorder();
-                  }}
-                >
-                  Reorder songs
-                </MenuItem>
-              )}
-              <MenuSeparator />
-            </>
-          )}
-
-          {/* Download Playlist option */}
-          {tracks.length > 0 && (
-            <>
-              {isDownloading ? (
-                <MenuItem
-                  icon={<Loader2 size={15} className="animate-spin text-key" />}
-                  disabled
-                  onSelect={() => {}}
-                >
-                  Downloading ({playlistProgress.done}/{playlistProgress.total})…
-                </MenuItem>
-              ) : isAllDownloaded ? (
-                <MenuItem
-                  icon={<Trash2 size={15} className="text-red-400" />}
-                  destructive
-                  onSelect={handleToggleDownload}
-                >
-                  Remove from downloads
-                </MenuItem>
-              ) : (
-                <MenuItem icon={<Download size={15} />} onSelect={handleToggleDownload}>
-                  {downloadedCount > 0
-                    ? `Download remaining (${tracks.length - downloadedCount} songs)`
-                    : `Download playlist (${tracks.length} songs)`}
-                </MenuItem>
-              )}
-
-              {!isAllDownloaded && downloadedCount > 0 && !isDownloading && (
-                <MenuItem
-                  icon={<Trash2 size={15} className="text-red-400" />}
-                  destructive
-                  onSelect={handleRemoveDownloaded}
-                >
-                  Remove downloaded ({downloadedCount})
-                </MenuItem>
-              )}
-              <MenuSeparator />
-            </>
-          )}
-
-          {/* Library Saving */}
-          {signedIn && library && (
-            <MenuItem
-              icon={
-                library.saved ? (
-                  <Check size={15} strokeWidth={2.4} />
-                ) : (
-                  <Plus size={15} strokeWidth={2.4} />
-                )
-              }
+      <GlassDropdownMenuContent side={side} align={align} aria-label={title}>
+        {tracks.length > 0 && (
+          <>
+            <GlassDropdownMenuItem
               onSelect={() => {
-                setSaved.mutate({ playlistId: library.playlistId, saved: !library.saved });
                 close();
+                playNext(tracks);
               }}
             >
-              {library.saved ? 'Remove from Library' : 'Add to Library'}
-            </MenuItem>
-          )}
+              <ListStart size={15} />
+              Play Next
+            </GlassDropdownMenuItem>
+            <GlassDropdownMenuItem
+              onSelect={() => {
+                close();
+                addToQueue(tracks);
+              }}
+            >
+              <ListEnd size={15} />
+              Add to Queue
+            </GlassDropdownMenuItem>
+            <GlassDropdownMenuItem
+              onSelect={() => {
+                close();
+                shuffleList(tracks, { source: { title, type: 'playlist', id } });
+              }}
+            >
+              <Shuffle size={15} />
+              Shuffle
+            </GlassDropdownMenuItem>
+            {onReorder && (
+              <GlassDropdownMenuItem
+                onSelect={() => {
+                  close();
+                  onReorder();
+                }}
+              >
+                <ArrowUpDown size={15} />
+                Reorder songs
+              </GlassDropdownMenuItem>
+            )}
+            <GlassDropdownMenuSeparator />
+          </>
+        )}
 
-          {/* Pin to Listen again */}
-          <MenuItem
-            icon={<Pin size={15} className={isPinned ? 'text-key fill-key' : ''} />}
-            onSelect={handleTogglePin}
+        {/* Download Playlist option */}
+        {tracks.length > 0 && (
+          <>
+            {isDownloading ? (
+              <GlassDropdownMenuItem disabled onSelect={() => {}}>
+                <Loader2 size={15} className="animate-spin text-key" />
+                Downloading ({playlistProgress.done}/{playlistProgress.total})…
+              </GlassDropdownMenuItem>
+            ) : isAllDownloaded ? (
+              <GlassDropdownMenuItem destructive onSelect={handleToggleDownload}>
+                <Trash2 size={15} />
+                Remove from downloads
+              </GlassDropdownMenuItem>
+            ) : (
+              <GlassDropdownMenuItem onSelect={handleToggleDownload}>
+                <Download size={15} />
+                {downloadedCount > 0
+                  ? `Download remaining (${tracks.length - downloadedCount} songs)`
+                  : `Download playlist (${tracks.length} songs)`}
+              </GlassDropdownMenuItem>
+            )}
+
+            {!isAllDownloaded && downloadedCount > 0 && !isDownloading && (
+              <GlassDropdownMenuItem destructive onSelect={handleRemoveDownloaded}>
+                <Trash2 size={15} />
+                Remove downloaded ({downloadedCount})
+              </GlassDropdownMenuItem>
+            )}
+            <GlassDropdownMenuSeparator />
+          </>
+        )}
+
+        {/* Library Saving */}
+        {signedIn && library && (
+          <GlassDropdownMenuItem
+            onSelect={() => {
+              setSaved.mutate({ playlistId: library.playlistId, saved: !library.saved });
+              close();
+            }}
           >
-            {isPinned ? 'Unpin from Listen again' : 'Pin to Listen again'}
-          </MenuItem>
+            {library.saved ? (
+              <Check size={15} strokeWidth={2.4} />
+            ) : (
+              <Plus size={15} strokeWidth={2.4} />
+            )}
+            {library.saved ? 'Remove from Library' : 'Add to Library'}
+          </GlassDropdownMenuItem>
+        )}
 
-          {/* Share */}
-          <MenuItem icon={<Share2 size={15} />} onSelect={handleShare}>
-            {copied ? 'Link Copied!' : 'Share Playlist'}
-          </MenuItem>
+        {/* Pin to Listen again */}
+        <GlassDropdownMenuItem onSelect={handleTogglePin}>
+          <Pin size={15} className={isPinned ? 'text-key fill-key' : ''} />
+          {isPinned ? 'Unpin from Listen again' : 'Pin to Listen again'}
+        </GlassDropdownMenuItem>
 
-          {/* Download Artwork */}
-          {thumbnail && (
-            <MenuItem icon={<ImageIcon size={15} />} onSelect={handleDownloadArtwork}>
-              Download Artwork
-            </MenuItem>
-          )}
-        </Menu>
-      )}
-    </>
+        {/* Share */}
+        <GlassDropdownMenuItem closeOnSelect={false} onSelect={handleShare}>
+          <Share2 size={15} />
+          {copied ? 'Link Copied!' : 'Share Playlist'}
+        </GlassDropdownMenuItem>
+
+        {/* Download Artwork */}
+        {thumbnail && (
+          <GlassDropdownMenuItem onSelect={handleDownloadArtwork}>
+            <ImageIcon size={15} />
+            Download Artwork
+          </GlassDropdownMenuItem>
+        )}
+      </GlassDropdownMenuContent>
+    </GlassDropdownMenu>
   );
 }
