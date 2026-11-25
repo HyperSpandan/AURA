@@ -711,13 +711,19 @@ export const smooth = (a: number, b: number, v: number) => {
 export const mixRgb = (a: Rgb, b: Rgb, t: number): Rgb => [lerp(a[0], b[0], t), lerp(a[1], b[1], t), lerp(a[2], b[2], t)]
 export const rgbCss = (c: Rgb) => `rgb(${Math.round(c[0] * 255)} ${Math.round(c[1] * 255)} ${Math.round(c[2] * 255)})`
 
-const isVisibleColor = (c: string) => !!c && c !== 'transparent' && !/rgba\(.*,\s*0\)$/.test(c) && !/\/\s*0\)$/.test(c)
+const colorAlpha = (c: string): number => {
+  if (!c || c === 'transparent') return 0
+  const m = c.match(/(?:,\s*|\/\s*)([\d.]+)(%?)\s*\)$/)
+  if (!m) return 1
+  const v = parseFloat(m[1])
+  return m[2] ? v / 100 : v
+}
 
-/** The colour an element sits on: the first ancestor with a painted background. */
+/** The colour an element sits on: the first ancestor with an opaque/mostly-opaque painted background. */
 export function surfaceColorOf(el: Element | null): string {
   for (let a = el; a; a = a.parentElement) {
     const c = getComputedStyle(a).backgroundColor
-    if (isVisibleColor(c)) return c
+    if (colorAlpha(c) >= 0.5) return c
   }
   return getComputedStyle(document.documentElement).colorScheme.includes('dark') ? 'black' : 'white'
 }

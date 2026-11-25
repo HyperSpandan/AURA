@@ -58,7 +58,7 @@ function VolumeControl({ open, onOpen }: { open: boolean; onOpen: () => void }) 
   return (
     <>
       <div
-        className={`absolute top-[calc(50%-5px)] right-[33px] w-24 -translate-y-1/2 transition-[opacity,translate] ${
+        className={`absolute top-[calc(50%-3px)] right-[33px] w-28 -translate-y-1/2 transition-[opacity,translate] [&>div]:gap-0.5 [&>div>div:first-child]:text-[11px] [&>div>div:first-child]:leading-tight ${
           open ? 'pointer-events-auto translate-none opacity-100' : 'pointer-events-none translate-x-2 opacity-0'
         }`}
       >
@@ -70,8 +70,7 @@ function VolumeControl({ open, onOpen }: { open: boolean; onOpen: () => void }) 
           value={Math.round(level * 100)}
           startIcon="none"
           endIcon="none"
-          showValue={false}
-          label=""
+          label="Volume"
           onChange={(pct) => {
             const v = pct / 100;
             if (remote) {
