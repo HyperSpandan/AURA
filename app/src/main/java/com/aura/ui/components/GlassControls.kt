@@ -56,6 +56,8 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
+import com.kyant.backdrop.backdrops.layerBackdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.lens
@@ -79,8 +81,8 @@ fun GlassSlider(
 ) {
     val c = MaterialTheme.colorScheme
     val dark = c.surface.luminance() <= 0.5f
-    val backdrop = LocalBackdrop.current
-    val liquid = liquidGlassOn() && backdrop != null
+    val liquid = liquidGlassOn()
+    val trackBackdrop = rememberLayerBackdrop()
     val latestOnChange by rememberUpdatedState(onValueChange)
     val span = (valueRange.endInclusive - valueRange.start).coerceAtLeast(1e-5f)
     val fraction = ((value - valueRange.start) / span).coerceIn(0f, 1f)
@@ -147,6 +149,7 @@ fun GlassSlider(
                 Modifier
                     .fillMaxWidth()
                     .height(6.dp)
+                    .then(if (liquid) Modifier.layerBackdrop(trackBackdrop) else Modifier)
                     .clip(CircleShape)
                     .background(c.onSurface.copy(alpha = if (dark) 0.16f else 0.14f)),
             ) {
@@ -168,20 +171,18 @@ fun GlassSlider(
                 }
                 .shadow(if (dragging) 8.dp else 4.dp, CircleShape, clip = false)
                 .then(
-                    if (dragging && liquid && backdrop != null) {
+                    if (dragging && liquid) {
                         Modifier.drawBackdrop(
-                            backdrop = backdrop,
+                            backdrop = trackBackdrop,
                             shape = { CircleShape },
                             effects = {
-                                vibrancy()
-                                blur(4.dp.toPx())
                                 val depth = lensDepth(14.dp.toPx(), size.minDimension)
-                                lens(depth, depth * 1.4f, depthEffect = true, chromaticAberration = true)
+                                lens(depth, 20.dp.toPx(), depthEffect = true, chromaticAberration = true)
                             },
                             highlight = { Highlight.Default },
                             shadow = { Shadow.Default },
                             innerShadow = { InnerShadow.Default },
-                            onDrawSurface = { drawRect(Color.White.copy(alpha = 0.16f)) },
+                            onDrawSurface = { drawRect(Color.White.copy(alpha = 0.12f)) },
                         )
                     } else {
                         Modifier

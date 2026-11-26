@@ -48,6 +48,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import com.kyant.backdrop.backdrops.layerBackdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.lens
@@ -190,13 +192,13 @@ fun BetaTag(modifier: Modifier = Modifier) {
     )
 }
 
-/** Liquid-glass pill switch with spring slide and clear-glass press refraction. */
+/** Liquid-glass pill switch with spring slide and clear-glass press refraction like the navigation dock. */
 @Composable
 fun AppSwitch(checked: Boolean, onChange: (Boolean) -> Unit, enabled: Boolean = true) {
     val c = MaterialTheme.colorScheme
     val dark = c.surface.luminance() <= 0.5f
-    val backdrop = LocalBackdrop.current
-    val liquid = liquidGlassOn() && backdrop != null
+    val liquid = liquidGlassOn()
+    val trackBackdrop = rememberLayerBackdrop()
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
 
@@ -211,12 +213,12 @@ fun AppSwitch(checked: Boolean, onChange: (Boolean) -> Unit, enabled: Boolean = 
         label = "switchThumb",
     )
     val stretchX by animateFloatAsState(
-        targetValue = if (pressed) 1.24f else 1f,
+        targetValue = if (pressed) 1.28f else 1f,
         animationSpec = spring(dampingRatio = 0.62f, stiffness = 580f),
         label = "switchStretch",
     )
     val stretchY by animateFloatAsState(
-        targetValue = if (pressed) 1.12f else 1f,
+        targetValue = if (pressed) 1.14f else 1f,
         animationSpec = spring(dampingRatio = 0.62f, stiffness = 580f),
         label = "switchStretchY",
     )
@@ -232,19 +234,24 @@ fun AppSwitch(checked: Boolean, onChange: (Boolean) -> Unit, enabled: Boolean = 
         Modifier
             .width(52.dp)
             .height(30.dp)
-            .alpha(if (enabled) 1f else 0.45f)
-            .clip(CircleShape)
-            .background(trackColor)
-            .border(0.75.dp, Color.White.copy(alpha = if (dark) 0.18f else 0.45f), CircleShape)
-            .clickable(
-                interactionSource = interaction,
-                indication = null,
-                enabled = enabled,
-                role = Role.Switch,
-                onClick = { onChange(!checked) },
-            ),
+            .alpha(if (enabled) 1f else 0.45f),
         contentAlignment = Alignment.CenterStart,
     ) {
+        Box(
+            Modifier
+                .matchParentSize()
+                .then(if (liquid) Modifier.layerBackdrop(trackBackdrop) else Modifier)
+                .clip(CircleShape)
+                .background(trackColor)
+                .border(0.75.dp, Color.White.copy(alpha = if (dark) 0.18f else 0.45f), CircleShape)
+                .clickable(
+                    interactionSource = interaction,
+                    indication = null,
+                    enabled = enabled,
+                    role = Role.Switch,
+                    onClick = { onChange(!checked) },
+                ),
+        )
         Box(
             Modifier
                 .offset(x = thumbOffset)
@@ -255,20 +262,18 @@ fun AppSwitch(checked: Boolean, onChange: (Boolean) -> Unit, enabled: Boolean = 
                 }
                 .shadow(if (pressed) 6.dp else 3.dp, CircleShape, clip = false)
                 .then(
-                    if (pressed && liquid && backdrop != null) {
+                    if (pressed && liquid) {
                         Modifier.drawBackdrop(
-                            backdrop = backdrop,
+                            backdrop = trackBackdrop,
                             shape = { CircleShape },
                             effects = {
-                                vibrancy()
-                                blur(4.dp.toPx())
                                 val depth = lensDepth(12.dp.toPx(), size.minDimension)
-                                lens(depth, depth * 1.3f, depthEffect = true, chromaticAberration = true)
+                                lens(depth, 18.dp.toPx(), depthEffect = true, chromaticAberration = false)
                             },
                             highlight = { Highlight.Default },
                             shadow = { Shadow.Default },
                             innerShadow = { InnerShadow.Default },
-                            onDrawSurface = { drawRect(Color.White.copy(alpha = 0.18f)) },
+                            onDrawSurface = { drawRect(Color.White.copy(alpha = 0.12f)) },
                         )
                     } else {
                         Modifier
@@ -281,13 +286,13 @@ fun AppSwitch(checked: Boolean, onChange: (Boolean) -> Unit, enabled: Boolean = 
     }
 }
 
-/** Liquid-glass segmented tabs: translucent pill track with specular rim and raised glass thumb. */
+/** Liquid-glass segmented tabs: matches the navigation dock's local LayerBackdrop + lens refraction. */
 @Composable
 fun <T> PillSegmented(options: List<T>, selected: T, label: (T) -> String, onSelect: (T) -> Unit, modifier: Modifier = Modifier) {
     val c = MaterialTheme.colorScheme
     val dark = c.surface.luminance() <= 0.5f
-    val backdrop = LocalBackdrop.current
-    val liquid = liquidGlassOn() && backdrop != null
+    val liquid = liquidGlassOn()
+    val itemsBackdrop = rememberLayerBackdrop()
     val rim = remember(dark) {
         Brush.verticalGradient(
             0f to Color.White.copy(alpha = if (dark) 0.24f else 0.75f),
@@ -313,38 +318,32 @@ fun <T> PillSegmented(options: List<T>, selected: T, label: (T) -> String, onSel
         val index = options.indexOf(selected).coerceAtLeast(0)
         val segment = maxWidth / options.size.coerceAtLeast(1)
         val x by animateDpAsState(segment * index, spring(dampingRatio = 0.74f, stiffness = 460f), label = "pill")
+        val moving = kotlin.math.abs((x - segment * index).value) > 0.5f
+
         Box(
             Modifier
                 .offset { IntOffset(x.roundToPx(), 0) }
                 .width(segment)
                 .fillMaxHeight()
-                .shadow(3.dp, CircleShape, clip = false)
-                .then(
-                    if (liquid && backdrop != null) {
-                        Modifier.drawBackdrop(
-                            backdrop = backdrop,
-                            shape = { CircleShape },
-                            effects = {
-                                vibrancy()
-                                blur(10.dp.toPx())
-                                val depth = lensDepth(12.dp.toPx(), size.minDimension)
-                                lens(depth, depth * 1.2f, depthEffect = true, chromaticAberration = false)
-                            },
-                            highlight = { Highlight.Default },
-                            shadow = { Shadow.Default },
-                            onDrawSurface = {
-                                drawRect(Color.White.copy(alpha = if (dark) 0.16f else 0.72f))
-                            },
-                        )
-                    } else {
-                        Modifier
-                            .clip(CircleShape)
-                            .background(if (dark) Color.White.copy(alpha = 0.16f) else Color.White.copy(alpha = 0.92f))
-                    },
+                .clip(CircleShape)
+                .background(
+                    Brush.verticalGradient(
+                        listOf(
+                            Color.White.copy(alpha = if (dark) 0.14f else 0.78f),
+                            Color.White.copy(alpha = if (dark) 0.08f else 0.56f),
+                        ),
+                    ),
                 )
                 .border(0.9.dp, thumbRim, CircleShape),
         )
-        Row(Modifier.fillMaxWidth().fillMaxHeight(), horizontalArrangement = Arrangement.SpaceEvenly) {
+
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .fillMaxHeight()
+                .then(if (liquid) Modifier.layerBackdrop(itemsBackdrop) else Modifier),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+        ) {
             options.forEachIndexed { i, option ->
                 val color by animateColorAsState(if (i == index) c.onSurface else c.onSurfaceVariant, label = "pillText")
                 Box(
@@ -361,6 +360,30 @@ fun <T> PillSegmented(options: List<T>, selected: T, label: (T) -> String, onSel
                     )
                 }
             }
+        }
+
+        if (liquid) {
+            Box(
+                Modifier
+                    .offset { IntOffset(x.roundToPx(), 0) }
+                    .width(segment)
+                    .fillMaxHeight()
+                    .graphicsLayer {
+                        val s = if (moving) 1.05f else 1f
+                        scaleX = s
+                        scaleY = s
+                    }
+                    .drawBackdrop(
+                        backdrop = itemsBackdrop,
+                        shape = { CircleShape },
+                        effects = {
+                            val depth = lensDepth(12.dp.toPx(), size.minDimension)
+                            lens(depth, 20.dp.toPx(), depthEffect = true, chromaticAberration = false)
+                        },
+                        highlight = { Highlight.Default },
+                        onDrawSurface = { drawRect(Color.White.copy(alpha = if (moving) 0.08f else 0.03f)) },
+                    ),
+            )
         }
     }
 }
