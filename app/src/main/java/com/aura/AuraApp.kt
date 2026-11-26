@@ -10,11 +10,16 @@ import coil3.SingletonImageLoader
 import coil3.disk.DiskCache
 import coil3.memory.MemoryCache
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
+import coil3.request.allowRgb565
 import coil3.request.crossfade
 import com.aura.data.Http
 import com.aura.data.MusicRepository
 import com.aura.data.subsonic.Subsonic
 import com.aura.ui.ScreenCache
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import okio.Path.Companion.toOkioPath
 
 class AuraApp : Application(), SingletonImageLoader.Factory {
@@ -26,6 +31,8 @@ class AuraApp : Application(), SingletonImageLoader.Factory {
     override fun newImageLoader(context: PlatformContext): ImageLoader {
         val am = context.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
         val isLowRam = am?.isLowRamDevice == true
+        val memInfo = ActivityManager.MemoryInfo().also { am?.getMemoryInfo(it) }
+        val constrainedMem = isLowRam || memInfo.totalMem in 1 until 4_200_000_000L
         return ImageLoader.Builder(context)
             .components {
                 add(OkHttpNetworkFetcherFactory(callFactory = { Http.client }))
@@ -45,7 +52,8 @@ class AuraApp : Application(), SingletonImageLoader.Factory {
                     .maxSizeBytes(100L * 1024 * 1024)
                     .build()
             }
-            .crossfade(150)
+            .allowRgb565(constrainedMem)
+            .crossfade(if (constrainedMem) 0 else 150)
             .build()
     }
 
@@ -82,9 +90,13 @@ class AuraApp : Application(), SingletonImageLoader.Factory {
         com.aura.data.spotify.SpotifyWebPlayer.account = {
             if (com.aura.ui.spotify.SpotifyConnection.connected.value) com.aura.ui.spotify.SpotifyConnection.cookie() else null
         }
-        // Last session's Home, shown at once and refreshed in the background.
-        MusicRepository.init(this)?.let { ScreenCache.put("home:${com.aura.data.settings.AppSettings.playback.value.recommender.name}", it, at = 0L) }
-        // After history, library, downloads and account: they tell an existing user from a new one.
-        com.aura.data.Welcome.settle(this)
+        // Offload cold-start disk I/O (cached Home shelf + welcome state) off the main thread.
+        val appContext = this
+        CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
+            MusicRepository.init(appContext)?.let {
+                ScreenCache.put("home:${com.aura.data.settings.AppSettings.playback.value.recommender.name}", it, at = 0L)
+            }
+            com.aura.data.Welcome.settle(appContext)
+        }
     }
 }

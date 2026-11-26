@@ -1,13 +1,8 @@
-# Compile the app's own code ahead of time, so the first launches and the first
-# scrolls don't wait on the JIT to warm up. The libraries below ship no
-# profile of their own; Compose, Media3 and the rest bring theirs.
-HSPLcom/aura/**->**(**)**
-Lcom/aura/**;
-HSPLdev/chrisbanes/haze/**->**(**)**
-Ldev/chrisbanes/haze/**;
-HSPLcom/kyant/**->**(**)**
-Lcom/kyant/**;
-HSPLcoil3/**->**(**)**
-Lcoil3/**;
-HSPLcom/materialkolor/**->**(**)**
-Lcom/materialkolor/**;
+HSPLcom/aura/AuraApp;->**(**)**
+HSPLcom/aura/MainActivity;->**(**)**
+HSPLcom/aura/ui/home/**;->**(**)**
+HSPLcom/aura/ui/player/**;->**(**)**
+HSPLcom/aura/ui/BottomChromeKt;->**(**)**
+HSPLcom/aura/ui/components/**;->**(**)**
+HSPLcom/aura/data/MusicRepository;->**(**)**
+HSPLcom/aura/playback/**;->**(**)**
