@@ -48,6 +48,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import com.kyant.backdrop.drawBackdrop
+import com.kyant.backdrop.effects.blur
+import com.kyant.backdrop.effects.lens
+import com.kyant.backdrop.effects.vibrancy
+import com.kyant.backdrop.highlight.Highlight
+import com.kyant.backdrop.shadow.InnerShadow
+import com.kyant.backdrop.shadow.Shadow
 
 /** Small gray uppercase label above a group. */
 @Composable
@@ -183,16 +190,18 @@ fun BetaTag(modifier: Modifier = Modifier) {
     )
 }
 
-/** Liquid-glass pill switch with spring slide and press-stretch thumb. */
+/** Liquid-glass pill switch with spring slide and clear-glass press refraction. */
 @Composable
 fun AppSwitch(checked: Boolean, onChange: (Boolean) -> Unit, enabled: Boolean = true) {
     val c = MaterialTheme.colorScheme
     val dark = c.surface.luminance() <= 0.5f
+    val backdrop = LocalBackdrop.current
+    val liquid = liquidGlassOn() && backdrop != null
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
 
     val trackColor by animateColorAsState(
-        targetValue = if (checked) c.onSurface else c.surfaceContainerHighest.copy(alpha = 0.85f),
+        targetValue = if (checked) c.primary else c.onSurface.copy(alpha = if (dark) 0.16f else 0.14f),
         animationSpec = spring(stiffness = 500f),
         label = "switchTrack",
     )
@@ -202,14 +211,20 @@ fun AppSwitch(checked: Boolean, onChange: (Boolean) -> Unit, enabled: Boolean = 
         label = "switchThumb",
     )
     val stretchX by animateFloatAsState(
-        targetValue = if (pressed) 1.18f else 1f,
-        animationSpec = spring(dampingRatio = 0.65f, stiffness = 600f),
+        targetValue = if (pressed) 1.24f else 1f,
+        animationSpec = spring(dampingRatio = 0.62f, stiffness = 580f),
         label = "switchStretch",
+    )
+    val stretchY by animateFloatAsState(
+        targetValue = if (pressed) 1.12f else 1f,
+        animationSpec = spring(dampingRatio = 0.62f, stiffness = 580f),
+        label = "switchStretchY",
     )
     val thumbRim = remember(dark) {
         Brush.linearGradient(
-            0f to Color.White.copy(alpha = if (dark) 0.75f else 0.95f),
-            1f to Color.White.copy(alpha = 0.25f),
+            0f to Color.White.copy(alpha = if (dark) 0.90f else 0.98f),
+            0.5f to Color.White.copy(alpha = 0.25f),
+            1f to Color.White.copy(alpha = if (dark) 0.65f else 0.85f),
         )
     }
 
@@ -220,7 +235,7 @@ fun AppSwitch(checked: Boolean, onChange: (Boolean) -> Unit, enabled: Boolean = 
             .alpha(if (enabled) 1f else 0.45f)
             .clip(CircleShape)
             .background(trackColor)
-            .border(0.75.dp, c.onSurface.copy(alpha = if (checked) 0.12f else 0.16f), CircleShape)
+            .border(0.75.dp, Color.White.copy(alpha = if (dark) 0.18f else 0.45f), CircleShape)
             .clickable(
                 interactionSource = interaction,
                 indication = null,
@@ -234,62 +249,116 @@ fun AppSwitch(checked: Boolean, onChange: (Boolean) -> Unit, enabled: Boolean = 
             Modifier
                 .offset(x = thumbOffset)
                 .size(width = 27.dp, height = 24.dp)
-                .graphicsLayer { scaleX = stretchX }
-                .shadow(3.dp, CircleShape, clip = false)
-                .clip(CircleShape)
-                .background(if (checked) c.background else Color.White)
-                .border(0.75.dp, thumbRim, CircleShape),
+                .graphicsLayer {
+                    scaleX = stretchX
+                    scaleY = stretchY
+                }
+                .shadow(if (pressed) 6.dp else 3.dp, CircleShape, clip = false)
+                .then(
+                    if (pressed && liquid && backdrop != null) {
+                        Modifier.drawBackdrop(
+                            backdrop = backdrop,
+                            shape = { CircleShape },
+                            effects = {
+                                vibrancy()
+                                blur(4.dp.toPx())
+                                val depth = lensDepth(12.dp.toPx(), size.minDimension)
+                                lens(depth, depth * 1.3f, depthEffect = true, chromaticAberration = true)
+                            },
+                            highlight = { Highlight.Default },
+                            shadow = { Shadow.Default },
+                            innerShadow = { InnerShadow.Default },
+                            onDrawSurface = { drawRect(Color.White.copy(alpha = 0.18f)) },
+                        )
+                    } else {
+                        Modifier
+                            .clip(CircleShape)
+                            .background(Color.White.copy(alpha = if (pressed) 0.28f else 1f))
+                    },
+                )
+                .border(if (pressed) 1.1.dp else 0.75.dp, thumbRim, CircleShape),
         )
     }
 }
 
-/** Liquid-glass segmented tabs: pill track with specular rim and spring-sliding pill thumb. */
+/** Liquid-glass segmented tabs: translucent pill track with specular rim and raised glass thumb. */
 @Composable
 fun <T> PillSegmented(options: List<T>, selected: T, label: (T) -> String, onSelect: (T) -> Unit, modifier: Modifier = Modifier) {
     val c = MaterialTheme.colorScheme
     val dark = c.surface.luminance() <= 0.5f
+    val backdrop = LocalBackdrop.current
+    val liquid = liquidGlassOn() && backdrop != null
     val rim = remember(dark) {
         Brush.verticalGradient(
-            0f to Color.White.copy(alpha = if (dark) 0.22f else 0.7f),
+            0f to Color.White.copy(alpha = if (dark) 0.24f else 0.75f),
             1f to c.onSurface.copy(alpha = 0.08f),
         )
     }
     val thumbRim = remember(dark) {
         Brush.linearGradient(
-            0f to Color.White.copy(alpha = if (dark) 0.45f else 0.85f),
-            1f to Color.White.copy(alpha = 0.12f),
+            0f to Color.White.copy(alpha = if (dark) 0.55f else 0.90f),
+            0.5f to Color.White.copy(alpha = 0.14f),
+            1f to Color.White.copy(alpha = if (dark) 0.35f else 0.65f),
         )
     }
     BoxWithConstraints(
         modifier
             .fillMaxWidth()
-            .height(46.dp)
+            .height(44.dp)
             .clip(CircleShape)
-            .background(c.surfaceContainerHighest.copy(alpha = if (dark) 0.65f else 0.78f))
+            .background(c.onSurface.copy(alpha = if (dark) 0.08f else 0.07f))
             .border(0.75.dp, rim, CircleShape)
             .padding(4.dp),
     ) {
         val index = options.indexOf(selected).coerceAtLeast(0)
         val segment = maxWidth / options.size.coerceAtLeast(1)
-        val x by animateDpAsState(segment * index, spring(dampingRatio = 0.76f, stiffness = 480f), label = "pill")
+        val x by animateDpAsState(segment * index, spring(dampingRatio = 0.74f, stiffness = 460f), label = "pill")
         Box(
             Modifier
                 .offset { IntOffset(x.roundToPx(), 0) }
                 .width(segment)
                 .fillMaxHeight()
-                .shadow(2.dp, CircleShape, clip = false)
-                .clip(CircleShape)
-                .background(c.onSurface)
-                .border(0.75.dp, thumbRim, CircleShape),
+                .shadow(3.dp, CircleShape, clip = false)
+                .then(
+                    if (liquid && backdrop != null) {
+                        Modifier.drawBackdrop(
+                            backdrop = backdrop,
+                            shape = { CircleShape },
+                            effects = {
+                                vibrancy()
+                                blur(10.dp.toPx())
+                                val depth = lensDepth(12.dp.toPx(), size.minDimension)
+                                lens(depth, depth * 1.2f, depthEffect = true, chromaticAberration = false)
+                            },
+                            highlight = { Highlight.Default },
+                            shadow = { Shadow.Default },
+                            onDrawSurface = {
+                                drawRect(Color.White.copy(alpha = if (dark) 0.16f else 0.72f))
+                            },
+                        )
+                    } else {
+                        Modifier
+                            .clip(CircleShape)
+                            .background(if (dark) Color.White.copy(alpha = 0.16f) else Color.White.copy(alpha = 0.92f))
+                    },
+                )
+                .border(0.9.dp, thumbRim, CircleShape),
         )
         Row(Modifier.fillMaxWidth().fillMaxHeight(), horizontalArrangement = Arrangement.SpaceEvenly) {
             options.forEachIndexed { i, option ->
-                val color by animateColorAsState(if (i == index) c.background else c.onSurfaceVariant, label = "pillText")
+                val color by animateColorAsState(if (i == index) c.onSurface else c.onSurfaceVariant, label = "pillText")
                 Box(
                     Modifier.weight(1f).fillMaxHeight().clip(CircleShape).clickable { onSelect(option) },
                     contentAlignment = Alignment.Center,
                 ) {
-                    Text(com.aura.ui.theme.tr(label(option)), color = color, style = MaterialTheme.typography.labelLarge, textAlign = TextAlign.Center, maxLines = 1)
+                    Text(
+                        com.aura.ui.theme.tr(label(option)),
+                        color = color,
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = if (i == index) FontWeight.SemiBold else FontWeight.Medium,
+                        textAlign = TextAlign.Center,
+                        maxLines = 1,
+                    )
                 }
             }
         }

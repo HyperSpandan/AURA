@@ -10,8 +10,9 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.horizontalDrag
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -35,6 +36,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -54,11 +56,18 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
+import com.kyant.backdrop.drawBackdrop
+import com.kyant.backdrop.effects.blur
+import com.kyant.backdrop.effects.lens
+import com.kyant.backdrop.effects.vibrancy
+import com.kyant.backdrop.highlight.Highlight
+import com.kyant.backdrop.shadow.InnerShadow
+import com.kyant.backdrop.shadow.Shadow
 import kotlin.math.roundToInt
 
 /**
  * Liquid-glass pill slider: a thin translucent track with an accent fill and a
- * pill thumb that swells with a specular rim while dragged.
+ * pill thumb that swells into clear refracting liquid glass while dragged.
  */
 @Composable
 fun GlassSlider(
@@ -70,53 +79,65 @@ fun GlassSlider(
 ) {
     val c = MaterialTheme.colorScheme
     val dark = c.surface.luminance() <= 0.5f
+    val backdrop = LocalBackdrop.current
+    val liquid = liquidGlassOn() && backdrop != null
+    val latestOnChange by rememberUpdatedState(onValueChange)
     val span = (valueRange.endInclusive - valueRange.start).coerceAtLeast(1e-5f)
     val fraction = ((value - valueRange.start) / span).coerceIn(0f, 1f)
     var dragging by remember { mutableStateOf(false) }
+
     val thumbScale by animateFloatAsState(
-        targetValue = if (dragging) 1.14f else 1f,
-        animationSpec = spring(dampingRatio = 0.65f, stiffness = 550f),
+        targetValue = if (dragging) 1.32f else 1f,
+        animationSpec = spring(dampingRatio = 0.62f, stiffness = 520f),
         label = "sliderThumbScale",
+    )
+    val glassAlpha by animateFloatAsState(
+        targetValue = if (dragging) 0.22f else 1f,
+        animationSpec = spring(stiffness = 500f),
+        label = "sliderGlassAlpha",
     )
     val thumbRim = remember(dark) {
         Brush.linearGradient(
-            0f to Color.White.copy(alpha = if (dark) 0.85f else 0.95f),
-            1f to Color.White.copy(alpha = 0.25f),
+            0f to Color.White.copy(alpha = if (dark) 0.90f else 0.98f),
+            0.5f to Color.White.copy(alpha = 0.25f),
+            1f to Color.White.copy(alpha = if (dark) 0.65f else 0.85f),
         )
     }
 
     BoxWithConstraints(
         modifier
             .fillMaxWidth()
-            .height(34.dp)
+            .height(38.dp)
             .alpha(if (enabled) 1f else 0.45f),
         contentAlignment = Alignment.CenterStart,
     ) {
         val density = LocalDensity.current
         val thumbW = 28.dp
+        val thumbHalfPx = with(density) { (thumbW / 2).toPx() }
         val trackPx = with(density) { (maxWidth - thumbW).coerceAtLeast(1.dp).toPx() }
         val thumbOffsetPx = (fraction * trackPx).roundToInt()
 
         val gestureMod = if (enabled) {
-            Modifier
-                .pointerInput(valueRange, trackPx) {
-                    detectTapGestures { pos ->
-                        val f = ((pos.x - with(density) { (thumbW / 2).toPx() }) / trackPx).coerceIn(0f, 1f)
-                        onValueChange(valueRange.start + f * span)
+            Modifier.pointerInput(valueRange, trackPx) {
+                awaitEachGesture {
+                    val down = awaitFirstDown(requireUnconsumed = false)
+                    down.consume()
+                    dragging = true
+                    fun emitAt(x: Float) {
+                        val f = ((x - thumbHalfPx) / trackPx).coerceIn(0f, 1f)
+                        latestOnChange(valueRange.start + f * span)
+                    }
+                    emitAt(down.position.x)
+                    try {
+                        horizontalDrag(down.id) { change ->
+                            change.consume()
+                            emitAt(change.position.x)
+                        }
+                    } finally {
+                        dragging = false
                     }
                 }
-                .pointerInput(valueRange, trackPx) {
-                    detectHorizontalDragGestures(
-                        onDragStart = { dragging = true },
-                        onDragEnd = { dragging = false },
-                        onDragCancel = { dragging = false },
-                        onHorizontalDrag = { change, _ ->
-                            change.consume()
-                            val f = ((change.position.x - with(density) { (thumbW / 2).toPx() }) / trackPx).coerceIn(0f, 1f)
-                            onValueChange(valueRange.start + f * span)
-                        },
-                    )
-                }
+            }
         } else {
             Modifier
         }
@@ -127,7 +148,7 @@ fun GlassSlider(
                     .fillMaxWidth()
                     .height(6.dp)
                     .clip(CircleShape)
-                    .background(c.surfaceContainerHighest.copy(alpha = 0.85f)),
+                    .background(c.onSurface.copy(alpha = if (dark) 0.16f else 0.14f)),
             ) {
                 Box(
                     Modifier
@@ -137,19 +158,40 @@ fun GlassSlider(
                         .background(c.primary),
                 )
             }
-            Box(
-                Modifier
-                    .offset { IntOffset(thumbOffsetPx, 0) }
-                    .size(width = thumbW, height = 18.dp)
-                    .graphicsLayer {
-                        scaleX = thumbScale
-                        scaleY = thumbScale
-                    }
-                    .shadow(4.dp, CircleShape, clip = false)
-                    .clip(CircleShape)
-                    .background(Color.White)
-                    .border(0.75.dp, thumbRim, CircleShape),
-            )
+
+            val thumbMod = Modifier
+                .offset { IntOffset(thumbOffsetPx, 0) }
+                .size(width = thumbW, height = 18.dp)
+                .graphicsLayer {
+                    scaleX = thumbScale
+                    scaleY = thumbScale
+                }
+                .shadow(if (dragging) 8.dp else 4.dp, CircleShape, clip = false)
+                .then(
+                    if (dragging && liquid && backdrop != null) {
+                        Modifier.drawBackdrop(
+                            backdrop = backdrop,
+                            shape = { CircleShape },
+                            effects = {
+                                vibrancy()
+                                blur(4.dp.toPx())
+                                val depth = lensDepth(14.dp.toPx(), size.minDimension)
+                                lens(depth, depth * 1.4f, depthEffect = true, chromaticAberration = true)
+                            },
+                            highlight = { Highlight.Default },
+                            shadow = { Shadow.Default },
+                            innerShadow = { InnerShadow.Default },
+                            onDrawSurface = { drawRect(Color.White.copy(alpha = 0.16f)) },
+                        )
+                    } else {
+                        Modifier
+                            .clip(CircleShape)
+                            .background(Color.White.copy(alpha = glassAlpha))
+                    },
+                )
+                .border(if (dragging) 1.1.dp else 0.75.dp, thumbRim, CircleShape)
+
+            Box(thumbMod)
         }
     }
 }
