@@ -2,9 +2,13 @@ package com.aura.ui.components
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -18,21 +22,28 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
@@ -172,53 +183,110 @@ fun BetaTag(modifier: Modifier = Modifier) {
     )
 }
 
-/** High-contrast switch: a light track with a dark thumb when on. */
+/** Liquid-glass pill switch with spring slide and press-stretch thumb. */
 @Composable
 fun AppSwitch(checked: Boolean, onChange: (Boolean) -> Unit, enabled: Boolean = true) {
     val c = MaterialTheme.colorScheme
-    Switch(
-        checked = checked,
-        onCheckedChange = onChange,
-        enabled = enabled,
-        colors = SwitchDefaults.colors(
-            checkedTrackColor = c.onSurface,
-            checkedThumbColor = c.background,
-            checkedBorderColor = c.onSurface,
-            uncheckedTrackColor = c.surfaceContainerHighest,
-            uncheckedThumbColor = c.onSurfaceVariant.copy(alpha = 0.6f),
-            uncheckedBorderColor = c.surfaceContainerHighest,
-        ),
+    val dark = c.surface.luminance() <= 0.5f
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+
+    val trackColor by animateColorAsState(
+        targetValue = if (checked) c.onSurface else c.surfaceContainerHighest.copy(alpha = 0.85f),
+        animationSpec = spring(stiffness = 500f),
+        label = "switchTrack",
     )
+    val thumbOffset by animateDpAsState(
+        targetValue = if (checked) 22.dp else 3.dp,
+        animationSpec = spring(dampingRatio = 0.72f, stiffness = 520f),
+        label = "switchThumb",
+    )
+    val stretchX by animateFloatAsState(
+        targetValue = if (pressed) 1.18f else 1f,
+        animationSpec = spring(dampingRatio = 0.65f, stiffness = 600f),
+        label = "switchStretch",
+    )
+    val thumbRim = remember(dark) {
+        Brush.linearGradient(
+            0f to Color.White.copy(alpha = if (dark) 0.75f else 0.95f),
+            1f to Color.White.copy(alpha = 0.25f),
+        )
+    }
+
+    Box(
+        Modifier
+            .width(52.dp)
+            .height(30.dp)
+            .alpha(if (enabled) 1f else 0.45f)
+            .clip(CircleShape)
+            .background(trackColor)
+            .border(0.75.dp, c.onSurface.copy(alpha = if (checked) 0.12f else 0.16f), CircleShape)
+            .clickable(
+                interactionSource = interaction,
+                indication = null,
+                enabled = enabled,
+                role = Role.Switch,
+                onClick = { onChange(!checked) },
+            ),
+        contentAlignment = Alignment.CenterStart,
+    ) {
+        Box(
+            Modifier
+                .offset(x = thumbOffset)
+                .size(width = 27.dp, height = 24.dp)
+                .graphicsLayer { scaleX = stretchX }
+                .shadow(3.dp, CircleShape, clip = false)
+                .clip(CircleShape)
+                .background(if (checked) c.background else Color.White)
+                .border(0.75.dp, thumbRim, CircleShape),
+        )
+    }
 }
 
-/** A segmented choice drawn as a sliding light pill on a dark track. */
+/** Liquid-glass segmented tabs: pill track with specular rim and spring-sliding pill thumb. */
 @Composable
 fun <T> PillSegmented(options: List<T>, selected: T, label: (T) -> String, onSelect: (T) -> Unit, modifier: Modifier = Modifier) {
     val c = MaterialTheme.colorScheme
+    val dark = c.surface.luminance() <= 0.5f
+    val rim = remember(dark) {
+        Brush.verticalGradient(
+            0f to Color.White.copy(alpha = if (dark) 0.22f else 0.7f),
+            1f to c.onSurface.copy(alpha = 0.08f),
+        )
+    }
+    val thumbRim = remember(dark) {
+        Brush.linearGradient(
+            0f to Color.White.copy(alpha = if (dark) 0.45f else 0.85f),
+            1f to Color.White.copy(alpha = 0.12f),
+        )
+    }
     BoxWithConstraints(
         modifier
             .fillMaxWidth()
-            .height(48.dp)
-            .clip(RoundedCornerShape(16.dp))
-            .background(c.surfaceContainerHighest.copy(alpha = 0.7f))
-            .padding(5.dp),
+            .height(46.dp)
+            .clip(CircleShape)
+            .background(c.surfaceContainerHighest.copy(alpha = if (dark) 0.65f else 0.78f))
+            .border(0.75.dp, rim, CircleShape)
+            .padding(4.dp),
     ) {
         val index = options.indexOf(selected).coerceAtLeast(0)
-        val segment = maxWidth / options.size
-        val x by animateDpAsState(segment * index, spring(dampingRatio = 0.8f, stiffness = 500f), label = "pill")
+        val segment = maxWidth / options.size.coerceAtLeast(1)
+        val x by animateDpAsState(segment * index, spring(dampingRatio = 0.76f, stiffness = 480f), label = "pill")
         Box(
             Modifier
                 .offset { IntOffset(x.roundToPx(), 0) }
                 .width(segment)
                 .fillMaxHeight()
-                .clip(RoundedCornerShape(12.dp))
-                .background(c.onSurface),
+                .shadow(2.dp, CircleShape, clip = false)
+                .clip(CircleShape)
+                .background(c.onSurface)
+                .border(0.75.dp, thumbRim, CircleShape),
         )
         Row(Modifier.fillMaxWidth().fillMaxHeight(), horizontalArrangement = Arrangement.SpaceEvenly) {
             options.forEachIndexed { i, option ->
                 val color by animateColorAsState(if (i == index) c.background else c.onSurfaceVariant, label = "pillText")
                 Box(
-                    Modifier.weight(1f).fillMaxHeight().clip(RoundedCornerShape(12.dp)).clickable { onSelect(option) },
+                    Modifier.weight(1f).fillMaxHeight().clip(CircleShape).clickable { onSelect(option) },
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(com.aura.ui.theme.tr(label(option)), color = color, style = MaterialTheme.typography.labelLarge, textAlign = TextAlign.Center, maxLines = 1)

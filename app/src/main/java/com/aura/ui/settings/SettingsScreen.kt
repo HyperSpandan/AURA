@@ -188,6 +188,7 @@ import com.aura.ui.components.GroupCard
 import com.aura.ui.components.GroupLabel
 import com.aura.ui.components.NavRow
 import com.aura.ui.components.PageHeader
+import com.aura.ui.components.GlassSlider
 import com.aura.ui.components.PillSegmented
 import com.aura.ui.components.RowDivider
 import com.aura.ui.components.SettingRow
@@ -895,11 +896,10 @@ private fun settingsSections(
                         },
                         icon = Icons.Rounded.Animation,
                         below = {
-                            Slider(
+                            GlassSlider(
                                 value = pb.crossfadeSeconds.toFloat(),
-                                onValueChange = { v -> AppSettings.updatePlayback { it.copy(crossfadeSeconds = v.toInt()) } },
+                                onValueChange = { v -> AppSettings.updatePlayback { it.copy(crossfadeSeconds = kotlin.math.round(v).toInt()) } },
                                 valueRange = 0f..12f,
-                                steps = 11,
                                 enabled = !pb.automix,
                             )
                         },

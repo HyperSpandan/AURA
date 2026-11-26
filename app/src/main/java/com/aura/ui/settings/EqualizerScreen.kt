@@ -39,9 +39,9 @@ import androidx.compose.material.icons.rounded.RestartAlt
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import com.aura.ui.components.GlassSlider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -424,7 +424,7 @@ private fun LabeledSlider(
             Text(label, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
             Text(format(value), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
         }
-        Slider(value = value.coerceIn(range), onValueChange = onChange, valueRange = range, enabled = enabled)
+        GlassSlider(value = value.coerceIn(range), onValueChange = onChange, valueRange = range, enabled = enabled)
     }
 }
 
