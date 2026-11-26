@@ -2431,12 +2431,12 @@ function createEngine(): GlassEngine | null {
     },
     true,
   )
-  // Theme switches (class="dark", data-theme, color-scheme) re-read every colour.
+  // Theme switches (class="dark", data-theme, data-appearance, color-scheme) re-read every colour.
   new MutationObserver(invalidateAll).observe(document.documentElement, {
     attributes: true,
-    attributeFilter: ['class', 'data-theme', 'style'],
+    attributeFilter: ['class', 'data-theme', 'data-appearance', 'style'],
   })
-  new MutationObserver(invalidateAll).observe(document.body, { attributes: true, attributeFilter: ['data-theme'], subtree: true })
+  new MutationObserver(invalidateAll).observe(document.body, { attributes: true, attributeFilter: ['data-theme', 'data-appearance'], subtree: true })
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', invalidateAll)
   // A radial bend scales with the viewport.
   window.addEventListener('resize', invalidateAll, { passive: true })

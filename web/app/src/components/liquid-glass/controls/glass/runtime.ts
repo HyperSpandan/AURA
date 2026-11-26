@@ -298,9 +298,11 @@ function makeLayer() {
 }
 
 function themeOf(el: HTMLElement): GlassThemeName {
-  // The nearest data-theme wins; otherwise a Tailwind/shadcn-style class="dark" on <html>.
+  // The nearest data-theme wins; otherwise data-appearance or class="dark" on <html>.
   const scoped = el.closest('[data-theme]')?.getAttribute('data-theme')
   if (scoped) return scoped === 'dark' ? 'dark' : 'light'
+  const appearance = document.documentElement.getAttribute('data-appearance')
+  if (appearance) return appearance === 'dark' ? 'dark' : 'light'
   return document.documentElement.classList.contains('dark') ? 'dark' : 'light'
 }
 
@@ -361,7 +363,7 @@ async function createRuntime() {
   }
   new MutationObserver(themeChanged).observe(document.documentElement, {
     attributes: true,
-    attributeFilter: ['data-theme'],
+    attributeFilter: ['data-theme', 'data-appearance'],
     subtree: true,
   })
   // class="dark" is only watched on <html> (a subtree class watch would fire on every re-render).
