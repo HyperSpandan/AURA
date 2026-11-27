@@ -81,8 +81,9 @@ val LocalBackdrop = staticCompositionLocalOf<LayerBackdrop?> { null }
 /** How much Liquid Glass frosts what's behind it; Apple's bars sit around here. */
 private val LIQUID_BLUR = 22.dp
 
-/** Lens refraction needs runtime shaders, which arrived in Android 13. */
-val liquidGlassSupported: Boolean get() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+/** Lens refraction needs runtime shaders, which arrived in Android 13 (unavailable in Robolectric software Canvas). */
+val liquidGlassSupported: Boolean
+    get() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && Build.FINGERPRINT != "robolectric"
 
 /** Blurring a recorded layer needs RenderEffect, which arrived in Android 12. */
 val backdropBlurSupported: Boolean get() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
