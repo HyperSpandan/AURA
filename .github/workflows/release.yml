@@ -81,7 +81,9 @@ jobs:
           AURA_KEYSTORE_PASSWORD: ${{ secrets.AURA_KEYSTORE_PASSWORD }}
           AURA_KEY_ALIAS: ${{ secrets.AURA_KEY_ALIAS }}
           AURA_KEY_PASSWORD: ${{ secrets.AURA_KEY_PASSWORD }}
-        run: ./gradlew --no-daemon testDebugUnitTest assembleRelease
+        run: |
+          ./gradlew --no-daemon --max-workers=2 -Dorg.gradle.parallel=false -Dorg.gradle.jvmargs="-Xmx3072m -XX:MaxMetaspaceSize=768m -Dfile.encoding=UTF-8 -Djava.net.preferIPv4Stack=true" testDebugUnitTest
+          ./gradlew --no-daemon --max-workers=2 -Dorg.gradle.parallel=false -Dorg.gradle.jvmargs="-Xmx3072m -XX:MaxMetaspaceSize=768m -Dfile.encoding=UTF-8 -Djava.net.preferIPv4Stack=true" assembleRelease
 
       - name: Verify official APK signing identity and version
         if: steps.version.outputs.skip != 'true'
