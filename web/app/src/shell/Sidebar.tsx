@@ -150,7 +150,7 @@ export function Sidebar() {
         live
         blur={8}
         tint={0.36}
-        className="ot-side absolute top-2.5 bottom-2.5 left-2.5 z-(--z-web-chrome) flex w-[calc(var(--web-navigation-width)-14px)] flex-col rounded-[24px] max-sm:inset-y-0 max-sm:left-0 max-sm:w-[min(300px,82vw)] max-sm:rounded-none max-sm:-translate-x-full max-sm:transition-transform max-sm:duration-(--duration-panel) max-sm:ease-panel max-sm:data-[open=true]:translate-none"
+        className="ot-side absolute top-2.5 bottom-2.5 left-2.5 z-(--z-web-chrome) flex w-[calc(var(--web-navigation-width)-14px)] flex-col rounded-[24px] before:pointer-events-none before:absolute before:inset-0 before:rounded-[inherit] before:bg-white/45 before:ring-1 before:ring-inset before:ring-black/[0.06] dark:before:bg-white/[0.06] dark:before:ring-white/[0.11] max-sm:inset-y-0 max-sm:left-0 max-sm:w-[min(300px,82vw)] max-sm:rounded-none max-sm:-translate-x-full max-sm:transition-transform max-sm:duration-(--duration-panel) max-sm:ease-panel max-sm:data-[open=true]:translate-none"
         data-open={drawerOpen}
         data-folded={folded}
       >
