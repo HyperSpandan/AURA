@@ -1,0 +1,37 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "AURA",
+  "version": "2.0.0",
+  "identifier": "com.aura.desktop",
+  "build": {
+    "beforeDevCommand": "pnpm --filter @aura/app dev",
+    "devUrl": "http://localhost:5173/AURA/player/",
+    "beforeBuildCommand": "AURA_WEB_BASE=/ pnpm --filter @aura/app build",
+    "frontendDist": "../../app/dist"
+  },
+  "app": {
+    "macOSPrivateApi": true,
+    "windows": [
+      {
+        "title": "AURA",
+        "width": 1280,
+        "height": 820,
+        "minWidth": 900,
+        "minHeight": 620,
+        "titleBarStyle": "Overlay",
+        "hiddenTitle": true,
+        "transparent": true
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "macOS": {
+      "minimumSystemVersion": "12.0"
+    }
+  }
+}

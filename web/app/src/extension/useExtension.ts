@@ -2,6 +2,7 @@ import { detectExtension, type DetectedExtension } from '@aura/shared/bridge';
 import { useQuery } from '@tanstack/react-query';
 import { config } from '@/config';
 import { queryClient } from '@/lib/queryClient';
+import { detectTauriBridge, isTauriDesktop } from './tauriBridge';
 
 export type ExtensionStatus =
   | { state: 'checking' }
@@ -25,6 +26,7 @@ const SLOW_RECHECK_MS = 5000;
  * its own when the worker is back; a removed extension fails each call instead.
  */
 async function detect(): Promise<DetectedExtension | null> {
+  if (isTauriDesktop()) return detectTauriBridge();
   const known = queryClient.getQueryData<DetectedExtension | null>(extensionQueryKey) ?? null;
   const found = await detectExtension({ chromiumExtensionId: config.chromiumExtensionId });
   if (found || !known) return found;
