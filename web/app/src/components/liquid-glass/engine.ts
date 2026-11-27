@@ -2431,13 +2431,20 @@ function createEngine(): GlassEngine | null {
     },
     true,
   )
-  // Theme switches (class="dark", data-theme, data-appearance, color-scheme) re-read every colour.
-  new MutationObserver(invalidateAll).observe(document.documentElement, {
+  // Theme switches (class="dark", data-theme, data-appearance, color-scheme) re-read every colour,
+  // including a delayed pass after CSS background-color transitions settle.
+  let themeTimer: ReturnType<typeof setTimeout> | undefined
+  const onThemeChange = () => {
+    invalidateAll()
+    clearTimeout(themeTimer)
+    themeTimer = setTimeout(invalidateAll, 350)
+  }
+  new MutationObserver(onThemeChange).observe(document.documentElement, {
     attributes: true,
     attributeFilter: ['class', 'data-theme', 'data-appearance', 'style'],
   })
-  new MutationObserver(invalidateAll).observe(document.body, { attributes: true, attributeFilter: ['data-theme', 'data-appearance'], subtree: true })
-  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', invalidateAll)
+  new MutationObserver(onThemeChange).observe(document.body, { attributes: true, attributeFilter: ['data-theme', 'data-appearance'], subtree: true })
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', onThemeChange)
   // A radial bend scales with the viewport.
   window.addEventListener('resize', invalidateAll, { passive: true })
   glCanvas.addEventListener('webglcontextlost', () => {
