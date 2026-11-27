@@ -1,0 +1,8 @@
+AURA 2.0.0 update:
+• AURA Connect: real-time cross-device playback sync, handoff, and unified Devices sheet across Android, Web, and TV
+• Android TV & TV Remote: dedicated TV app experience and in-app remote control
+• Automix DJ transitions and Smart Downloads with limits & mixes caching
+• Liquid Glass UI: refracting switches, sliders, segmented tabs, dock lens scrubbing, and opening reveal
+• Fixed PrecisionAudioSink partial writes to eliminate audio drops and stuttering
+• Playlist song reordering, smart playlists, audiobooks, and merged Spotify Liked Songs
+• Major performance & low-end device optimizations (Baseline Profile, RGB_565 artwork, 120Hz support)
