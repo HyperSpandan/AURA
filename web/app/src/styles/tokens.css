@@ -68,13 +68,13 @@
   /* ---- Colour: light ----------------------------------------------------- */
   color-scheme: light;
 
-  --pageBG: #ffffff;
-  --pageBG-rgb: 255, 255, 255;
+  --pageBG: #f5f5f7;
+  --pageBG-rgb: 245, 245, 247;
 
-  --systemPrimary: #000000e0;
-  --systemSecondary: #0000008f;
-  --systemTertiary: #0000007a;
-  --systemQuaternary: #0000001a;
+  --systemPrimary: #000000eb;
+  --systemSecondary: #0000009e;
+  --systemTertiary: #00000080;
+  --systemQuaternary: #0000001f;
   --systemQuinary: #0000000d;
 
   --systemPrimary-onDark: #ffffffeb;
@@ -102,18 +102,18 @@
   --labelDivider: #00000026;
   --vibrantDivider: #3c3c434a;
 
-  --glassMaterialBackground: #f5f5f78c;
-  --glassMaterialShadowColor: #0000001a;
+  --glassMaterialBackground: #ffffffcc;
+  --glassMaterialShadowColor: #00000022;
   --glassMaterialInnerStroke: #000000;
-  --glassMaterialInnerStrokeAlpha: 0.05;
+  --glassMaterialInnerStrokeAlpha: 0.09;
   --glassMaterialBackdropFilter: saturate(190%) blur(36px);
 
-  --systemStandardThinMaterialSover: #f6f6f67a;
-  --systemStandardThickMaterialSover: #f6f6f6b8;
-  --systemHeaderMaterialSover: #ffffffcc;
+  --systemStandardThinMaterialSover: #ffffff99;
+  --systemStandardThickMaterialSover: #ffffffd6;
+  --systemHeaderMaterialSover: #f5f5f7d9;
 
-  --navSidebarSelectedState: #3c3c431a;
-  --tracklistHoverColor: #0000000f;
+  --navSidebarSelectedState: #00000014;
+  --tracklistHoverColor: #00000012;
   --shelfBG: #0000000d;
   --opaqueShelfBG: #f2f2f2;
   --footerBg: #fbfbfb;
